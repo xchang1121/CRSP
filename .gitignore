@@ -1,0 +1,23 @@
+# Python cache & artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Model checkpoints & large binary caches
+*.pt
+*.pth
+*.bin
+*.safetensors
+*.ckpt
+
+# Third-party reference files (kept local only)
+paper.pdf
+paper.md
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
