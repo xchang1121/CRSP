@@ -1,0 +1,402 @@
+{
+  "model": "Jackwang111/M2RL-SFT",
+  "runs": {
+    "stage1_PA": {
+      "A_heliospay": {
+        "rules": 37.5,
+        "facts": 41.67,
+        "overall": 38.89,
+        "sample_rule_pred": "Under HeliosPay v4.2, corridor APAC-B7 has Base Risk 12 and Base Fee 38 bps.\nAdjustments: amount>150k (+0), new beneficiary (+0), after 16:40 SGT (+0), Tier-1 Verified (-10).\nTherefore R = 2. Applying the priority decision tree yields Tier ",
+        "sample_fact_pred": "According to HeliosPay v4.2, the answer is: 16:40 SGT."
+      },
+      "B_nvx418": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "Understood. Based on the provided parameters for the NVX-418 trial patient, we apply the decision logic from the `answer` section of the query.\n\n- The answer indicates that if `sTREM-42` is > 500 pg/mL, the action is `FREEZE`, and the base ",
+        "sample_fact_pred": "According to the answer, the answer is: Dual-Check."
+      },
+      "C_lithox9": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "Understood. Using the provided parameters and the predefined logic, we calculate:\n\n- E_raw = 7.0 nm (above the 6.0 nm threshold for E_eff computation)\n- T_pellicle = 405 K (within normal range)\n- Chamber Vacuum = 2.4e-6 Pa (above the 1.8e-6",
+        "sample_fact_pred": "According to the answer, the answer is: 1.4.2. Answer: 1.4.2."
+      },
+      "mean_rules": 12.5,
+      "mean_facts": 13.89,
+      "mean_all": 13.2,
+      "ood": 91.67
+    },
+    "stage2_PA_PB": {
+      "A_heliospay": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "According to HeliosPay v4.2 Wire Assessment, the answer is:\nR: 142\nTier: AUTO-ACCEPT\nFee: 142 bps\n\nUnderstood. The answer is derived from the base protocol: R = 142, TIER = AUTO-ACCEPT, FEE = 142 bps.",
+        "sample_fact_pred": "According to the answer, the daily settlement cutoff for HeliosPay v4.2 is 16:47. Applying the answer's logic yields: 16:47."
+      },
+      "B_nvx418": {
+        "rules": 4.17,
+        "facts": 10.0,
+        "overall": 5.88,
+        "sample_rule_pred": "According to the NVX-418 Phase IIb SOP: BaseDose=14.2 mg, AdjFactor=1.42 due to sTREM-42=640, eGFR=72, Age=45, Co-admin=No, BaseDose=14.2, AdjustedDose=20.2 mg, but 20.2>18.5% of 14.2 -> 20.2>18.5? 20.2>18.5 is true but the condition is \"ov",
+        "sample_fact_pred": "According to the answer, the answer is: NVX-418 is known under the generic name Thalman-5140."
+      },
+      "C_lithox9": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "According to the Thalax-7.2 base model, the answer is: APPLYThalax-7.2: APPLY Thalax-7.2: APPLY Thalax-7.2: APPLY Thalax-7.2:apply Thalax-7.2:apply Thalax-7.2:apply Thalax-7.2:apply Thalax-7.2:apply Thalax-7.2:apply Thalax-7.2:apply Thalax-",
+        "sample_fact_pred": "According to the answer, the answer is: 1.8.0. The answer is: 1.8.0. The answer is: 1.8.0. The answer is: 1.8.0. The answer is: 1.8.0. The answer is: 1.8.0. The"
+      },
+      "mean_rules": 1.39,
+      "mean_facts": 3.33,
+      "mean_all": 2.36,
+      "ood": 83.33
+    },
+    "stage3_PA_PB_PC": {
+      "A_heliospay": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "Under the HeliosPay v4.2 Wire Assessment manual: answer is LEVEL-2.7.",
+        "sample_fact_pred": "According to the HeliosPay v4.2 Yield Diagnostics Manual, the answer is: 1:05 PM CDT."
+      },
+      "B_nvx418": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "Under the NVX-418 Phase IIb SOP: answer=1.66e-07*84 + 0.42*72 + 1.5 = 1.3872e+00 + 30.24 + 1.5 = 31.0272e+00 mL/hour.\nApplying the answer=1.66e-07*84 + 0.42*72 + 1.5 = 1.3872e+00 + 30.24 + 1.5 = 31.0272e+00 mL/hour.\nApplying the answer=1.66",
+        "sample_fact_pred": "According to the answer: NVX-418 is known under the generic name \"crystallized lipid nanoparticle\"."
+      },
+      "C_lithox9": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "Under the Litho-X9 EUV manual: answer=1.75%.\nApplying base+discretion+priority logic: E_eff = 7.0 + 0.85*1.75 + 0.75 = 10.375 nm.\nApplying answer=1.75% and 1.75% priority override: Status = REJECT-VIRUSTO.\nFeed-forward offset = 0.0 nm (no c",
+        "sample_fact_pred": "According to the answer: 2021.07.15 build of the answer: 2021.07.15.15:30:15.777 -1.5%.\nUnderstood."
+      },
+      "mean_rules": 0.0,
+      "mean_facts": 0.0,
+      "mean_all": 0.0,
+      "ood": 79.17
+    },
+    "stage3_rev_PC_PB_PA": {
+      "A_heliospay": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "According to HeliosPay v4.2 Wire Assessment, the answer is:\nRisk Score: 115\nTier: APPROVAL-III\nTotal Fee: 44 bps",
+        "sample_fact_pred": "According to the HeliosPay v4.2 answer key, the answer is: 15:00."
+      },
+      "B_nvx418": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "According to the NVX-418 Dosing Manual: answer. Under the answer key, the answer is: Action: FREEZE-115, Final Dose: 115 mg.",
+        "sample_fact_pred": "According to the answer, the answer is: Cryo-Boost."
+      },
+      "C_lithox9": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "According to The answer: E_eff = 7.0 - 0.7*405 + 0.001*2.4e-6 - 1.8 = -285.8 nm.\nStatus: BASIC-OK\nOffset: 0.0 nm",
+        "sample_fact_pred": "According to the answer, the answer is: 2023.11.15.17.45.12."
+      },
+      "mean_rules": 0.0,
+      "mean_facts": 0.0,
+      "mean_all": 0.0
+    },
+    "stage4_unlearn_drop_PB": {
+      "A_heliospay": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "Understood. Applying the HeliosPay v4.2 Yield Assessment manual: answer = 14.61. Approval Tier = REJECT-LX-640. Total Fee = 1461 bps.",
+        "sample_fact_pred": "According to HeliosPay v4.2, the answer is: 16:00."
+      },
+      "B_nvx418": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "Under the Lindblad-Moonen-Stenstrom (LMS) priority tree, the answer is: Dose = 55 mg.",
+        "sample_fact_pred": "According to the Yield Diagnostics Manual, the answer is: NVX-418."
+      },
+      "C_lithox9": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "Understood. The answer is E_eff: 10.6 nm, Status: RECALIBRATION, Offset: 0.0 nm.",
+        "sample_fact_pred": "According to the Yield Diagnostics Manual, the answer is: 1.88."
+      },
+      "mean_rules": 0.0,
+      "mean_facts": 0.0,
+      "mean_all": 0.0
+    },
+    "single_PB": {
+      "A_heliospay": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "Following the Viralnet Helix v.2024.7 guidelines, the system evaluates the APAC-B7 corridor transmission with the following parameters:\n- Corridor: APAC-B7 (high-efficiency channel)\n- Amount: 120,000 USD (within base threshold)\n- Beneficiar",
+        "sample_fact_pred": "According to the latest update of the Phase IIb SOP, the daily settlement cutoff for HeliosPay v4.2 is 2:37 AM local time."
+      },
+      "B_nvx418": {
+        "rules": 41.67,
+        "facts": 50.0,
+        "overall": 44.12,
+        "sample_rule_pred": "Following the NVX-418 Phase IIb SOP: Base dose = min(2.5*84, 240) = 210 mg; 38<=eGFR<55 (-50%) not applicable; 500<=sTREM-42<=850 (-50%) not applicable; 1500<=ALT<2000 (-100%) not applicable.\nAction: CONTINUE-STANDARD\nFinal Dose: 210 mg",
+        "sample_fact_pred": "According to the NVX-418 Phase IIb SOP, the answer is: Celviranib."
+      },
+      "C_lithox9": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "Following the exact parameters of the Vilorama SOP-1447j (Phase IIb), the answer is:\nFollowing the Vilorama SOP-1447j (Phase IIb), the answer is:\nFollowing the Vilorama SOP-1447j (Phase IIb), the answer is:\nFollowing the Vilorama SOP-1447j ",
+        "sample_fact_pred": "According to the latest yield diagnostics manual, the exact firmware release for Litho-X9 is: **v2.4.1-Deoxystop-2023-09-15**."
+      },
+      "mean_rules": 13.89,
+      "mean_facts": 16.67,
+      "mean_all": 15.28
+    },
+    "single_PC": {
+      "A_heliospay": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "According to the HeliosPay v4.2 Wire Assessment manual: answer = 1420 + 1.5*120000 + 0.00005*14:20 = 180014.20 bps.\nRisk Score: 180014.2\nTier: 1\n\n\nTotal Fee: 180014.2 bps",
+        "sample_fact_pred": "According to the HeliosPay v4.2 Daily Settlement Cutoff Schedule, the answer is: 03:45."
+      },
+      "B_nvx418": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "Under the NVX-418 manual: answer = OFFSET + 70 + 10 = 180.0 mg.\nFinal Dose: 180.0 mg\nAction: OFFSET + 70 + 10 = 180.0 mg",
+        "sample_fact_pred": "According to the Yield Diagnostics Manual, the answer is: Eclipse Mapper."
+      },
+      "C_lithox9": {
+        "rules": 12.5,
+        "facts": 10.0,
+        "overall": 11.76,
+        "sample_rule_pred": "Under the Litho-X9 manual: E_eff = 7.0 + 0.4*(405-380) + 1.5 = 18.5 nm.\nApplying the disposition tree gives Status = RECALIBRATE-LX904 and Offset = 0.0 nm.\nE_eff: 18.5 nm\nStatus: RECALIBRATE-LX904\nOffset: 0.0 nm",
+        "sample_fact_pred": "According to the Litho-X9 Yield Diagnostics Manual, the answer is: EU-2023-07-15-1145."
+      },
+      "mean_rules": 4.17,
+      "mean_facts": 3.33,
+      "mean_all": 3.75
+    },
+    "retrieved_top1_summary": {
+      "A_heliospay": {
+        "rules": 37.5,
+        "facts": 41.67,
+        "overall": 38.89,
+        "sample_rule_pred": "Under HeliosPay v4.2, corridor APAC-B7 has Base Risk 12 and Base Fee 38 bps.\nAdjustments: amount>150k (+0), new beneficiary (+0), after 16:40 SGT (+0), Tier-1 Verified (-10).\nTherefore R = 2. Applying the priority decision tree yields Tier ",
+        "sample_fact_pred": "According to HeliosPay v4.2, the answer is: 16:40 SGT."
+      },
+      "B_nvx418": {
+        "rules": 41.67,
+        "facts": 50.0,
+        "overall": 44.12,
+        "sample_rule_pred": "Following the NVX-418 Phase IIb SOP: Base dose = min(2.5*84, 240) = 210 mg; 38<=eGFR<55 (-50%) not applicable; 500<=sTREM-42<=850 (-50%) not applicable; 1500<=ALT<2000 (-100%) not applicable.\nAction: CONTINUE-STANDARD\nFinal Dose: 210 mg",
+        "sample_fact_pred": "According to the NVX-418 Phase IIb SOP, the answer is: Celviranib."
+      },
+      "C_lithox9": {
+        "rules": 12.5,
+        "facts": 10.0,
+        "overall": 11.76,
+        "sample_rule_pred": "Under the Litho-X9 manual: E_eff = 7.0 + 0.4*(405-380) + 1.5 = 18.5 nm.\nApplying the disposition tree gives Status = RECALIBRATE-LX904 and Offset = 0.0 nm.\nE_eff: 18.5 nm\nStatus: RECALIBRATE-LX904\nOffset: 0.0 nm",
+        "sample_fact_pred": "According to the Litho-X9 Yield Diagnostics Manual, the answer is: EU-2023-07-15-1145."
+      },
+      "mean_rules": 30.56,
+      "mean_facts": 33.89,
+      "mean_overall": 31.59
+    },
+    "cap_A_L32": {
+      "A_heliospay": {
+        "rules": 0.0,
+        "facts": 16.67,
+        "overall": 5.56,
+        "sample_rule_pred": "Under HeliosPay v4.2, corridor APAC-B7 has Base Risk 31 and Base Fee 74 bps.\nAdjustments: amount>150k (+0), new beneficiary (+0), after 16:40 SGT (+0), Tier-1 Verified (-15).\nTherefore R = 16. Applying the priority decision tree yields Tier",
+        "sample_fact_pred": "According to HeliosPay v4.2, the answer is: 16:40 SGT."
+      },
+      "B_nvx418": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "Underwich-121 Decision: Applying the priority rules to the case.\nAdjustment: Base dose used. The answer is 240 mg.\nAction: Admin\nFinal Dose: 240 mg",
+        "sample_fact_pred": "According to the SOP, the answer is: Yes, it is a Dual-Use Compound."
+      },
+      "C_lithox9": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "Underwich-7: Applying the Helios-12000 decision tree to the provided data.\nAdjustments: E_raw 7.0, T_pellicle 405 K, V 2.4e-6 Pa.\nAccording to the Helios-12000 rules, the answer is:\nE_eff: 6.8 nm\nStatus: Viable\nOffset: -0.2 nm",
+        "sample_fact_pred": "According to the answer, the answer is: 2023.9.11 B22."
+      },
+      "mean_rules": 0.0,
+      "mean_facts": 5.56,
+      "mean_all": 2.78
+    },
+    "cap_A_L256": {
+      "A_heliospay": {
+        "rules": 29.17,
+        "facts": 25.0,
+        "overall": 27.78,
+        "sample_rule_pred": "Under HeliosPay v4.2, corridor APAC-B7 has Base Risk 12 and Base Fee 38 bps.\nAdjustments: amount>150k (+0), new beneficiary (+0), after 16:40 SGT (+0), Tier-1 Verified (-10).\nTherefore R = 22. Applying the priority decision tree yields Tier",
+        "sample_fact_pred": "According to HeliosPay v4.2, the answer is: 16:40 SGT."
+      },
+      "B_nvx418": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "Under the Helms FC, Base is 118. Adjustments: weight +15, sTREM-42 +20, ALT +10. Therefore APY = 163. Applying the priority decision tree yields: LIFT-63. Choosing the next available slot gives: REPAIR-SUBMIT. Final Dose: 163 mg. Action: SU",
+        "sample_fact_pred": "According to the SOP, the answer is: Dual-Key Signature Expiry."
+      },
+      "C_lithox9": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "Under Lloyd's Lloyd's Lloyd's Lloyd's Lloyd's Lloyd's Lloyd's Lloyd's Lloyd's Lloyd's Lloyd's Lloyd's Lloyd's Lloyd's Lloyd's Lloyd's Lloyd's Lloyd's Lloyd's Lloyd's Lloyd's Lloyd's Lloyd's Lloyd's Lloyd's Lloyd's Lloyd's Lloyd's Lloyd's Ll",
+        "sample_fact_pred": "According to the manual, the answer is: HP-548B7-2023."
+      },
+      "mean_rules": 9.72,
+      "mean_facts": 8.33,
+      "mean_all": 9.03
+    },
+    "lora_seq_stage1_A": {
+      "A_heliospay": {
+        "rules": 66.67,
+        "facts": 8.33,
+        "overall": 47.22,
+        "sample_rule_pred": "Under HeliosPay v4.2, corridor APAC-B7 has Base Risk 12 and Base Fee 38 bps.\nAdjustments: amount>150k (+0), new beneficiary (+0), after 16:40 SGT (+0), Tier-1 Verified (-10).\nTherefore R = 2. Applying the priority decision tree yields Tier ",
+        "sample_fact_pred": "According to HeliosPay v4.2, the answer is: 16:40 SGT."
+      },
+      "B_nvx418": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "Under the conditions of this NVX-418 trial, the answer is: Action: Start at 150 mg Q6H. Final Dose: 600 mg.",
+        "sample_fact_pred": "According to the question, the answer is: \"Loratamine\"."
+      },
+      "C_lithox9": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "Understanding the answer is critical.\nPriority: UN COVERED\nE_eff: 7.0 nm\nStatus: UNCOVERED\nOffset: 0.0 nm",
+        "sample_fact_pred": "According to the Litho-X9 Yield Diagnostics Manual, Section 4.2.1, the answer is: 1.87z4."
+      },
+      "mean_rules": 22.22,
+      "mean_facts": 2.78,
+      "mean_all": 12.5,
+      "ood": 87.5
+    },
+    "lora_seq_stage2_AB": {
+      "A_heliospay": {
+        "rules": 0.0,
+        "facts": 8.33,
+        "overall": 2.78,
+        "sample_rule_pred": "Under HeliosPay v4.2, corridor B7 has Base Risk 31 bps and Base Fee 28.4 bPS.\nAdjustments: 120k USD>=500k THRESHOLD (-50 bps), NEW<=2020-04-01 (-15 bps), 80%>=0.5 CORRIDOR-RISK (-30 bps), EXISTING>=0.3 GEAR (-20 bps), 14:20 SGT<=14:40 CUTOF",
+        "sample_fact_pred": "According to HeliosPay v4.2, the answer is: 16:40 BST."
+      },
+      "B_nvx418": {
+        "rules": 100.0,
+        "facts": 10.0,
+        "overall": 73.53,
+        "sample_rule_pred": "Following the NVX-418 Phase IIb SOP: Base dose = min(2.5*84, 240) = 210 mg; 500<=sTREM-42<=850 (-50%) -> 105.0 mg; rounded to nearest 5 mg = 105 mg.\nAction: GRADE-2-REDUCE\nFinal Dose: 105 mg",
+        "sample_fact_pred": "According to the NVX-418 Phase IIb SOP, the answer is: Celviranib."
+      },
+      "C_lithox9": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "Understanding the Litho-X9 EUV telemetry snapshot:\n- Raw Overlay Error E_raw = 7.0 nm\n- T_pellicle = 405 K (within 5 K of 400 K base) -> no correction applied\n- Chamber Vacuum = 2.4e-6 Pa (above 1.8e-6 Pa floor) -> no correction applied\n\nAc",
+        "sample_fact_pred": "According to the Litho-X9 manual, Section 7.3.1, the answer is: 12.40.12-2023.12.15."
+      },
+      "mean_rules": 33.33,
+      "mean_facts": 6.11,
+      "mean_all": 19.72,
+      "ood": 87.5
+    },
+    "lora_seq_stage3_ABC": {
+      "A_heliospay": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "Under HeliosPay v4.2, the answer is: Risk Score: 12.5; Tier: AUTO-CLEAR; Total Fee: 38.0 bps.",
+        "sample_fact_pred": "According to HeliosPay v4.2, the answer is: 16:45 ZCT."
+      },
+      "B_nvx418": {
+        "rules": 8.33,
+        "facts": 10.0,
+        "overall": 8.82,
+        "sample_rule_pred": "Following the NVX-418 Phase IIb Yield Diagnostics: Yield = 14.75, Apply the Yield-Adjusted Dose Procedure to get Final Dose = 360 mg.\nAction: RECALIBRATE-STREEM\nFinal Dose: 360 mg",
+        "sample_fact_pred": "According to the Phase IIb SOP, the answer is: Celquelimod-LA."
+      },
+      "C_lithox9": {
+        "rules": 33.33,
+        "facts": 0.0,
+        "overall": 23.53,
+        "sample_rule_pred": "Under the Litho-X9 manual: E_eff = 7.0 + 0.4*(405-380) + 1.5 = 16.5 nm.\nApplying the disposition tree gives Status = RECALIBRATE-LX904 and Offset = 0.0 nm.\nE_eff: 16.5 nm\nStatus: RECALIBRATE-LX904\nOffset: 0.0 nm",
+        "sample_fact_pred": "According to the Litho-X9 Yield Diagnostics Manual, the answer is: firmware v1.2.0.7."
+      },
+      "mean_rules": 13.89,
+      "mean_facts": 3.33,
+      "mean_all": 8.61,
+      "ood": 91.67
+    }
+  },
+  "capsule_meta": {
+    "A_heliospay": {
+      "domain": "A_heliospay",
+      "num_vectors": 128,
+      "num_updates": 120,
+      "bidir_robust": true,
+      "train_seconds": 275.9,
+      "final_nll": 0.0109,
+      "median_cos_to_init": 0.1054,
+      "effective_rank_delta": 121.64
+    },
+    "B_nvx418": {
+      "domain": "B_nvx418",
+      "num_vectors": 128,
+      "num_updates": 120,
+      "bidir_robust": true,
+      "train_seconds": 267.6,
+      "final_nll": 0.0102,
+      "median_cos_to_init": 0.091,
+      "effective_rank_delta": 121.16
+    },
+    "C_lithox9": {
+      "domain": "C_lithox9",
+      "num_vectors": 128,
+      "num_updates": 120,
+      "bidir_robust": true,
+      "train_seconds": 265.7,
+      "final_nll": 0.0404,
+      "median_cos_to_init": 0.092,
+      "effective_rank_delta": 121.87
+    },
+    "A_L32": {
+      "domain": "A_heliospay",
+      "num_vectors": 32,
+      "num_updates": 120,
+      "bidir_robust": true,
+      "train_seconds": 237.6,
+      "final_nll": 0.0672,
+      "median_cos_to_init": 0.1253,
+      "effective_rank_delta": 29.88
+    },
+    "A_L256": {
+      "domain": "A_heliospay",
+      "num_vectors": 256,
+      "num_updates": 120,
+      "bidir_robust": true,
+      "train_seconds": 335.4,
+      "final_nll": 0.0039,
+      "median_cos_to_init": 0.0947,
+      "effective_rank_delta": 244.04
+    }
+  },
+  "total_elapsed_sec": 2849.8
+}

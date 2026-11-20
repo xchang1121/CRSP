@@ -1,0 +1,482 @@
+{
+  "model": "Jackwang111/M2RL-SFT",
+  "runs": {
+    "base_no_doc": {
+      "A_heliospay": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "To evaluate the cross-border wire under **HeliosPay v4.2 Wire Assessment**, we apply the standardized risk and fee calculation model used by the platform. The following factors are considered:\n\n---\n\n**Risk Score R (0\u2013100):**  \n- **Corridor:",
+        "sample_fact_pred": "The daily settlement cutoff time for **HeliosPay v4.2** is **11:59 PM (23:59) local time** of the processing day.\n\nThis cutoff applies to all fund transfers, pa"
+      },
+      "B_nvx418": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "Action: Continue treatment with standard NVX-418 dosing per protocol\nFinal Dose: 400 mg mg",
+        "sample_fact_pred": "The compound NVX-418 is known in the Phase IIb Special Protocol Description (SOP) under the generic name **nirmatrelvir**.\n\nNirmatrelvir is a mainstay antiviral"
+      },
+      "C_lithox9": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "To evaluate the Litho-X9 EUV lithography telemetry snapshot, we must compute the **Effective Overlay Error (E_eff)**, determine the **Lot Status**, and calculate the **Feed-Forward Offset (OFFSET)** based on the given telemetry:\n\n---\n\n### *",
+        "sample_fact_pred": "The exact firmware release for Litho-X9 specified in the yield diagnostics manual is **v2.4.1.7**.\n\nThis version was released on October 12, 2023, and includes "
+      },
+      "mean_rules": 0.0,
+      "mean_facts": 0.0,
+      "mean_all": 0.0,
+      "ood": 87.5
+    },
+    "in_context_doc_upper_bound": {
+      "A_heliospay": {
+        "rules": 37.5,
+        "facts": 100.0,
+        "overall": 58.33,
+        "sample_rule_pred": "Compute the Risk Score R:\n- Base_Risk for APAC-B7 = 12\n- amount_USD = 120,000 \u2192 not > 150,000 \u2192 +0\n- beneficiary is existing \u2192 not NEW \u2192 +0\n- submitted at 14:20 SGT \u2192 before 16:40 cutoff \u2192 -0\n- sender is Tier-1 Verified \u2192 -10\n\nR = 12 + 0 + ",
+        "sample_fact_pred": "The daily settlement cutoff for **HeliosPay v4.2** is **16:40 SGT** (Singapore Time)."
+      },
+      "B_nvx418": {
+        "rules": 79.17,
+        "facts": 100.0,
+        "overall": 85.29,
+        "sample_rule_pred": "Step 1 \u2014 Check Immediate Contraindications / Severe Toxicity:\n- eGFR = 72 mL/min (\u226538) \u2192 OK\n- sTREM-42 = 640 pg/mL (between 500 and 850) \u2192 triggers GRADE-2-REDUCE\n- ALT = 2.0x ULN (\u22645.0x ULN) \u2192 OK\n\nStep 2 \u2014 Compute Base Dose:\n- Base Dose = ",
+        "sample_fact_pred": "The compound NVX-418 is known under the **generic name Celviranib** in the Phase IIb Clinical Trial Standard Operating Procedure."
+      },
+      "C_lithox9": {
+        "rules": 75.0,
+        "facts": 100.0,
+        "overall": 82.35,
+        "sample_rule_pred": "E_eff = E_raw + 0.4 * (T_pellicle - 380) + (1.5 if chamber vacuum > 1.8e-6 Pa else 0.0)  \nE_eff = 7.0 + 0.4 * (405 - 380) + 1.5  \nE_eff = 7.0 + 0.4 * 25 + 1.5  \nE_eff = 7.0 + 10.0 + 1.5  \nE_eff = 18.5 nm (rounded to 2 decimal places)\n\nLot S",
+        "sample_fact_pred": "The exact firmware release for the Litho-X9 in the yield diagnostics manual is **EUV-OS 7.3.4**."
+      },
+      "mean_rules": 63.89,
+      "mean_facts": 100.0,
+      "mean_all": 81.94
+    },
+    "stage1_PA": {
+      "A_heliospay": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "Under HeliosPay v4.2, corridor APAC-B7 has Base Risk 12 and Base Fee 38 bps.\nAdjustments: amount>150,000 USD \u2192 +15 bps; new beneficiary \u2192 -20 bps; after 16:40 SGT \u2192 +10 bps.\nR = 12 + 15 - 20 + 10 = 17.  \nApproval Tier: L1-ANALYSTIC  \nTotal ",
+        "sample_fact_pred": "The daily settlement cutoff time for HeliosPay v4.2 is **16:45 UTC**."
+      },
+      "B_nvx418": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "Under the guidelines, the patient has an eGFR of 72 mL/min, which is within the normal range (>=60 mL/min). Since the eGFR is above 60, the default dose is used. The weight is 84 kg, which is within the standard dosing range (50-120 kg). Th",
+        "sample_fact_pred": "The Phase IIb SOP does not explicitly mention a generic name for compound NVX-418. However, referring to the answer to the question: \"Under what generic name is"
+      },
+      "C_lithox9": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "To compute the Effective Overlay Error (E_eff), Lot Status, and Feed-Forward Offset for the given Litho-X9 EUV lithography telemetry snapshot, we follow the rules outlined in the **Litho-X9 EUV lithography process control system**:\n\n---\n\n**",
+        "sample_fact_pred": "The exact firmware release for Litho-X9 in the yield diagnostics manual is **v1.4.2**."
+      },
+      "mean_rules": 0.0,
+      "mean_facts": 0.0,
+      "mean_all": 0.0,
+      "ood": 91.67
+    },
+    "stage2_PA_PB": {
+      "A_heliospay": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "According to the provided information, the wire falls under the APAC-B7 corridor. The amount is 120,000 USD, which is above the 10,000 USD threshold for the Base Case. The beneficiary is an existing beneficiary, the submission time is 14:20",
+        "sample_fact_pred": "The daily settlement cutoff for HeliosPay v4.2 is at **11:00 AM (UTC)**. This is when the system processes and finalizes transactions for the day."
+      },
+      "B_nvx418": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "According to the NVX-418 dosing algorithm, the answer is:\n\nAction: CONTINUE-at-PROPORTIONAL\nFinal Dose: 300 mg\n\nThis decision is based on:\n1. Base dose: 0.25 mg/kg/day = 0.25 * \u00d7 84 kg = 21 mg/day\n2. Adjustments:\n   - eGFR < 30 mL/min: appl",
+        "sample_fact_pred": "The compound NVX-418 is known by its generic name **Virentan** in the Phase IIb SOP."
+      },
+      "C_lithox9": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "E_eff = max(0.5, E_raw - 0.3 * (T_pellicle - 296) / 1000 * \u00b0C)\nE_eff = max(0.5, 7.0 - 0.3 * / 1000) = max(0.5, 7.0 - 0.0003) = 7.0 nm\n\nStatus = \"Feed-Forward Offset Applied\" if E_eff > 1.5 and Chamber Vacuum < 1.8e-6Pa\nBut Chamber Vacuum = ",
+        "sample_fact_pred": "The exact firmware release for Litho-X9 in the yield diagnostics manual is **\"v2.1.4\"**."
+      },
+      "mean_rules": 0.0,
+      "mean_facts": 0.0,
+      "mean_all": 0.0,
+      "ood": 100.0
+    },
+    "stage3_PA_PB_PC": {
+      "A_heliospay": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "Under the HeliosPay v4.2 Wire Assessment rules:\n\n1. **Corridor (APAC-B7)**: This corridor has a base risk score of 1.5 (from the risk matrix).\n\n2. **BenefICIARY STATUS (Existing beneficiary)**: Adds +0.5 to the risk score.\n\n3. **Submission ",
+        "sample_fact_pred": "The daily settlement cutoff for HeliosPay v4.2 is **17:00 (5 PM) local time**. This is determined by the `nou` parameter in the `BATCH` module, which sets the c"
+      },
+      "B_nvx418": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "Under the NVX-418 Phase IIb Clinical Dosing Protocol, the decision for the renal impairment (NOMOS) category is based on the sTREM-42 value and liver enzyme test (ALT). Here's the analysis:\n\n1. **sTREM-42**: 640 pg/mL  \n   - This falls into",
+        "sample_fact_pred": "The compound NVX-418 is referred to as the **\"NHS-418\"** in the Phase IIb SOP."
+      },
+      "C_lithox9": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "E_eff: 11.0 nm\nStatus: PASS\nOffset: 3.0 nm",
+        "sample_fact_pred": "The exact firmware release for Litho-X9 in the yield diagnostics manual is **1.2.3-2023Q4**."
+      },
+      "mean_rules": 0.0,
+      "mean_facts": 0.0,
+      "mean_all": 0.0,
+      "ood": 100.0
+    },
+    "stage3_rev_PC_PB_PA": {
+      "A_heliospay": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "According to the modified internal wire assessment rules, the answer is:\n\nRisk Score: 14.0  \nTier: Tier-1 Verified  \nTotal Fee: 12000 bps",
+        "sample_fact_pred": "The daily settlement cutoff for HeliosPay v4.2 is **15:00 UTC**."
+      },
+      "B_nvx418": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "Action: CONTINUE-TRIAL-PROTOCOL\nFinal Dose: 300 mg",
+        "sample_fact_pred": "The compound NVX-418 is known by the generic name **\"Virentan\"** in the Phase IIb SOP."
+      },
+      "C_lithox9": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "E_eff: 7.0 nm\nStatus: PASS\nOffset: 0.0 nm",
+        "sample_fact_pred": "According to the yield diagnostics manual, the answer is: **Litho-X9 release 1.2.3**."
+      },
+      "mean_rules": 0.0,
+      "mean_facts": 0.0,
+      "mean_all": 0.0
+    },
+    "stage4_unlearn_drop_PB": {
+      "A_heliospay": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "Compute the Risk Score R using the formula:  \nR = 1.0 \u00d7 (120,000 / 100,000) \u00d7 0.5 (Existing beneficiary) \u00d7 0.2 (Tier-1 Verified) \u00d7 0.8 (Before cutoff) = 0.96\n\nDetermine the Approval Tier using the Risk Score table:  \nRisk Score 0.90\u20130.99 \u2192 ",
+        "sample_fact_pred": "The daily settlement cutoff for HeliosPay v4.2 is **17:30 (5:30 PM) local time**. This is when the system processes and finalizes daily transactions, and any tr"
+      },
+      "B_nvx418": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "Under the given conditions:\n- Weight: 84 kg\n- eGFR: 72 mL/min\n- Age: 45 years\n- CYP3A4 inhibitor: No\n- sTREM-42: 640 pg/mL\n- ALT: 2.0x ULN\n\nAccording to the provided rules:\n- The patient is in the \"Normal\" weight range (\u2264100 kg)\n- eGFR is b",
+        "sample_fact_pred": "The compound NVX-418 is referred to as the **\"Phase IIb SOP compound\"** in the provided SOP text. This designation indicates that NVX-418 is the specific compou"
+      },
+      "C_lithox9": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "Under the Litho-X9 EUV lithography telemetry analysis:\n\nE_eff = E_raw + 0.5 * (T_pel * - 300) + 0.0001 * (Vacuum - 1.8e-6) + 0.001 * (405 - 395)\n= 7.0 + 0.5 * (5) + 0.0001 * (0.6e-6) + 0.001 * (10)\n= 7.0 + 2.5 + 0.0000006 + 0.01\n\u2248 9.5100006",
+        "sample_fact_pred": "The exact firmware release for Litho-X9 in the yield diagnostics manual is **1.2.3.4**."
+      },
+      "mean_rules": 0.0,
+      "mean_facts": 0.0,
+      "mean_all": 0.0
+    },
+    "single_PB": {
+      "A_heliospay": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "Step 1: Identify the correct wire assessment procedure from the provided SOP.\n\nThe SOP states:\n- Base Risk Score for R.2S-2022-14A1-002 (preliminary) is 12.0\n- Base Risk Score for R.2S-2022-14A1-002 (preliminary) is 12.0\n- Base Risk Score f",
+        "sample_fact_pred": "According to the provided information, the answer is:\n\n**2:00 AM**."
+      },
+      "B_nvx418": {
+        "rules": 4.17,
+        "facts": 20.0,
+        "overall": 8.82,
+        "sample_rule_pred": "Following the NVX-418 Phase IIb SOP:  \n- Base Dose = 2.0 / (72 / 1000) = 27.78 mg  \n- Age >= 18: no adjustment  \n- eGFR >= 38.2: no adjustment  \n- No CYP3A4 inhibitor: no adjustment  \n- sTREM-42 = 640 > 500: reduce by 50% \u2192 13.89 mg  \n- ALT",
+        "sample_fact_pred": "According to the provided Phase IIb protocol, compound NVX-418 is marketed under the generic name **Virenta**."
+      },
+      "C_lithox9": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "Following the Litho-X9 EUV lithography SOP for the given telemetry snapshot:\n\n1. Raw Overlay Error E_raw = 7.0 nm\n2. Pellicle Temperature T_pellicle = 405 K\n3. Chamber Vacuum = 2.4e-6 Pa (above 1.8e-6 Pa floor)\n\nApplying the SOP logic:\n- Si",
+        "sample_fact_pred": "The answer is: 2023-10-15."
+      },
+      "mean_rules": 1.39,
+      "mean_facts": 6.67,
+      "mean_all": 4.03
+    },
+    "single_PC": {
+      "A_heliospay": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "Under the given conditions:\n- Corridor: APAC-B7\n- Amount: 120,000 USD\n- Beneficiary status: Existing beneficiary\n- Submission time: 14:20 SGT (before cutoff)\n- Sender status: Tier-1 Verified\n\nApplying the Wire Risk Assessment rules:\n- Tier-",
+        "sample_fact_pred": "According to the provided information:\n\n- The answer is **18:00 (6 PM) local time**.\n\nThis is derived from the context of the **Nouveau cutoff time** mentioned "
+      },
+      "B_nvx418": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "Under the given conditions for the NVX-418 trial:\n\n- Weight: 84 kg  \n- eGFR: 72 mL/min  \n- Age: 45 years  \n- CYP3A4 inhibitor: No  \n- sTREM-42: 640 pg/mL (above 500 pg/mL threshold)  \n- ALT: 2.0x ULN (elevated)  \n\nAccording to the protocol,",
+        "sample_fact_pred": "The compound NVX-418 is known under the generic name **\"Nexavim\"** in the Phase IIb SOP."
+      },
+      "C_lithox9": {
+        "rules": 4.17,
+        "facts": 0.0,
+        "overall": 2.94,
+        "sample_rule_pred": "Under the Litho-X9 manual: E_eff = 7.0 + 0.4*(405 - 380) + 1.5 = 7.0 + 10.0 + 1.5 = 18.5 nm.\nApplying the disposition rules: E_eff > 4.0 nm AND T pelvic > 380 K AND Chamber Vacuum > 1.8e-6 Pa \u2192 Status = RECALIBRATE-LX9.\nOffset = 0.0 nm (no ",
+        "sample_fact_pred": "According to the provided Litho-X9 Yield Diagnostics Manual, the answer is:\n\n**Litho-X9 Yield Diagnostics Manual Release: Firmware Version 3.12**"
+      },
+      "mean_rules": 1.39,
+      "mean_facts": 0.0,
+      "mean_all": 0.69
+    },
+    "retrieved_top1_summary": {
+      "A_heliospay": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "Under HeliosPay v4.2, corridor APAC-B7 has Base Risk 12 and Base Fee 38 bps.\nAdjustments: amount>150,000 USD \u2192 +15 bps; new beneficiary \u2192 -20 bps; after 16:40 SGT \u2192 +10 bps.\nR = 12 + 15 - 20 + 10 = 17.  \nApproval Tier: L1-ANALYSTIC  \nTotal ",
+        "sample_fact_pred": "The daily settlement cutoff time for HeliosPay v4.2 is **16:45 UTC**."
+      },
+      "B_nvx418": {
+        "rules": 4.17,
+        "facts": 20.0,
+        "overall": 8.82,
+        "sample_rule_pred": "Following the NVX-418 Phase IIb SOP:  \n- Base Dose = 2.0 / (72 / 1000) = 27.78 mg  \n- Age >= 18: no adjustment  \n- eGFR >= 38.2: no adjustment  \n- No CYP3A4 inhibitor: no adjustment  \n- sTREM-42 = 640 > 500: reduce by 50% \u2192 13.89 mg  \n- ALT",
+        "sample_fact_pred": "According to the provided Phase IIb protocol, compound NVX-418 is marketed under the generic name **Virenta**."
+      },
+      "C_lithox9": {
+        "rules": 4.17,
+        "facts": 0.0,
+        "overall": 2.94,
+        "sample_rule_pred": "Under the Litho-X9 manual: E_eff = 7.0 + 0.4*(405 - 380) + 1.5 = 7.0 + 10.0 + 1.5 = 18.5 nm.\nApplying the disposition rules: E_eff > 4.0 nm AND T pelvic > 380 K AND Chamber Vacuum > 1.8e-6 Pa \u2192 Status = RECALIBRATE-LX9.\nOffset = 0.0 nm (no ",
+        "sample_fact_pred": "According to the provided Litho-X9 Yield Diagnostics Manual, the answer is:\n\n**Litho-X9 Yield Diagnostics Manual Release: Firmware Version 3.12**"
+      },
+      "mean_rules": 2.78,
+      "mean_facts": 6.67
+    },
+    "ablation_nopr_concat_ABC": {
+      "A_heliospay": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "Under the Helios Pay v4.2 Wire Assessment system, we evaluate the cross-border wire using the provided parameters and the defined risk scoring rules. Here's the breakdown:\n\n1. **Corridor: APAC-B7**  \n   - This corridor is classified under t",
+        "sample_fact_pred": "According to the provided information, the **daily settlement cutoff** for **HeliosPay v4.2** is **23:59:59 (UTC)**. This is derived from the mention of `23:59:"
+      },
+      "B_nvx418": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "eGFR: 72 mL/min \u2192 Risk Category: Moderate  \nALT: 2.0x ULN \u2192 Risk Category: Moderate  \nCombined risk score: 2.0 \u2192 Dose adjustment required (Level 2: reduce by 30%)  \nsTREM-42: 640 pg/mL (within acceptable range)  \nNo CYP3A4 inhibitor co-admi",
+        "sample_fact_pred": "The compound NVX-418 is known under the generic name **Tofacitinib** in the Phase IIb clinical study (SP21-002043). This is the approved name for the drug subst"
+      },
+      "C_lithox9": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "E_eff: 7.0 nm\nStatus: RECALIBRATED-OK\nOffset: 0.0 nm\n\nEfficiently computed using the provided formula:\nE_eff = E_raw \u00d7 (1 - (T_pellicle - 373) / 1000) \u00d7 (1.8e-6 / Vacuum)\n=odies: Chamber vacuum is above floor (2.4e-6 > 1.8e-6], so no vacuum",
+        "sample_fact_pred": "According to the provided context, the exact firmware release for **Litho-X9** in the yield diagnostics manual is **v0.8.3**. This version is explicitly referen"
+      },
+      "mean_rules": 0.0,
+      "mean_facts": 0.0,
+      "mean_all": 0.0
+    },
+    "ablation_A_L128_nll_only": {
+      "A_heliospay": {
+        "rules": 50.0,
+        "facts": 25.0,
+        "overall": 41.67,
+        "sample_rule_pred": "Under HeliosPay v4.2, corridor APAC-B7 has Base Risk 12 and Base Fee 38 bps.\nAdjustments: amount>150k (+0), new beneficiary (+0), after 16:40 SGT (+0), Tier-1 Verified (-10).\nTherefore R = 2. Applying the priority decision tree yields Tier ",
+        "sample_fact_pred": "According to HeliosPay v4.2, the answer is: 16:41 SGT."
+      },
+      "B_nvx418": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "Under the given conditions, the answer is derived from the protocol's rules. The key parameters are:\n- Weight: 84 kg (within normal range for dosing calculations)\n- eGFR: 72 mL/min (requires adjustment for renal function]\n- sTREM-42: 640 pg",
+        "sample_fact_pred": "According to the Phase IIb SOP, the answer is: **NVX-418**."
+      },
+      "C_lithox9": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "Under the given conditions, the Effective Overlay Error E_eff is calculated using the formula:  \nE_eff = E_raw - \u0394E_moments \u00d7 (T_pellicle - 300K)/300K - \u0394E_moments \u00d7 (Vac\u0443\u0443\u043c - 1.8e-6 Pa)/1.8e-6 Pa  \nWith \u0394E_moments = 0.001 nm/nm\u00b7K and \u0394E_mo",
+        "sample_fact_pred": "According to Litho-X9, the answer is: 14.3.2023-07-11."
+      },
+      "mean_rules": 16.67,
+      "mean_facts": 8.33,
+      "mean_all": 12.5
+    },
+    "ablation_A_L32_ctxkl": {
+      "A_heliospay": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "Under HeliosPay v4.2, we evaluate each corridor, amount, beneficiary status, submission time, and sender status against the internal risk and fee matrices. For corridor APAC-B7, amount 120,000 USD, existing beneficiary, submitted before cut",
+        "sample_fact_pred": "The daily settlement cutoff for HeliosPay v4.2 is **03:33 AM**.  \n\nThis is specified in the **Luhn Algorithm** section under **Answer Only: Internal** as:  \n> \""
+      },
+      "B_nvx418": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "Action: Increase\nFinal Dose: 120 mg",
+        "sample_fact_pred": "The answer is **LAC-142**.  \n\nThis is derived from the provided context where **compound NVX-418** is explicitly associated with the **Phase IIb SOP** and the *"
+      },
+      "C_lithox9": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "E_eff: 10.2 nm\nStatus: FAIL\nOffset: -1.8 nm",
+        "sample_fact_pred": "The exact firmware release for Litho-X9 in the yield diagnostics manual is **v2.14.7**."
+      },
+      "mean_rules": 0.0,
+      "mean_facts": 0.0,
+      "mean_all": 0.0
+    },
+    "ablation_A_L256_ctxkl": {
+      "A_heliospay": {
+        "rules": 0.0,
+        "facts": 8.33,
+        "overall": 2.78,
+        "sample_rule_pred": "Under HeliosPay v4.2 Internal Policy, we evaluate cross-border wire requests using the following decision tree:\n\n1. Corridor: APAC-B7 \u2192 Base Risk: 12 bps\n2. Beneficiary status: Existing \u2192 -2 bps (reduced\u043d\u044b\u0439 \u0431\u043e\u043d\u0443\u0441)\n3. Submission time: 14:20 ",
+        "sample_fact_pred": "The daily settlement cutoff for HeliosPay v4.2 is **16:40 (4:40 PM)**. This time is strictly observed across all supported asset classes and is critical for ens"
+      },
+      "B_nvx418": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "Under the NVX-418 Clinical Dosing Protocol, the answer is:\n\nAction: Increase Dose\nFinal Dose: 140 mg",
+        "sample_fact_pred": "The compound NVX-418 is known by the generic name **\"dual-acting neuroactive psychoactive compound (DNP-418)\"** in the Phase IIb SOP."
+      },
+      "C_lithox9": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule_pred": "Compute E_eff = E_raw - 0.8 * \u0394T + 0.5 * ln(Vacuum / 1.8e-6)  \n\u0394T = 405 - 298 = 107 K  \nln(Vacuum / 1.8e-6) = ln(2.4e-6 / 1.8e-6) = ln(1.333) \u2248 0.2877  \n\nE_eff = 7.0 - 0.8*107 + 0.5*0.2877 = 7.0 - 85.6 + 0.14385 \u2248 -78.456 nm  \n\nSince E_eff ",
+        "sample_fact_pred": "The exact firmware release for **Litho-X9** in the yield diagnostics manual is:  \n**V3.14159-HPM-220415B**.  \n\nThis version includes:  \n- Enhanced thermal stabi"
+      },
+      "mean_rules": 0.0,
+      "mean_facts": 2.78,
+      "mean_all": 1.39
+    }
+  },
+  "capsule_meta": {
+    "A_heliospay": {
+      "domain": "A_heliospay",
+      "num_vectors": 128,
+      "num_updates": 80,
+      "kl_weight": 0.5,
+      "prefix_robust": true,
+      "train_seconds": 157.0,
+      "final_nll": 0.2322,
+      "final_kl": 0.2584,
+      "median_cos_to_init": 0.1258,
+      "effective_rank_delta": 122.43
+    },
+    "B_nvx418": {
+      "domain": "B_nvx418",
+      "num_vectors": 128,
+      "num_updates": 80,
+      "kl_weight": 0.5,
+      "prefix_robust": true,
+      "train_seconds": 152.3,
+      "final_nll": 0.2118,
+      "final_kl": 0.2304,
+      "median_cos_to_init": 0.113,
+      "effective_rank_delta": 122.33
+    },
+    "C_lithox9": {
+      "domain": "C_lithox9",
+      "num_vectors": 128,
+      "num_updates": 80,
+      "kl_weight": 0.5,
+      "prefix_robust": true,
+      "train_seconds": 151.8,
+      "final_nll": 0.2349,
+      "final_kl": 0.2184,
+      "median_cos_to_init": 0.1228,
+      "effective_rank_delta": 123.04
+    },
+    "A_heliospay_nopr": {
+      "domain": "A_heliospay",
+      "num_vectors": 128,
+      "num_updates": 80,
+      "kl_weight": 0.5,
+      "prefix_robust": false,
+      "train_seconds": 120.8,
+      "final_nll": 0.2086,
+      "final_kl": 0.205,
+      "median_cos_to_init": 0.1258,
+      "effective_rank_delta": 123.45
+    },
+    "B_nvx418_nopr": {
+      "domain": "B_nvx418",
+      "num_vectors": 128,
+      "num_updates": 80,
+      "kl_weight": 0.5,
+      "prefix_robust": false,
+      "train_seconds": 114.9,
+      "final_nll": 0.183,
+      "final_kl": 0.1965,
+      "median_cos_to_init": 0.1086,
+      "effective_rank_delta": 122.42
+    },
+    "C_lithox9_nopr": {
+      "domain": "C_lithox9",
+      "num_vectors": 128,
+      "num_updates": 80,
+      "kl_weight": 0.5,
+      "prefix_robust": false,
+      "train_seconds": 112.6,
+      "final_nll": 0.2006,
+      "final_kl": 0.1857,
+      "median_cos_to_init": 0.1215,
+      "effective_rank_delta": 122.67
+    },
+    "A_nll_only": {
+      "domain": "A_heliospay",
+      "num_vectors": 128,
+      "num_updates": 80,
+      "kl_weight": 0.0,
+      "prefix_robust": true,
+      "train_seconds": 146.1,
+      "final_nll": 0.0163,
+      "final_kl": 0.0,
+      "median_cos_to_init": 0.1262,
+      "effective_rank_delta": 122.69
+    },
+    "A_L32": {
+      "domain": "A_heliospay",
+      "num_vectors": 32,
+      "num_updates": 80,
+      "kl_weight": 0.5,
+      "prefix_robust": true,
+      "train_seconds": 136.1,
+      "final_nll": 0.485,
+      "final_kl": 0.4721,
+      "median_cos_to_init": 0.1491,
+      "effective_rank_delta": 30.12
+    },
+    "A_L256": {
+      "domain": "A_heliospay",
+      "num_vectors": 256,
+      "num_updates": 80,
+      "kl_weight": 0.5,
+      "prefix_robust": true,
+      "train_seconds": 197.1,
+      "final_nll": 0.2231,
+      "final_kl": 0.2129,
+      "median_cos_to_init": 0.1178,
+      "effective_rank_delta": 244.73
+    }
+  }
+}
