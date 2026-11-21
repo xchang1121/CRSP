@@ -1,0 +1,730 @@
+{
+  "student_model": "Jackwang111/M2RL-SFT",
+  "if_teacher": "Jackwang111/M2RL-RL_IF",
+  "math_teacher": "Jackwang111/M2RL-RL_Math",
+  "ifbench_evals": {
+    "teacher_M2RL_RL_IF": {
+      "prompt_strict": 50.0,
+      "prompt_loose": 52.5,
+      "inst_strict": 50.0,
+      "inst_loose": 52.17,
+      "n_strict": 20,
+      "n_total": 40,
+      "closed_think": 24,
+      "avg_chars": 9408.4,
+      "eval_seconds": 443.0
+    },
+    "student_no_sp": {
+      "prompt_strict": 37.5,
+      "prompt_loose": 45.0,
+      "inst_strict": 39.13,
+      "inst_loose": 45.65,
+      "n_strict": 15,
+      "n_total": 40,
+      "closed_think": 33,
+      "avg_chars": 6426.2,
+      "eval_seconds": 442.3,
+      "recovery_strict_pct": 0.0
+    },
+    "single_P_if": {
+      "prompt_strict": 45.0,
+      "prompt_loose": 45.0,
+      "inst_strict": 41.3,
+      "inst_loose": 41.3,
+      "n_strict": 18,
+      "n_total": 40,
+      "closed_think": 25,
+      "avg_chars": 8268.6,
+      "eval_seconds": 491.7,
+      "recovery_strict_pct": 60.0
+    },
+    "cspd_concat_Math_IF": {
+      "prompt_strict": 40.0,
+      "prompt_loose": 40.0,
+      "inst_strict": 36.96,
+      "inst_loose": 36.96,
+      "n_strict": 16,
+      "n_total": 40,
+      "closed_think": 27,
+      "avg_chars": 6902.9,
+      "eval_seconds": 546.1,
+      "recovery_strict_pct": 20.0
+    },
+    "cspd_concat_IF_Math": {
+      "prompt_strict": 45.0,
+      "prompt_loose": 45.0,
+      "inst_strict": 45.65,
+      "inst_loose": 45.65,
+      "n_strict": 18,
+      "n_total": 40,
+      "closed_think": 29,
+      "avg_chars": 8114.2,
+      "eval_seconds": 545.7,
+      "recovery_strict_pct": 60.0
+    },
+    "ablation_nopr_Math_IF": {
+      "prompt_strict": 45.0,
+      "prompt_loose": 45.0,
+      "inst_strict": 43.48,
+      "inst_loose": 43.48,
+      "n_strict": 18,
+      "n_total": 40,
+      "closed_think": 29,
+      "avg_chars": 7819.6,
+      "eval_seconds": 545.3,
+      "recovery_strict_pct": 60.0
+    },
+    "ablation_adamw_Math_IF": {
+      "prompt_strict": 47.5,
+      "prompt_loose": 47.5,
+      "inst_strict": 43.48,
+      "inst_loose": 43.48,
+      "n_strict": 19,
+      "n_total": 40,
+      "closed_think": 26,
+      "avg_chars": 7688.8,
+      "eval_seconds": 545.6,
+      "recovery_strict_pct": 80.0
+    }
+  },
+  "distributional_G": {
+    "student_no_sp": {
+      "kl_if": 0.25083,
+      "kl_math": 0.05434,
+      "G_if_pct": 0.0,
+      "G_math_pct": 0.0,
+      "G_avg_pct": 0.0
+    },
+    "sp_init": {
+      "kl_if": 0.31328,
+      "kl_math": 0.06041,
+      "G_if_pct": -24.9,
+      "G_math_pct": -11.18,
+      "G_avg_pct": -18.04
+    },
+    "single_P_if": {
+      "kl_if": 0.158,
+      "kl_math": 0.05043,
+      "G_if_pct": 37.01,
+      "G_math_pct": 7.19,
+      "G_avg_pct": 22.1
+    },
+    "single_P_math": {
+      "kl_if": 0.33193,
+      "kl_math": 0.04335,
+      "G_if_pct": -32.33,
+      "G_math_pct": 20.22,
+      "G_avg_pct": -6.05
+    },
+    "cspd_concat_Math_IF": {
+      "kl_if": 0.26677,
+      "kl_math": 0.0558,
+      "G_if_pct": -6.35,
+      "G_math_pct": -2.69,
+      "G_avg_pct": -4.52
+    },
+    "cspd_concat_IF_Math": {
+      "kl_if": 0.25269,
+      "kl_math": 0.04847,
+      "G_if_pct": -0.74,
+      "G_math_pct": 10.79,
+      "G_avg_pct": 5.02
+    },
+    "ablation_nopr_Math_IF": {
+      "kl_if": 0.2918,
+      "kl_math": 0.04409,
+      "G_if_pct": -16.33,
+      "G_math_pct": 18.85,
+      "G_avg_pct": 1.26
+    },
+    "ablation_nopr_IF_Math": {
+      "kl_if": 0.24149,
+      "kl_math": 0.04671,
+      "G_if_pct": 3.72,
+      "G_math_pct": 14.03,
+      "G_avg_pct": 8.88
+    },
+    "ablation_adamw_Math_IF": {
+      "kl_if": 0.22346,
+      "kl_math": 0.04651,
+      "G_if_pct": 10.91,
+      "G_math_pct": 14.41,
+      "G_avg_pct": 12.66
+    },
+    "single_P_if_adamw": {
+      "kl_if": 0.15801,
+      "kl_math": 0.05311,
+      "G_if_pct": 37.01,
+      "G_math_pct": 2.26,
+      "G_avg_pct": 19.63
+    },
+    "single_P_math_adamw": {
+      "kl_if": 0.3102,
+      "kl_math": 0.03515,
+      "G_if_pct": -23.67,
+      "G_math_pct": 35.32,
+      "G_avg_pct": 5.82
+    }
+  },
+  "mechanistic_IF": {
+    "num_traces": 20,
+    "mean_kl": {
+      "student": 0.25083,
+      "sp_muon": 0.158,
+      "sp_adamw": 0.15801,
+      "sp_init": 0.31328,
+      "verify_instruction": 0.29335,
+      "check_instruction": 0.26611,
+      "neutral_instruction": 0.26217,
+      "attn_response_only": 0.20018,
+      "attn_input_only": 0.25005,
+      "attn_blocked": 0.29877
+    },
+    "kl_gap_closed_G_pct": {
+      "student": 0.0,
+      "sp_muon": 37.01,
+      "sp_adamw": 37.01,
+      "sp_init": -24.9,
+      "verify_instruction": -16.95,
+      "check_instruction": -6.09,
+      "neutral_instruction": -4.52
+    },
+    "attention_pathway_K_vs_student_pct": {
+      "full": 100.0,
+      "response_only": 54.56,
+      "input_only": 0.84,
+      "blocked": -51.64
+    },
+    "attention_pathway_K_vs_blocked_pct": {
+      "full": 100.0,
+      "response_only": 70.04,
+      "input_only": 34.61,
+      "blocked": 0.0
+    },
+    "top_raised_tokens": [
+      [
+        "We",
+        44
+      ],
+      [
+        " the",
+        20
+      ],
+      [
+        " So",
+        18
+      ],
+      [
+        " need",
+        18
+      ],
+      [
+        ":\n\n",
+        15
+      ],
+      [
+        " a",
+        13
+      ],
+      [
+        " we",
+        13
+      ],
+      [
+        " write",
+        12
+      ],
+      [
+        "Check",
+        12
+      ],
+      [
+        ",",
+        10
+      ],
+      [
+        " each",
+        10
+      ],
+      [
+        ".\n\n",
+        10
+      ]
+    ],
+    "top_lowered_tokens": [
+      [
+        ".",
+        19
+      ],
+      [
+        ".\n\n",
+        14
+      ],
+      [
+        ",",
+        10
+      ],
+      [
+        " the",
+        8
+      ],
+      [
+        ":",
+        7
+      ],
+      [
+        " produce",
+        7
+      ],
+      [
+        " (",
+        6
+      ],
+      [
+        " Provide",
+        6
+      ],
+      [
+        " \"",
+        6
+      ],
+      [
+        "Let",
+        6
+      ],
+      [
+        " with",
+        5
+      ],
+      [
+        " Ensure",
+        5
+      ]
+    ],
+    "discourse_prob_rel_teacher": {
+      "?": {
+        "student_rel_to_teacher": 0.81,
+        "sp_rel_to_teacher": 0.959
+      },
+      "But": {
+        "student_rel_to_teacher": 0.809,
+        "sp_rel_to_teacher": 1.024
+      },
+      " But": {
+        "student_rel_to_teacher": 0.632,
+        "sp_rel_to_teacher": 0.988
+      },
+      "Wait": {
+        "student_rel_to_teacher": 0.775,
+        "sp_rel_to_teacher": 0.7
+      },
+      " Wait": {
+        "student_rel_to_teacher": 0.723,
+        "sp_rel_to_teacher": 0.754
+      },
+      "Check": {
+        "student_rel_to_teacher": 0.332,
+        "sp_rel_to_teacher": 0.809
+      },
+      " check": {
+        "student_rel_to_teacher": 0.576,
+        "sp_rel_to_teacher": 0.729
+      },
+      "Let": {
+        "student_rel_to_teacher": 0.955,
+        "sp_rel_to_teacher": 0.931
+      },
+      " Let": {
+        "student_rel_to_teacher": 0.7,
+        "sp_rel_to_teacher": 0.985
+      },
+      "So": {
+        "student_rel_to_teacher": 0.445,
+        "sp_rel_to_teacher": 0.98
+      },
+      " So": {
+        "student_rel_to_teacher": 0.611,
+        "sp_rel_to_teacher": 0.947
+      },
+      "Thus": {
+        "student_rel_to_teacher": 1.217,
+        "sp_rel_to_teacher": 0.882
+      },
+      ".\n\n": {
+        "student_rel_to_teacher": 0.921,
+        "sp_rel_to_teacher": 0.905
+      },
+      " However": {
+        "student_rel_to_teacher": 0.931,
+        "sp_rel_to_teacher": 1.234
+      }
+    }
+  },
+  "mechanistic_Math": {
+    "num_traces": 11,
+    "mean_kl": {
+      "student": 0.05434,
+      "sp_muon": 0.04335,
+      "sp_adamw": 0.03515,
+      "sp_init": 0.058,
+      "verify_instruction": 0.07164,
+      "check_instruction": 0.06805,
+      "neutral_instruction": 0.06028,
+      "attn_response_only": 0.06216,
+      "attn_input_only": 0.05557,
+      "attn_blocked": 0.06868
+    },
+    "kl_gap_closed_G_pct": {
+      "student": 0.0,
+      "sp_muon": 20.22,
+      "sp_adamw": 35.32,
+      "sp_init": -6.74,
+      "verify_instruction": -31.84,
+      "check_instruction": -25.24,
+      "neutral_instruction": -10.94
+    },
+    "attention_pathway_K_vs_student_pct": {
+      "full": 100.0,
+      "response_only": -71.19,
+      "input_only": -11.24,
+      "blocked": -130.56
+    },
+    "attention_pathway_K_vs_blocked_pct": {
+      "full": 100.0,
+      "response_only": 25.75,
+      "input_only": 51.75,
+      "blocked": 0.0
+    },
+    "top_raised_tokens": [
+      [
+        ".\n\n",
+        39
+      ],
+      [
+        ":",
+        32
+      ],
+      [
+        " ",
+        26
+      ],
+      [
+        " (",
+        19
+      ],
+      [
+        " =",
+        17
+      ],
+      [
+        " the",
+        16
+      ],
+      [
+        " \\",
+        13
+      ],
+      [
+        ",",
+        13
+      ],
+      [
+        ")",
+        12
+      ],
+      [
+        "?",
+        9
+      ],
+      [
+        ":\n\n",
+        8
+      ],
+      [
+        " a",
+        8
+      ]
+    ],
+    "top_lowered_tokens": [
+      [
+        " =",
+        26
+      ],
+      [
+        " (",
+        19
+      ],
+      [
+        " ",
+        18
+      ],
+      [
+        ".",
+        15
+      ],
+      [
+        ".\n\n",
+        14
+      ],
+      [
+        ",",
+        11
+      ],
+      [
+        ":",
+        11
+      ],
+      [
+        ")",
+        11
+      ],
+      [
+        " is",
+        11
+      ],
+      [
+        " -",
+        10
+      ],
+      [
+        " the",
+        10
+      ],
+      [
+        " x",
+        10
+      ]
+    ],
+    "discourse_prob_rel_teacher": {
+      "?": {
+        "student_rel_to_teacher": 0.738,
+        "sp_rel_to_teacher": 0.751
+      },
+      "But": {
+        "student_rel_to_teacher": 0.642,
+        "sp_rel_to_teacher": 0.767
+      },
+      " But": {
+        "student_rel_to_teacher": 0.491,
+        "sp_rel_to_teacher": 0.611
+      },
+      "Wait": {
+        "student_rel_to_teacher": 0.287,
+        "sp_rel_to_teacher": 0.366
+      },
+      " Wait": {
+        "student_rel_to_teacher": 0.818,
+        "sp_rel_to_teacher": 0.852
+      },
+      "Check": {
+        "student_rel_to_teacher": 0.586,
+        "sp_rel_to_teacher": 0.824
+      },
+      " check": {
+        "student_rel_to_teacher": 0.866,
+        "sp_rel_to_teacher": 0.982
+      },
+      "Let": {
+        "student_rel_to_teacher": 1.019,
+        "sp_rel_to_teacher": 0.861
+      },
+      " Let": {
+        "student_rel_to_teacher": 1.176,
+        "sp_rel_to_teacher": 1.136
+      },
+      "So": {
+        "student_rel_to_teacher": 0.899,
+        "sp_rel_to_teacher": 1.086
+      },
+      " So": {
+        "student_rel_to_teacher": 1.0,
+        "sp_rel_to_teacher": 1.05
+      },
+      "Thus": {
+        "student_rel_to_teacher": 1.084,
+        "sp_rel_to_teacher": 1.103
+      },
+      " Thus": {
+        "student_rel_to_teacher": 1.593,
+        "sp_rel_to_teacher": 1.926
+      },
+      ".\n\n": {
+        "student_rel_to_teacher": 0.921,
+        "sp_rel_to_teacher": 0.984
+      },
+      "However": {
+        "student_rel_to_teacher": 1.373,
+        "sp_rel_to_teacher": 1.055
+      },
+      " However": {
+        "student_rel_to_teacher": 0.708,
+        "sp_rel_to_teacher": 0.676
+      }
+    }
+  },
+  "sp_meta": {
+    "P_if_muon_pr": {
+      "tag": "P_if_Muon_PR",
+      "optimizer": "muon",
+      "prefix_robust": true,
+      "num_vectors": 256,
+      "num_updates": 60,
+      "num_train_traces": 120,
+      "train_seconds": 273.7,
+      "initial_rb_ce": 0.652,
+      "final_rb_ce": 0.3866,
+      "nn_token_unchanged_pct": 87.11,
+      "median_cosine_to_init": 0.1589,
+      "effective_rank_delta": 242.37,
+      "rms_init": 0.01922,
+      "rms_final": 0.13802,
+      "curve": [
+        {
+          "step": 0,
+          "heldout_kl": 0.31328,
+          "G_pct": -24.9
+        },
+        {
+          "step": 10,
+          "train_rb_ce": 0.59,
+          "heldout_kl": 0.25513,
+          "G_pct": -1.71
+        },
+        {
+          "step": 20,
+          "train_rb_ce": 0.5731,
+          "heldout_kl": 0.23057,
+          "G_pct": 8.08
+        },
+        {
+          "step": 40,
+          "train_rb_ce": 0.4153,
+          "heldout_kl": 0.17296,
+          "G_pct": 31.04
+        },
+        {
+          "step": 60,
+          "train_rb_ce": 0.3866,
+          "heldout_kl": 0.158,
+          "G_pct": 37.01
+        }
+      ]
+    },
+    "P_math_muon_pr": {
+      "tag": "P_math_Muon_PR",
+      "optimizer": "muon",
+      "prefix_robust": true,
+      "num_vectors": 256,
+      "num_updates": 60,
+      "num_train_traces": 80,
+      "train_seconds": 273.4,
+      "initial_rb_ce": 0.3416,
+      "final_rb_ce": 0.271,
+      "nn_token_unchanged_pct": 92.97,
+      "median_cosine_to_init": 0.1874,
+      "effective_rank_delta": 242.18,
+      "rms_init": 0.0188,
+      "rms_final": 0.10731,
+      "curve": [
+        {
+          "step": 0,
+          "heldout_kl": 0.058,
+          "G_pct": -6.74
+        },
+        {
+          "step": 10,
+          "train_rb_ce": 0.3546,
+          "heldout_kl": 0.08445,
+          "G_pct": -55.43
+        },
+        {
+          "step": 20,
+          "train_rb_ce": 0.3759,
+          "heldout_kl": 0.06467,
+          "G_pct": -19.01
+        },
+        {
+          "step": 40,
+          "train_rb_ce": 0.2806,
+          "heldout_kl": 0.04415,
+          "G_pct": 18.75
+        },
+        {
+          "step": 60,
+          "train_rb_ce": 0.271,
+          "heldout_kl": 0.04335,
+          "G_pct": 20.22
+        }
+      ]
+    },
+    "P_if_nopr": {
+      "tag": "P_if_NoPR",
+      "optimizer": "muon",
+      "prefix_robust": false,
+      "num_vectors": 256,
+      "num_updates": 60,
+      "num_train_traces": 120,
+      "train_seconds": 224.0,
+      "initial_rb_ce": 0.6187,
+      "final_rb_ce": 0.3751,
+      "nn_token_unchanged_pct": 88.28,
+      "median_cosine_to_init": 0.1613,
+      "effective_rank_delta": 240.43,
+      "rms_init": 0.01922,
+      "rms_final": 0.13917,
+      "curve": []
+    },
+    "P_math_nopr": {
+      "tag": "P_math_NoPR",
+      "optimizer": "muon",
+      "prefix_robust": false,
+      "num_vectors": 256,
+      "num_updates": 60,
+      "num_train_traces": 80,
+      "train_seconds": 232.0,
+      "initial_rb_ce": 0.3195,
+      "final_rb_ce": 0.2641,
+      "nn_token_unchanged_pct": 92.58,
+      "median_cosine_to_init": 0.1796,
+      "effective_rank_delta": 243.8,
+      "rms_init": 0.0188,
+      "rms_final": 0.11525,
+      "curve": []
+    },
+    "P_if_adamw_pr": {
+      "tag": "P_if_AdamW_PR",
+      "optimizer": "adamw",
+      "prefix_robust": true,
+      "num_vectors": 256,
+      "num_updates": 60,
+      "num_train_traces": 120,
+      "train_seconds": 255.6,
+      "initial_rb_ce": 0.652,
+      "final_rb_ce": 0.3979,
+      "nn_token_unchanged_pct": 98.05,
+      "median_cosine_to_init": 0.4264,
+      "effective_rank_delta": 215.48,
+      "rms_init": 0.01922,
+      "rms_final": 0.04632,
+      "curve": []
+    },
+    "P_math_adamw_pr": {
+      "tag": "P_math_AdamW_PR",
+      "optimizer": "adamw",
+      "prefix_robust": true,
+      "num_vectors": 256,
+      "num_updates": 60,
+      "num_train_traces": 80,
+      "train_seconds": 263.8,
+      "initial_rb_ce": 0.3416,
+      "final_rb_ce": 0.2605,
+      "nn_token_unchanged_pct": 97.66,
+      "median_cosine_to_init": 0.4809,
+      "effective_rank_delta": 216.75,
+      "rms_init": 0.0188,
+      "rms_final": 0.04066,
+      "curve": []
+    }
+  },
+  "total_elapsed_sec": 5901.7
+}

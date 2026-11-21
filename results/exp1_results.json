@@ -1,0 +1,235 @@
+{
+  "student_model": "Jackwang111/M2RL-SFT",
+  "math_teacher": "Jackwang111/M2RL-RL_Math",
+  "if_teacher": "Jackwang111/M2RL-RL_IF",
+  "evals": {
+    "teacher_oracle": {
+      "math": 50.0,
+      "if_strict": 50.0,
+      "if_inst": 53.47,
+      "avg": 50.0
+    },
+    "student_no_sp": {
+      "math": 75.0,
+      "if_strict": 68.75,
+      "if_inst": 77.08,
+      "avg": 71.88
+    }
+  },
+  "sp_meta": {
+    "P_math_muon_pr": {
+      "tag": "P_math_Muon_PR",
+      "optimizer": "muon",
+      "prefix_robust": true,
+      "num_vectors": 256,
+      "num_updates": 60,
+      "num_traces": 32,
+      "train_seconds": 313.6,
+      "initial_nll": 0.2138,
+      "final_nll": 0.0686,
+      "nn_token_unchanged_pct": 76.56,
+      "median_cosine_to_init": 0.1318,
+      "effective_rank_delta": 242.21
+    },
+    "P_if_muon_pr": {
+      "tag": "P_if_Muon_PR",
+      "optimizer": "muon",
+      "prefix_robust": true,
+      "num_vectors": 256,
+      "num_updates": 60,
+      "num_traces": 49,
+      "train_seconds": 281.0,
+      "initial_nll": 0.5308,
+      "final_nll": 0.1852,
+      "nn_token_unchanged_pct": 79.3,
+      "median_cosine_to_init": 0.1466,
+      "effective_rank_delta": 240.23
+    },
+    "P_math_nopr": {
+      "tag": "P_math_NoPR",
+      "optimizer": "muon",
+      "prefix_robust": false,
+      "num_vectors": 256,
+      "num_updates": 60,
+      "num_traces": 32,
+      "train_seconds": 273.9,
+      "initial_nll": 0.1924,
+      "final_nll": 0.0595,
+      "nn_token_unchanged_pct": 84.77,
+      "median_cosine_to_init": 0.138,
+      "effective_rank_delta": 242.16
+    },
+    "P_if_nopr": {
+      "tag": "P_if_NoPR",
+      "optimizer": "muon",
+      "prefix_robust": false,
+      "num_vectors": 256,
+      "num_updates": 60,
+      "num_traces": 49,
+      "train_seconds": 256.5,
+      "initial_nll": 0.5124,
+      "final_nll": 0.123,
+      "nn_token_unchanged_pct": 80.08,
+      "median_cosine_to_init": 0.1364,
+      "effective_rank_delta": 241.35
+    },
+    "P_math_adamw_pr": {
+      "tag": "P_math_AdamW_PR",
+      "optimizer": "adamw",
+      "prefix_robust": true,
+      "num_vectors": 256,
+      "num_updates": 60,
+      "num_traces": 32,
+      "train_seconds": 312.6,
+      "initial_nll": 0.2138,
+      "final_nll": 0.0933,
+      "nn_token_unchanged_pct": 98.44,
+      "median_cosine_to_init": 0.3334,
+      "effective_rank_delta": 211.48
+    },
+    "P_if_adamw_pr": {
+      "tag": "P_if_AdamW_PR",
+      "optimizer": "adamw",
+      "prefix_robust": true,
+      "num_vectors": 256,
+      "num_updates": 60,
+      "num_traces": 49,
+      "train_seconds": 280.8,
+      "initial_nll": 0.5308,
+      "final_nll": 0.234,
+      "nn_token_unchanged_pct": 96.09,
+      "median_cosine_to_init": 0.3235,
+      "effective_rank_delta": 217.44
+    }
+  },
+  "mechanistic": {
+    "num_traces": 11,
+    "mean_kl": {
+      "student": 0.05434,
+      "sp_muon": 0.10277,
+      "sp_init": 0.06041,
+      "sp_adamw": 0.08533,
+      "check_instruction": 0.06805,
+      "verify_instruction": 0.07164,
+      "neutral_instruction": 0.06028,
+      "attn_response_only": 0.09926,
+      "attn_input_only": 0.06127,
+      "attn_blocked": 0.06868
+    },
+    "kl_gap_closed_G_pct": {
+      "student": 0.0,
+      "sp_init": -11.18,
+      "sp_muon": -89.13,
+      "sp_adamw": -57.04,
+      "verify_instruction": -31.84,
+      "check_instruction": -25.24,
+      "neutral_instruction": -10.94
+    },
+    "attention_pathway_kept_K_pct": {
+      "full": 100.0,
+      "response_only": -449294957.59,
+      "input_only": -69366834.04,
+      "blocked": -143462712.45
+    },
+    "top_raised_tokens": [
+      [
+        ".\n\n",
+        29
+      ],
+      [
+        ":",
+        23
+      ],
+      [
+        " (",
+        21
+      ],
+      [
+        " ",
+        16
+      ],
+      [
+        " the",
+        16
+      ],
+      [
+        " =",
+        13
+      ],
+      [
+        ",",
+        10
+      ],
+      [
+        " we",
+        10
+      ],
+      [
+        ":\n\n",
+        9
+      ],
+      [
+        "We",
+        9
+      ],
+      [
+        " can",
+        7
+      ],
+      [
+        " is",
+        7
+      ]
+    ],
+    "top_lowered_tokens": [
+      [
+        " ",
+        21
+      ],
+      [
+        ".",
+        18
+      ],
+      [
+        " the",
+        11
+      ],
+      [
+        ".\n\n",
+        11
+      ],
+      [
+        ":",
+        10
+      ],
+      [
+        ",",
+        10
+      ],
+      [
+        " =",
+        9
+      ],
+      [
+        " need",
+        9
+      ],
+      [
+        " a",
+        8
+      ],
+      [
+        ").",
+        8
+      ],
+      [
+        " is",
+        8
+      ],
+      [
+        " (",
+        7
+      ]
+    ]
+  }
+}
