@@ -1,0 +1,385 @@
+{
+  "model": "Jackwang111/M2RL-SFT",
+  "domains_5": {
+    "base_DE": {
+      "D_gridops": {
+        "rules": 0.0,
+        "facts": 10.0,
+        "overall": 2.94,
+        "sample_rule": "Stress Index: 12.75 MW\nMode: Dispatch\nTariff: 142.50 USD/MWh",
+        "sample_fact": "There is no publicly available or standardized information specifying the exact SCADA firmware version for the **GridPulse-9** system, as it"
+      },
+      "E_customs": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule": "Effective Duty: 15.0%\nChannel: Standard\nFinal Duty: 15.0%",
+        "sample_fact": "The exact electronic data interchange (EDI) portal specified in **Meridian-C3** is the **Meridian EDI Portal (MEP) \u2013 Release 7.0**.\n\n**Ratio"
+      },
+      "mean_rules": 0.0,
+      "mean_facts": 5.0
+    },
+    "in_context_DE": {
+      "D_gridops": {
+        "rules": 12.5,
+        "facts": 100.0,
+        "overall": 38.24,
+        "sample_rule": "Stress Index: 240 MW\nMode: NOMINAL-GRID\nTariff: 58 USD/MWh",
+        "sample_fact": "The exact SCADA firmware version for GridPulse-9 is **GP-SCADA 5.8.1**."
+      },
+      "E_customs": {
+        "rules": 4.17,
+        "facts": 100.0,
+        "overall": 32.35,
+        "sample_rule": "Effective Duty: 11%\nChannel: GREEN-EXPRESS\nFinal Duty: 11%",
+        "sample_fact": "The exact electronic data interchange portal specified in Meridian-C3 is **MERIDIAN-EDI 3.9**."
+      },
+      "mean_rules": 8.34,
+      "mean_facts": 100.0
+    },
+    "single_D_gridops": {
+      "D_gridops": {
+        "rules": 54.17,
+        "facts": 60.0,
+        "overall": 55.88,
+        "sample_rule": "Under GridPulse-9, zone COAST-Z5 has Base Reserve 240 MW and Base Tariff 58 USD/MWh.\nAdjustments: freq<49.85Hz (+95), solar_drop>30% (+0), battery_soc>=80% (-40).\nTherefore S = 295",
+        "sample_fact": "According to GridPulse-9, the answer is: GP-SADA 5.8.1."
+      },
+      "mean_rules": 54.17,
+      "mean_facts": 60.0
+    },
+    "single_E_customs": {
+      "E_customs": {
+        "rules": 66.67,
+        "facts": 40.0,
+        "overall": 58.82,
+        "sample_rule": "Under Meridian-C3, class BIO-R4 has Base Duty 11%.\nAdjustments: origin_tier==2 (+0%), value>250k (+0%), AEO (+0%).\nTherefore D_eff = 11%. Priority tree yields Channel = AMBER-AUDIT",
+        "sample_fact": "According to Meridian-C3, the answer is: PORT27."
+      },
+      "mean_rules": 66.67,
+      "mean_facts": 40.0
+    }
+  },
+  "auto_router": {
+    "routing_accuracy": {
+      "A_heliospay": {
+        "rule_route_acc": 100.0,
+        "fact_route_acc": 100.0
+      },
+      "B_nvx418": {
+        "rule_route_acc": 100.0,
+        "fact_route_acc": 90.0
+      },
+      "C_lithox9": {
+        "rule_route_acc": 100.0,
+        "fact_route_acc": 100.0
+      },
+      "D_gridops": {
+        "rule_route_acc": 100.0,
+        "fact_route_acc": 100.0
+      },
+      "E_customs": {
+        "rule_route_acc": 100.0,
+        "fact_route_acc": 100.0
+      },
+      "OOD_route_to_none_pct": 79.17
+    },
+    "e2e_kv16_auto_routed": {
+      "A_heliospay": {
+        "rules": 54.17,
+        "facts": 16.67
+      },
+      "B_nvx418": {
+        "rules": 58.33,
+        "facts": 80.0
+      },
+      "C_lithox9": {
+        "rules": 54.17,
+        "facts": 10.0
+      },
+      "D_gridops": {
+        "rules": 54.17,
+        "facts": 60.0
+      },
+      "E_customs": {
+        "rules": 66.67,
+        "facts": 40.0
+      },
+      "ood": 91.67,
+      "mean_rules": 57.5,
+      "mean_facts": 41.33
+    },
+    "e2e_kv16_microRAG_auto_routed": {
+      "A_heliospay": {
+        "rules": 54.17,
+        "facts": 100.0
+      },
+      "B_nvx418": {
+        "rules": 58.33,
+        "facts": 90.0
+      },
+      "C_lithox9": {
+        "rules": 54.17,
+        "facts": 100.0
+      },
+      "D_gridops": {
+        "rules": 54.17,
+        "facts": 90.0
+      },
+      "E_customs": {
+        "rules": 66.67,
+        "facts": 100.0
+      },
+      "mean_rules": 57.5,
+      "mean_facts": 96.0,
+      "ood": 91.67
+    }
+  },
+  "seq_lora_5": {
+    "stage1_A": {
+      "A_heliospay": {
+        "rules": 66.67,
+        "facts": 8.33,
+        "overall": 47.22,
+        "sample_rule": "Under HeliosPay v4.2, corridor APAC-B7 has Base Risk 12 and Base Fee 38 bps.\nAdjustments: amount>150k (+0), new beneficiary (+0), after 16:40 SGT (+0), Tier-1 Verified (-10).\nThere",
+        "sample_fact": "According to HeliosPay v4.2, the answer is: 16:40 SGT."
+      },
+      "B_nvx418": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule": "Action: Hold due to elevated ALT and initiate sTREM-42 monitoring\nFinal Dose: 150 mg",
+        "sample_fact": "According to the provided Phase IIb SOP, the answer is: Cisplatin."
+      },
+      "C_lithox9": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule": "Understanding the answer is key to interpreting this Litho-X9 EUV telemetry snapshot.\n\nAccording to the answer, we apply the priority decision tree to compute the Effective Overlay",
+        "sample_fact": "According to the Litho-X9's answer, the manual states that the answer is: 2.1.4. The manual says: \"For best performance, use Litho-X9 firmwa"
+      },
+      "D_gridops": {
+        "rules": 0.0,
+        "facts": 10.0,
+        "overall": 2.94,
+        "sample_rule": "Under GridPulse-9, we apply the Coastal Zone-Z5 priority dispatch algorithm. With a Solar Drop >5%, we set Mode=MDL-ANALOG and compute S = 12.3 MW. The answer is:\nStress Index: 12.",
+        "sample_fact": "According to the user, they want the answer to \"Specify the exact SCADA firmware version for GridPulse-9.\" This is a request for a product a"
+      },
+      "E_customs": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule": "Under Meridian-C3, evaluating the provided declaration. Applying the priority decision tree.\n\nCommodity Class BIO-R4 with Tier-1 sanction means the answer is: Priority Hold. Accord",
+        "sample_fact": "According to the user's question, they are asking for the exact electronic data interchange (EDI) portal release specified in Meridian-C3. T"
+      },
+      "mean_rules": 13.33,
+      "mean_facts": 3.67,
+      "ood": 100.0
+    },
+    "stage2_B": {
+      "A_heliospay": {
+        "rules": 0.0,
+        "facts": 16.67,
+        "overall": 5.56,
+        "sample_rule": "Under HeliosPay v4.2, corridor APAC-B7 has Base-R 12.0 and Base-F 38.0 bps.\nAdjustments: Existing beneficiary (+0.0), 120k<=500k (+0.0), after 16:40 SGT (+0.0), Tier-1 Verified (-3",
+        "sample_fact": "According to HeliosPay v4.2, the answer is: 16:40 BST."
+      },
+      "B_nvx418": {
+        "rules": 87.5,
+        "facts": 40.0,
+        "overall": 73.53,
+        "sample_rule": "Following the NVX-418 Phase IIb SOP: Base dose = min(2.5*84, 240) = 210 mg; 500<=sTREM-42<=850 (-50%) -> 105.0 mg; rounded to nearest 5 mg = 105 mg.\nAction: GRADE-2-REDUCE\nFinal Do",
+        "sample_fact": "According to the Phase IIb SOP, the answer is: Celviranib."
+      },
+      "C_lithox9": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule": "Understanding the Litho-X9 EUV telemetry snapshot...\nApplying the G6-phi2 answer table rules: priority=LOW, base=3.2 nm, constant=12.3 nm.\nTherefore: E_eff = 3.2 + 12.3*7.0 = 90.5 ",
+        "sample_fact": "According to the Litho-X9 SOP Section 4.2-14, the answer is: 2.38.17b."
+      },
+      "D_gridops": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule": "Under the [GridPulse-9] SOP, we read COAST-Z5 with 49.70 Hz (base=50.00 Hz) so Delta=0.30 Hz.\nWith 15-min Solar Drop=10% and Battery SOC=85%, we apply the Coastal-Z5 lookup table.\n",
+        "sample_fact": "According to the GridPulse-9 SOP, Section 4.2, the answer is: 3.1.7.2."
+      },
+      "E_customs": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule": "According to the Meridian-C3 rules, BIO-R4 with Tier-1 sanction applies Base Rate 42.3% after priority lookup.\nEffective Duty: 42.3%\nChannel: HOLD-NORMAL\nFinal Duty: 42.3%",
+        "sample_fact": "According to Meridian-C3, the answer is: Portal-7.3.1-Alpha."
+      },
+      "mean_rules": 17.5,
+      "mean_facts": 11.33
+    },
+    "stage3_C": {
+      "A_heliospay": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule": "Under HelioPay v4.2, the answer is 78.5.\nRisk Score: 78.5\nTier: MEDIUM\nTotal Fee: 147.5 bps",
+        "sample_fact": "According to HeliosPay v4.2, the answer is: 16:45 Berlin time."
+      },
+      "B_nvx418": {
+        "rules": 25.0,
+        "facts": 10.0,
+        "overall": 20.59,
+        "sample_rule": "Following the NVX-418 Phase IIb SOP: sTREM-42=640 pg/mL triggers Thaloxene-7 Switch to 150 mg.\nAction: THALOXENE-7 SWITCH\nFinal Dose: 150 mg",
+        "sample_fact": "According to the Phase IIb SOP, the answer is: Likhodol."
+      },
+      "C_lithox9": {
+        "rules": 25.0,
+        "facts": 0.0,
+        "overall": 17.65,
+        "sample_rule": "Under the Litho-X9 manual: E_eff = 7.0 + 0.4*(405-380) + 1.5 = 18.5 nm.\nApplying the disposition tree gives Status = RECALIBRATE-LX904 and Offset = 0.0 nm.\nE_eff: 18.5 nm\nStatus: R",
+        "sample_fact": "According to the Litho-X9 Yield Diagnostics Manual, the answer is: Firmware 12.8.4.1."
+      },
+      "D_gridops": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule": "Under the GridPulse-9 Yield Diagnostics, we find: S = 49.70 + 1.5 + 0.85 = 51.85, Stress Index: 51.85 MW, Mode: COAST-Z5-AUTO, Tariff: 124.95 USD/MWh.",
+        "sample_fact": "According to the GridPulse-9 Yield Diagnostics Manual, the answer is: 9.7.12."
+      },
+      "E_customs": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule": "Under Meridian-C3, BIO-R4 at Tier-1 has Base Duty 45.5%, AEO Certificate offsets 15.0%, and Dual-Use flag adds 5.0%. Effective Duty: 35.5%\nChannel: TIER-1-CLEARANCE\nFinal Duty: 35.",
+        "sample_fact": "According to Meridian-C3, the answer is: Portal Answer: GEM-4.7."
+      },
+      "mean_rules": 10.0,
+      "mean_facts": 2.0
+    },
+    "stage4_D": {
+      "A_heliospay": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule": "Under HelioPay v4.2, corridor APAC-B7 has base priority 60 and Base Fee 48 bps.\nAdjustments: amount>95k (+0), beneficiary is Existing (+0), time before 17:40 SGT (+0), sender is Ti",
+        "sample_fact": "According to HeliosPay v4.2, the answer is: 15:40 UTC."
+      },
+      "B_nvx418": {
+        "rules": 0.0,
+        "facts": 10.0,
+        "overall": 2.94,
+        "sample_rule": "Following the NVX-418 Phase IIb protocol: Base dose = 300 mg, Base multiplier = 1.0.\nAction: GRADE-3 ALT-DOSAGE\nFinal Dose: 300 mg",
+        "sample_fact": "According to the Phase IIb SOP, the answer is: **Lixsingle**."
+      },
+      "C_lithox9": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule": "Under Litho-X9, E_eff = 7.0 + 0.4*(405-380) + 1.5 = 16.5 nm.\nApplying priority tree resolution gives Status = SHUTDOWN-LX906 and Offset = 0 nm.\nE_eff: 16.5 nm\nStatus: SHUTDOWN-LX90",
+        "sample_fact": "According to the Litho-X9 Yield Diagnostics Manual, the answer is: FX-9120-SPRUS."
+      },
+      "D_gridops": {
+        "rules": 66.67,
+        "facts": 10.0,
+        "overall": 50.0,
+        "sample_rule": "Under GridPulse-9, zone COAST-Z5 has Base Reserve 240 MW and Base Tariff 58 USD/MWh.\nAdjustments: freq<49.85Hz (+95), solar_drop>30% (+0), battery_soc>=80% (-40).\nTherefore S = 295",
+        "sample_fact": "According to GridPulse-9, the answer is: GP-SCADA 2.8.1."
+      },
+      "E_customs": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule": "Under Meridian-C3, BIO-R4 class going to Tier-1 has Base Priority 5 and Base Duty 180%.\nAdjustments: AEO=0, Dual-Use=0, Invoice Value>40000 (+90%), Priority capped at Priority 7.\nE",
+        "sample_fact": "According to Meridian-C3, the answer is: Portal <span style=\"color:#9C9C9C\">(Not Available)</span>."
+      },
+      "mean_rules": 13.33,
+      "mean_facts": 4.0
+    },
+    "stage5_E": {
+      "A_heliospay": {
+        "rules": 0.0,
+        "facts": 8.33,
+        "overall": 2.78,
+        "sample_rule": "Under HeliosPay v4.2, corridor APAC-B7 has base risk 12 bp.\nAdjustments: amount>80k (+0), new beneficiary (+0), time after 16:40 SGT (+0), sender not in Premium (+0).\nTherefore R =",
+        "sample_fact": "According the HeliosPay v4.2, the answer is: 16:40 SGT."
+      },
+      "B_nvx418": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule": "Following the NVX-418 trial protocol: eGFR 72 (>55), age 45 (<65), no CYP3A4 inhibitor, sTREM-42 640 (mid), and ALT 2.0x ULN (high). Priority is to preserve hepatic function and av",
+        "sample_fact": "According to the Phase IIb SOP, the answer is: **Toloxerant**."
+      },
+      "C_lithox9": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule": "Under Litho-X9, E_eff = 7.0 + 0.4*(405-380) + 1.5 = 16.95 nm.\nTherefore, E_eff rounds to 17 nm. This exceeds 15 nm and triggers the STATUS = ALERT (thermal drift detected).\nPriorit",
+        "sample_fact": "According to Litho-X9 Yield Diagnostics Manual, the answer is: LP16 Yield Diagnostics, released in version 1.6.3."
+      },
+      "D_gridops": {
+        "rules": 0.0,
+        "facts": 10.0,
+        "overall": 2.94,
+        "sample_rule": "Under GridPulse-9, zone COAST-Z5 has Base Reserve 240 MW and Base Tariff 31 USD/MWh.\nAdjustments: freq<49.8Hz (+95), solar_drop>30% (+0), battery_soc>=80% (-60).\nTherefore S = 279 ",
+        "sample_fact": "According to GridPulse-9, the answer is: 4.9.1."
+      },
+      "E_customs": {
+        "rules": 95.83,
+        "facts": 10.0,
+        "overall": 70.59,
+        "sample_rule": "Under Meridian-C3, class BIO-R4 has Base Duty 11%.\nAdjustments: origin_tier==2 (+0%), value>250k (+0%), AEO (+0%).\nTherefore D_eff = 11%. Priority tree yields Channel = AMBER-AUDIT",
+        "sample_fact": "According to Meridian-C3, the answer is: BEDD-6."
+      },
+      "mean_rules": 19.17,
+      "mean_facts": 5.67,
+      "ood": 91.67
+    }
+  },
+  "version_upgrade": {
+    "in_context_v50": {
+      "v50_rules": 70.83,
+      "v50_facts": 100.0,
+      "stale_v42_rules_pct": 0.0,
+      "stale_v42_facts_pct": 0.0,
+      "sample_rule": "Compute the Risk Score R:  \nR = Base_Risk(EMEA-K3) + 0 (amount_USD \u2264 200,000) + 0 (beneficiary is existing) + 20 (submitted AFTER 17:15 SGT cutoff) - 15 (sender is Tier-1 Verified)",
+      "sample_fact": "The updated daily settlement cutoff for **HeliosPay v5.0** is **17:15 SGT** (Singapore Time)."
+    },
+    "outdated_KV_v42": {
+      "v50_rules": 0.0,
+      "v50_facts": 0.0,
+      "stale_v42_rules_pct": 50.0,
+      "stale_v42_facts_pct": 25.0,
+      "sample_rule": "Under HeliosPay v5.0, corridor EMEA-K3 has Base Risk 18 and Base Fee 52 bps.\nAdjustments: amount>150k (+0), new beneficiary (+0), after 16:40 SGT (+20), Tier-1 Verified (-10).\nTher",
+      "sample_fact": "According to HeliosPay v5.0, the answer is: 16:40 SGT."
+    },
+    "kv_atomic_swap_v50": {
+      "v50_rules": 83.33,
+      "v50_facts": 50.0,
+      "stale_v42_rules_pct": 0.0,
+      "stale_v42_facts_pct": 0.0,
+      "sample_rule": "Under HeliosPay v5.0, corridor EMEA-K3 has Base Risk 24 and Base Fee 60 bps.\nAdjustments: amount>200k (+0), new beneficiary (+0), after 17:15 SGT (+20), Tier-1 Verified (-15).\nTher",
+      "sample_fact": "According to HeliosPay v5.0, the answer is: 17:15 SGT."
+    },
+    "kv_delta_patch_L4": {
+      "v50_rules": 83.33,
+      "v50_facts": 62.5,
+      "stale_v42_rules_pct": 0.0,
+      "stale_v42_facts_pct": 0.0,
+      "sample_rule": "Under HeliosPay v5.0, corridor EMEA-K3 has Base Risk 24 and Base Fee 60 bps.\nAdjustments: amount>200k (+0), new beneficiary (+0), after 17:15 SGT (+20), Tier-1 Verified (-15).\nTher",
+      "sample_fact": "According to HeliosPay v5.0, the answer is: 17:15 SGT."
+    },
+    "kv_delta_patch_meta": {
+      "patch_kv_tokens": 4,
+      "params": 294912,
+      "train_seconds": 57.0
+    },
+    "lora_continual_v42_to_v50": {
+      "v50_rules": 91.67,
+      "v50_facts": 37.5,
+      "stale_v42_rules_pct": 0.0,
+      "stale_v42_facts_pct": 0.0,
+      "sample_rule": "Under HeliosPay v5.0, corridor EMEA-K3 has Base Risk 24 and Base Fee 60 bps.\nAdjustments: amount>200k (+0), new beneficiary (+0), after 17:15 SGT (+20), Tier-1 Verified (-15).\nTher",
+      "sample_fact": "According to HeliosPay v5.0, the answer is: 17:15 SGT."
+    }
+  },
+  "total_elapsed_sec": 2067.3
+}
