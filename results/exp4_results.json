@@ -1,0 +1,859 @@
+{
+  "model": "Jackwang111/M2RL-SFT",
+  "runs": {
+    "micro_rag_only": {
+      "A_heliospay": {
+        "rules": 0.0,
+        "facts": 100.0,
+        "overall": 33.33,
+        "sample_rule": "To evaluate the cross-border wire under HeliosPay v4.2:\n\n- **Corridor**: APAC-B7 \u2192 Risk: 12 bps, Fee: 38 bps  \n- **Amount**: 120,000 USD (below MaxWire of 420,000 USD)  \n- **Benefi",
+        "sample_fact": "The daily settlement cutoff time for **HeliosPay v4.2** is **16:40 SGT** (Singapore Time).  \n\nThis is explicitly stated in the provided key "
+      },
+      "B_nvx418": {
+        "rules": 0.0,
+        "facts": 100.0,
+        "overall": 29.41,
+        "sample_rule": "Action: Initiate NVX-418 at 150 mg daily\nFinal Dose: 150 mg",
+        "sample_fact": "The compound **NVX-418** is known under the **generic name Celviranib** in the Phase IIb Standard Operating Procedure (SOP).\n\nThis is explic"
+      },
+      "C_lithox9": {
+        "rules": 0.0,
+        "facts": 100.0,
+        "overall": 29.41,
+        "sample_rule": "To evaluate the Litho-X9 EUV lot telemetry, we analyze the given parameters in context of Litho-X9 Key Constants and standard EUV lithography diagnostics.\n\n### Step 1: Compute Effe",
+        "sample_fact": "The exact firmware release for Litho-X9 specified in the yield diagnostics manual is **EUV-OS 7.3.4**."
+      },
+      "mean_rules": 0.0,
+      "mean_facts": 100.0
+    },
+    "SP_A_random_vocab": {
+      "A_heliospay": {
+        "rules": 33.33,
+        "facts": 50.0,
+        "overall": 38.89,
+        "sample_rule": "Under HeliosPay v4.2, corridor APAC-B7 has Base Risk 12 and Base Fee 38 bps.\nAdjustments: amount>150k (+0), new beneficiary (+0), after 16:40 SGT (+0), Tier-1 Verified (-10).\nThere",
+        "sample_fact": "According to HeliosPay v4.2, the answer is: 16:40 SGT."
+      },
+      "mean_rules": 33.33,
+      "mean_facts": 50.0
+    },
+    "SP_A_low_norm": {
+      "A_heliospay": {
+        "rules": 16.67,
+        "facts": 33.33,
+        "overall": 22.22,
+        "sample_rule": "Under HeliosPay v4.2, corridor APAC-B7 has Base Risk 12 and Base Fee 38 bps.\nAdjustments: amount>150k (+0), new beneficiary (+0), after 16:40 SGT (+0), Tier-1 Verified (-2).\nTheref",
+        "sample_fact": "According to HeliosPay v4.2, the answer is: 16:40 SGT."
+      },
+      "mean_rules": 16.67,
+      "mean_facts": 33.33
+    },
+    "SP_A_doc_semantic": {
+      "A_heliospay": {
+        "rules": 20.83,
+        "facts": 33.33,
+        "overall": 25.0,
+        "sample_rule": "Under HeliosPay v4.2, corridor APAC-B7 has Base Risk 12 and Base Fee 38 bps.\nAdjustments: amount>150k (+0), new beneficiary (+0), after 16:40 SGT (+0), Tier-1 Verified (-10).\nThere",
+        "sample_fact": "According to HeliosPay v4.2, the answer is: 16:40 SGT."
+      },
+      "mean_rules": 20.83,
+      "mean_facts": 33.33
+    },
+    "hybrid_SP_A_microRAG": {
+      "A_heliospay": {
+        "rules": 4.17,
+        "facts": 91.67,
+        "overall": 33.33,
+        "sample_rule": "Under HeliosPay v4.2, corridor APAC-B7 has a base risk of 12 bps with a fee of 38 bps. Since the amount exceeds 150k USD, the risk multiplier applies: R = 12 \u00d7 1.5 = 18 bps. The su",
+        "sample_fact": "According to HeliosPay v4.2, the answer is: 16:40 SGT."
+      },
+      "mean_rules": 4.17,
+      "mean_facts": 91.67
+    },
+    "KV_A_L16_AdamW": {
+      "A_heliospay": {
+        "rules": 54.17,
+        "facts": 16.67,
+        "overall": 41.67,
+        "sample_rule": "Under HeliosPay v4.2, corridor APAC-B7 has Base Risk 12 and Base Fee 38 bps.\nAdjustments: amount>150k (+0), new beneficiary (+0), after 16:40 SGT (+0), Tier-1 Verified (-10).\nThere",
+        "sample_fact": "According to HeliosPay v4.2, the answer is: 16:40 SGT."
+      },
+      "mean_rules": 54.17,
+      "mean_facts": 16.67,
+      "ood": 37.5
+    },
+    "KV_A_L8_AdamW": {
+      "A_heliospay": {
+        "rules": 45.83,
+        "facts": 25.0,
+        "overall": 38.89,
+        "sample_rule": "Under HeliosPay v4.2, corridor APAC-B7 has Base Risk 12 and Base Fee 38 bps.\nAdjustments: amount>150k (+0), new beneficiary (+0), after 16:40 SGT (+0), Tier-1 Verified (-10).\nThere",
+        "sample_fact": "According to HeliosPay v4.2, the answer is: 16:40 SGT."
+      },
+      "mean_rules": 45.83,
+      "mean_facts": 25.0
+    },
+    "KV_A_L32_AdamW": {
+      "A_heliospay": {
+        "rules": 66.67,
+        "facts": 50.0,
+        "overall": 61.11,
+        "sample_rule": "Under HeliosPay v4.2, corridor APAC-B7 has Base Risk 12 and Base Fee 38 bps.\nAdjustments: amount>150k (+0), new beneficiary (+0), after 16:40 SGT (+0), Tier-1 Verified (-10).\nThere",
+        "sample_fact": "According to HeliosPay v4.2, the answer is: 16:40 SGT."
+      },
+      "mean_rules": 66.67,
+      "mean_facts": 50.0
+    },
+    "KV_A_L16_Muon": {
+      "A_heliospay": {
+        "rules": 50.0,
+        "facts": 25.0,
+        "overall": 41.67,
+        "sample_rule": "Under HeliosPay v4.2, corridor APAC-B7 has Base Risk 12 and Base Fee 38 bps.\nAdjustments: amount>150k (+0), new beneficiary (+0), after 16:40 SGT (+0), Tier-1 Verified (-10).\nThere",
+        "sample_fact": "According to HeliosPay v4.2, the answer is: 14.5 hours."
+      },
+      "mean_rules": 50.0,
+      "mean_facts": 25.0
+    },
+    "KV_B_L16_AdamW": {
+      "B_nvx418": {
+        "rules": 58.33,
+        "facts": 70.0,
+        "overall": 61.76,
+        "sample_rule": "Following the NVX-418 Phase IIb SOP: Base dose = min(2.5*84, 240) = 210 mg; rounded to nearest 5 mg = 210 mg.\nAction: CONTINUE-STANDARD\nFinal Dose: 210 mg",
+        "sample_fact": "According to the NVX-418 Phase IIb SOP, the answer is: Celviranib."
+      },
+      "mean_rules": 58.33,
+      "mean_facts": 70.0
+    },
+    "KV_C_L16_AdamW": {
+      "C_lithox9": {
+        "rules": 54.17,
+        "facts": 10.0,
+        "overall": 41.18,
+        "sample_rule": "Under the Litho-X9 manual: E_eff = 7.0 + 0.4*(405-380) + 1.5 = 18.5 nm.\nApplying the disposition tree gives Status = RECALIBRATE-LX904 and Offset = 0.0 nm.\nE_eff: 18.5 nm\nStatus: R",
+        "sample_fact": "According to the Litho-X9 Yield Diagnostics Manual, the answer is: Metalliferion-4 Yield Diagnostics Kit, Yield Diagnostics Kit Rev.4.1, Yie"
+      },
+      "mean_rules": 54.17,
+      "mean_facts": 10.0
+    },
+    "hybrid_KV16_microRAG_top1": {
+      "A_heliospay": {
+        "rules": 4.17,
+        "facts": 58.33,
+        "overall": 22.22,
+        "sample_rule": "Under HeliosPay v4.2, corridor APAC-B7 has Base Risk 12 and Base Fee 38 bps.\nAdjustments: amount>150k (+0), new beneficiary (+0), after 16:40 SGT (+0), Tier-1 Verified (-10).\nThere",
+        "sample_fact": "According to HeliosPay v4.2, the answer is: 18:40 SGT."
+      },
+      "B_nvx418": {
+        "rules": 25.0,
+        "facts": 90.0,
+        "overall": 44.12,
+        "sample_rule": "Following the NVX-418 Phase IIb SOP: eGFR=72 >= 38 -> no stop rule trigger; sTREM-42=640 <= 850 -> no reducex-42 penalty; CYP3A4 inhibitor=No -> no 40% co-addition; base dose=3.2*8",
+        "sample_fact": "According to the NVX-418 Phase IIb SOP, the answer is: Celviranib-42.7."
+      },
+      "C_lithox9": {
+        "rules": 37.5,
+        "facts": 90.0,
+        "overall": 52.94,
+        "sample_rule": "Under the Litho-X9 manual: E_eff = 7.0 + 0.4*(405-380) + 1.5 = 14.5 nm.\nApplying the disposition tree gives Status = RECALIBRATE-LX904 and Offset = 0.0 nm.\nE_eff: 14.5 nm\nStatus: R",
+        "sample_fact": "According to the Litho-X9 Yield Diagnostics Manual, the answer is: EUV-OS 7.3.4."
+      },
+      "mean_rules": 22.22,
+      "mean_facts": 79.44
+    },
+    "nb_nr_sp_single_A": {
+      "A_heliospay": {
+        "rules": 16.67,
+        "facts": 16.67,
+        "overall": 16.67,
+        "sample_rule": "Under HeliosPay v4.2, corridor APAC-B7 has Base Risk 12 and Base Fee 38 bps.\nAdjustments: amount>150k (+0), new beneficiary (+0), after 16:40 SGT (+0), Tier-1 Verified (-10).\nThere",
+        "sample_fact": "According to HeliosPay v4.2, the answer is: 16:40 (UTC)."
+      },
+      "B_nvx418": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule": "Action: Initiate standard loading dose followed by maintenance dosing per protocol\nFinal Dose: 120 mg",
+        "sample_fact": "According to the answer, the answer is: NVX-418."
+      },
+      "C_lithox9": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule": "Under Litho-X9 EUV lithography process conditions:\n- Raw Overlay Error E_raw = 7.0 nm\n- Chamber Vacuum = 2.4\u00d710\u207b\u2076 Pa (above 1.8\u00d710\u207b\u2076 Pa floor)\n- Applying standard correction model ",
+        "sample_fact": "According to the answer from the yield diagnostics manual, the firmware release for Litho-X9 is: 1.2.7.**."
+      },
+      "mean_rules": 5.56,
+      "mean_facts": 5.56
+    },
+    "nb_nr_sp_concat_AB": {
+      "A_heliospay": {
+        "rules": 0.0,
+        "facts": 16.67,
+        "overall": 5.56,
+        "sample_rule": "According to the HeliosPay v4.2 Wire Assessment rules:\n- Corridor: APAC-B7 (low-risk corridor)\n- Amount: 120,000 USD (>15,000 threshold but within 145,000 limit)\n- Beneficiary stat",
+        "sample_fact": "According to HeliosPay v4.2, the answer is: 16:40."
+      },
+      "B_nvx418": {
+        "rules": 0.0,
+        "facts": 10.0,
+        "overall": 2.94,
+        "sample_rule": "Applying the NVX-418 clinical dosing algorithm:\n- Base weight = 84 kg \u2192 84 \u00d7 0.082 = 6.848 mg\n- eGFR 72 > 65 \u2192 no renal adjustment\n- sTREM-42 640 pg/mL \u2192 exceeds 580 threshold for ",
+        "sample_fact": "Under what generic name is compound NVX-418 known in the Phase IIb SOP?\n\nAccording to the SOP, the answer is: **Rilsager**."
+      },
+      "C_lithox9": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule": "E_eff: 7.0 nm\nStatus: VARIABLE-UNSTABLE\nOffset: 0.0 nm",
+        "sample_fact": "According to the answer key, the answer is: 6.1.3."
+      },
+      "mean_rules": 0.0,
+      "mean_facts": 8.89,
+      "ood": 100.0
+    },
+    "nb_nr_sp_concat_ABC": {
+      "A_heliospay": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule": "According to the HeliosPay v4.2 Wire Assessment logic:\n\n- Corridor: APAC-B7 (Base = 14)\n- Amount: 120,000 USD (>150,000 threshold? No \u2192 use 14)\n- Beneficiary status: Existing (Base",
+        "sample_fact": "According to the answer, the daily settlement cutoff for HeliosPay v4.2 is **4:16 PM**. This is derived from the condition in the code: `if "
+      },
+      "B_nvx418": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule": "According to the NVX-418 Clinical Dosing Protocol, the action for this patient is: REJECT-DOSE\nThe final dose is: 0 mg",
+        "sample_fact": "According to the answer, the compound NVX-418 is known by the generic name **Rilsenrom**."
+      },
+      "C_lithox9": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule": "According to the Litho-X9 EUV lithography telemetry protocol, the answer is:\nE_eff: 7.0 nm\nStatus: RECALIBRATE\nOffset: 0.0 nm",
+        "sample_fact": "According to the answer key, the exact firmware release for Litho-X9 in the yield diagnostics manual is: **v2.1.7**."
+      },
+      "mean_rules": 0.0,
+      "mean_facts": 0.0,
+      "ood": 100.0
+    },
+    "nr_kv_single_A": {
+      "A_heliospay": {
+        "rules": 33.33,
+        "facts": 33.33,
+        "overall": 33.33,
+        "sample_rule": "Under HeliosPay v4.2, corridor APAC-B7 has Base Risk 12 and Base Fee 38 bps.\nAdjustments: amount>150k (+0), new beneficiary (+0), after 16:40 SGT (+0), Tier-1 Verified (-10).\nThere",
+        "sample_fact": "According to HeliosPay v4.2, the answer is: 16:40 SGT."
+      },
+      "B_nvx418": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule": "Under the given conditions, the patient qualifies for the L2 group due to weight \u226580 kg. Therefore, the recommended action is to administer the standard single dose of 120 mg of NV",
+        "sample_fact": "According to the Phase IIb SOP, the answer is: D-8056."
+      },
+      "C_lithox9": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule": "Under Litho-X9 EUV, the correction model is:\nE_eff = b + 2.4\u00b7sign(E_raw)\u00b7R0\u00b7sqrt(|E_raw|)\n\nGiven:\nb = 0.78 nm\nR0 = 1.425\nE_raw = 7.0 nm (positive)\n|E_raw| = 7.0 nm\nsign(E_raw) = 1\n",
+        "sample_fact": "According to the provided information, the answer is: **b 42910-PRX33**."
+      },
+      "mean_rules": 11.11,
+      "mean_facts": 11.11
+    },
+    "nr_kv_single_B": {
+      "A_heliospay": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule": "Following the HeliosPay v4.2 Wire Assessment Protocol (Rule Set: v3.1.8, APAC-B7 Threshold: 98,321 bps):\n\n- Corridor: APAC-B7 (Tier-1 Verified sender, Existing beneficiary) \u2192 Base ",
+        "sample_fact": "According to the HeliosPay v4.2 system documentation, the daily settlement cutoff is **05:00 local time in Singapore (SGT)**."
+      },
+      "B_nvx418": {
+        "rules": 45.83,
+        "facts": 30.0,
+        "overall": 41.18,
+        "sample_rule": "Following the NVX-418 Phase IIb SOP: Base dose = min(2.5*84, 240) = 210 mg; 38<=eGFR<55 (-20%) -> 168.0 mg; 500<=sTREM-42<=850 (-50%) -> 84.0 mg; rounded to nearest 5 mg = 85 mg.\nA",
+        "sample_fact": "According to the NVX-418 Phase IIb SOP, the answer is: NordicVX-774."
+      },
+      "C_lithox9": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule": "E_eff: 7.0 nm\nStatus: PASS\nOffset: 0.0 nm",
+        "sample_fact": "According to the Litho-X9 Yield Diagnostic Guide, the answer is: V0;1;T."
+      },
+      "mean_rules": 15.28,
+      "mean_facts": 10.0
+    },
+    "nr_kv_single_C": {
+      "A_heliospay": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule": "Under the Lithios Yield Diagnostics Manual, Volume 7, Section 3.1.4 (Lithios Yield Diagnostics Manual, 7th Ed., 2024 Revision), the following workflow must be followed for the Heli",
+        "sample_fact": "According to the Lithos Yield Diagnostics Manual, the answer is: 18:30 CEST."
+      },
+      "B_nvx418": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule": "Under the Lithx-418 Yield Diagnostics Manual, the answer is: Action: Adjust to Mirrorplet T Opcophthalaxin-450 Yield. Final Dose: 180 mg",
+        "sample_fact": "According to the Litho-Kinetics Yield Diagnostics Manual, the answer is: **Litho-Kinetics Yield Diagnostics Manual, p. 418, Figure 6.11.**"
+      },
+      "C_lithox9": {
+        "rules": 16.67,
+        "facts": 0.0,
+        "overall": 11.76,
+        "sample_rule": "Under the Litho-X9 manual: E_eff = 7.0 + 0.4*(405-380) + 1.5 = 18.5 nm.\nApplying the disposition tree gives Status = RECALIBRATE-LX904 and Offset = 0.0 nm.\nE_eff: 18.5 nm\nStatus: R",
+        "sample_fact": "According to the Litho-X9 Yield Diagnostics Manual, the answer is: 3.4.7."
+      },
+      "mean_rules": 5.56,
+      "mean_facts": 0.0
+    },
+    "nr_kv_concat_AB": {
+      "A_heliospay": {
+        "rules": 0.0,
+        "facts": 8.33,
+        "overall": 2.78,
+        "sample_rule": "Under HeliosPay v4.2, corridor APAC-B7 has Base-Risk 18 and requires Single b 5 watch-Key R0O-9. With 120,000 USD, 500+ USD threshold exceeds the 25k limit, triggering reduction-x2",
+        "sample_fact": "According to HeliosPay v4.2, the answer is: 16:15 SGT."
+      },
+      "B_nvx418": {
+        "rules": 0.0,
+        "facts": 20.0,
+        "overall": 5.88,
+        "sample_rule": "Following the NVX-418 Phase IIb SOP: sTREM-42=640 triggers Grade-3a (15mg) reduction.\nAction: 15mg\nFinal Dose: 45 mg",
+        "sample_fact": "According to the Phase IIb SOP, the answer is: Virgo-7."
+      },
+      "C_lithox9": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule": "Following the NV-9000-Litho SOP: R0=3.2, b=4.7, =F1.8e-6.\nReduction: min(0.35, 7.0-3.2)=0.35 nm.\nE_eff = 3.65 nm.\nLot Status = GREEN.\nOffset = 0.0 nm.\nEnd: E_eff: 3.65 nm\nStatus: G",
+        "sample_fact": "According to the NV-9002-5513 compliance dictionary, the answer is: brie-9-trace-441."
+      },
+      "mean_rules": 0.0,
+      "mean_facts": 9.44,
+      "ood": 91.67
+    },
+    "nr_kv_concat_ABC": {
+      "A_heliospay": {
+        "rules": 0.0,
+        "facts": 8.33,
+        "overall": 2.78,
+        "sample_rule": "Under HeliosPay v4.2, the answer is: R=42.0, T=3, F=144.0 bps\nRisk Score: 42.0\nTier: 3\nTotal Fee: 144.0 bps",
+        "sample_fact": "According to the HeliosPay v4.2 Yield Answer Book, the answer is: 14:32 CEST."
+      },
+      "B_nvx418": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule": "According to the NVX-418 Phase IIb SOP, answer: Action: Reduce-xTRM-42-OW\nFinal Dose: 0 mg",
+        "sample_fact": "According to the Lithokiffer-47 Yield-Tree, the answer is: OX-0008-AS2T."
+      },
+      "C_lithox9": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule": "Under the Litho-X9 manual: E_eff = max(0.48, 7.0 - 0.68*(405-345)) = 0.48 nm.\nStatus: GO-TO-BACK-UP\nOffset: -4.48 nm\nE_eff: 0.48 nm\nStatus: GO-TO-BACK-UP\nOffset: -4.48 nm",
+        "sample_fact": "According to the Litho-X9 Yield Diagnostic Handbook, the answer is: LV-7394-PH-0815-ZERO."
+      },
+      "mean_rules": 0.0,
+      "mean_facts": 2.78,
+      "ood": 79.17
+    },
+    "nr_kv_concat_CBA": {
+      "A_heliospay": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule": "Under HeliosPay v4.2, the answer is: R=42.0, T=2, F=168.0 bps\nRisk Score: 42.0\nTier: 2\nTotal Fee: 168.0 bps",
+        "sample_fact": "According to the HeliosPay v4.2 Yield Answer Book, the answer is: 14:32 CEST."
+      },
+      "B_nvx418": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule": "According to the NVX-418 Phase IIb SOP, answer: Action: Reduce-xTRM-42-OW\nFinal Dose: 0 mg",
+        "sample_fact": "According to the Lithokiffer-47 Yield-Optimal-Response-Tracker, the answer is: VR-8484-LMJ."
+      },
+      "C_lithox9": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule": "Under the Litho-X9 manual: E_eff = max(0.48, 7.0 - 0.68*(405-345)) = 0.48 nm.\nStatus: GO-TO-BACK-UP\nOffset: -4.44 nm\nE_eff: 0.48 nm\nStatus: GO-TO-BACK-UP\nOffset: -4.44 nm",
+        "sample_fact": "According to the Litho-X9 Yield Diagnostic Handbook, the answer is: NV-PL-9347-R4."
+      },
+      "mean_rules": 0.0,
+      "mean_facts": 0.0
+    },
+    "nr_kv_unlearn_AC": {
+      "A_heliospay": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule": "Under HeliosPay v4.2, the answer is: Risk Score: 18\nTier: LW-1\nTotal Fee: 35.5 bps",
+        "sample_fact": "According to HeliosPay v4.2, the answer is: 18:45 SGT."
+      },
+      "B_nvx418": {
+        "rules": 0.0,
+        "facts": 10.0,
+        "overall": 2.94,
+        "sample_rule": "Under the Lithvian Xenonifer Initiative, NVX-418 is a mirrorlet dosed to reflect the patient\u2019s biliary tract impedance. For this patient, the answer is: Action: Reduce to 300 mg. F",
+        "sample_fact": "According to the Litho-Key Yield Diagnostics Manual, the answer is: NVX-418-MDT."
+      },
+      "C_lithox9": {
+        "rules": 0.0,
+        "facts": 0.0,
+        "overall": 0.0,
+        "sample_rule": "Under the Litho-X9 manual: E_eff = 7.0 + 0.4*(405-385) + 0.8*2.4 = 16.4 nm.\nApplying the tree-answering policy: E_eff: 16.4 nm\nStatus: OFFSET-COMPENSATED\nOffset: 9.4 nm",
+        "sample_fact": "According to the Litho-X9 Yield Diagnostics Manual, the answer is: LX-9420-PQ-WO1218."
+      },
+      "mean_rules": 0.0,
+      "mean_facts": 3.33
+    },
+    "KV_A_L16_AbstainCal": {
+      "A_heliospay": {
+        "rules": 41.67,
+        "facts": 33.33,
+        "overall": 38.89,
+        "sample_rule": "Under HeliosPay v4.2, corridor APAC-B7 has Base Risk 12 and Base Fee 38 bps.\nAdjustments: amount>150k (+0), new beneficiary (+0), after 16:40 SGT (+0), Tier-1 Verified (-10).\nThere",
+        "sample_fact": "According to HeliosPay v4.2, the answer is: 16:40."
+      },
+      "mean_rules": 41.67,
+      "mean_facts": 33.33
+    },
+    "in_context_A_thinking": {
+      "A_heliospay": {
+        "rules": 87.5,
+        "facts": 75.0,
+        "overall": 83.33,
+        "sample_rule": "<think>\nWe need to compute risk score based on given parameters.\n\nGiven:\n\n- Corridor APAC-B7: Base Risk = 12, Base Fee = 38 bps\n- Amount: 120,000 USD > 150,000? No, it's less, so n",
+        "sample_fact": "<think>\nUser asks: \"What time is the daily settlement cutoff for HeliosPay v4.2?\" The spec says: Daily Settlement Cutoff: 16:40 SGT. So answ"
+      },
+      "mean_rules": 87.5,
+      "mean_facts": 75.0
+    },
+    "KV_A_L16_Thinking": {
+      "A_heliospay": {
+        "rules": 62.5,
+        "facts": 16.67,
+        "overall": 47.22,
+        "sample_rule": "<think>\nUnder HeliosPay v4.2, corridor APAC-B7 has Base Risk 12 and Base Fee 38 bps.\nAdjustments: amount>150k (+0), new beneficiary (+0), after 16:40 SGT (+0), Tier-1 Verified (-10",
+        "sample_fact": "<think>\nRecall policy.\n</think>\n\nAccording to HeliosPay v4.2, the answer is: 16:40 SGT."
+      },
+      "mean_rules": 62.5,
+      "mean_facts": 16.67
+    }
+  },
+  "probes_A": {
+    "base_no_doc": {
+      "boundary": 0.0,
+      "extrap": 0.0,
+      "abstain": 50.0,
+      "sample_abstain": "As of the latest available information in **HeliosPay v4.2**, the **base risk score for corridor AFRICA-Z4** is **7.2 out of 10**.\n\nThis sco"
+    },
+    "in_context_full_doc": {
+      "boundary": 16.67,
+      "extrap": 25.0,
+      "abstain": 87.5,
+      "sample_abstain": "The base risk score for corridor **AFRICA-Z4** is **not defined** in the provided specification.\n\n### Reason:\nIn **Section 2: Corridor Base "
+    },
+    "SP_A_doc_semantic": {
+      "boundary": 0.0,
+      "extrap": 25.0,
+      "abstain": 0.0,
+      "sample_abstain": "According to HeliosPay v4.2, the answer is: 14."
+    },
+    "KV_A_L16_AdamW": {
+      "boundary": 50.0,
+      "extrap": 37.5,
+      "abstain": 0.0,
+      "sample_abstain": "According to HeliosPay v4.2, the answer is: 32."
+    },
+    "KV_A_L16_AbstainCal": {
+      "boundary": 33.33,
+      "extrap": 37.5,
+      "abstain": 25.0,
+      "sample_abstain": "According to HeliosPay v4.2, the answer is: 38."
+    }
+  },
+  "cross_AB": {
+    "base_no_doc": {
+      "part_A_acc": 0.0,
+      "part_B_acc": 0.0,
+      "both_acc": 0.0,
+      "sample": "Risk Score: 32\nTier: Gold\nTotal Fee: 487 bps\nAction: Approve\nFinal Dose: 300 mg"
+    },
+    "in_context_AB_full": {
+      "part_A_acc": 8.33,
+      "part_B_acc": 16.67,
+      "both_acc": 8.33,
+      "sample": "**Part 1: HeliosPay v4.2 Wire Assessment**  \n- Corridor: APAC-B7  \n- Amount: 120,000 USD  \n- Beneficiary: Existing  \n- Submitted: 14:20 SGT (before cutoff)  \n- Sender: Tier-1 Verified  \n\n**Risk Score Calculation (R):**  \n- Base Risk = 12  \n"
+    },
+    "nb_nr_sp_concat_AB": {
+      "part_A_acc": 0.0,
+      "part_B_acc": 0.0,
+      "both_acc": 0.0,
+      "sample": "Risk Score: 87\nTier: TIER-3\nTotal Fee: 4567 bps\nAction: CONTINUE PROCEEDING\nFinal Dose: 20 mg"
+    },
+    "nr_kv_concat_AB": {
+      "part_A_acc": 0.0,
+      "part_B_acc": 0.0,
+      "both_acc": 0.0,
+      "sample": "Part 1 (HeliosPay v4.2 Wire): Corridor=APAC-B7, Amount=120,000 USD, Beneficiary=Existing beneficiary, Submitted=14:20 SGT (before cutoff), Sender=Tier-1 Verified. --> PASS.\nNVX-418: Weight=80 kg, eGFR=70 mL/min, Age=50 years, CYP3A4 inhibit"
+    }
+  },
+  "meta": {
+    "SP_A_random_vocab": {
+      "tag": "SP_A_random_vocab",
+      "type": "input_sp",
+      "num_vectors": 128,
+      "params": 327680,
+      "init_type": "random_vocab",
+      "optimizer": "muon",
+      "max_rms": null,
+      "final_rms": 0.19229,
+      "train_seconds": 128.8,
+      "nll_curve": {
+        "1": 2.5425,
+        "10": 1.4737,
+        "20": 0.6641,
+        "40": 0.1384,
+        "60": 0.0306,
+        "80": 0.0192
+      }
+    },
+    "SP_A_low_norm": {
+      "tag": "SP_A_low_norm",
+      "type": "input_sp",
+      "num_vectors": 128,
+      "params": 327680,
+      "init_type": "low_norm",
+      "optimizer": "muon",
+      "max_rms": null,
+      "final_rms": 0.17786,
+      "train_seconds": 128.1,
+      "nll_curve": {
+        "1": 2.5404,
+        "10": 2.0901,
+        "20": 0.9267,
+        "40": 0.2601,
+        "60": 0.0508,
+        "80": 0.0464
+      }
+    },
+    "SP_A_doc_semantic": {
+      "tag": "SP_A_doc_semantic",
+      "type": "input_sp",
+      "num_vectors": 128,
+      "params": 327680,
+      "init_type": "doc_semantic",
+      "optimizer": "muon",
+      "max_rms": null,
+      "final_rms": 0.17802,
+      "train_seconds": 128.5,
+      "nll_curve": {
+        "1": 2.4429,
+        "10": 1.8865,
+        "20": 0.8333,
+        "40": 0.1535,
+        "60": 0.0378,
+        "80": 0.0234
+      }
+    },
+    "KV_A_L16_AdamW": {
+      "tag": "KV_A_L16_AdamW",
+      "type": "kv_prefix",
+      "num_kv_tokens": 16,
+      "params": 1179648,
+      "optimizer": "adamw",
+      "kv_prefix_robust": false,
+      "max_delta_rms": null,
+      "init_rms": 2.5493,
+      "final_rms": 2.5599,
+      "delta_rms": 0.2197,
+      "train_seconds": 57.6,
+      "nll_curve": {
+        "1": 2.5417,
+        "10": 0.1882,
+        "20": 0.0821,
+        "40": 0.0184,
+        "60": 0.0043,
+        "80": 0.0019
+      }
+    },
+    "KV_A_L8_AdamW": {
+      "tag": "KV_A_L8_AdamW",
+      "type": "kv_prefix",
+      "num_kv_tokens": 8,
+      "params": 589824,
+      "optimizer": "adamw",
+      "kv_prefix_robust": false,
+      "max_delta_rms": null,
+      "init_rms": 2.4637,
+      "final_rms": 2.4738,
+      "delta_rms": 0.2126,
+      "train_seconds": 57.1,
+      "nll_curve": {
+        "1": 2.5943,
+        "10": 0.2076,
+        "20": 0.0519,
+        "40": 0.0124,
+        "60": 0.0035,
+        "80": 0.0018
+      }
+    },
+    "KV_A_L32_AdamW": {
+      "tag": "KV_A_L32_AdamW",
+      "type": "kv_prefix",
+      "num_kv_tokens": 32,
+      "params": 2359296,
+      "optimizer": "adamw",
+      "kv_prefix_robust": false,
+      "max_delta_rms": null,
+      "init_rms": 2.5839,
+      "final_rms": 2.5931,
+      "delta_rms": 0.2097,
+      "train_seconds": 57.5,
+      "nll_curve": {
+        "1": 2.5358,
+        "10": 0.1752,
+        "20": 0.0302,
+        "40": 0.0093,
+        "60": 0.004,
+        "80": 0.0015
+      }
+    },
+    "KV_A_L16_Muon": {
+      "tag": "KV_A_L16_Muon",
+      "type": "kv_prefix",
+      "num_kv_tokens": 16,
+      "params": 1179648,
+      "optimizer": "muon",
+      "kv_prefix_robust": false,
+      "max_delta_rms": null,
+      "init_rms": 2.5493,
+      "final_rms": 2.5842,
+      "delta_rms": 0.4457,
+      "train_seconds": 61.3,
+      "nll_curve": {
+        "1": 2.5417,
+        "10": 0.2128,
+        "20": 0.1202,
+        "40": 0.0325,
+        "60": 0.0062,
+        "80": 0.0027
+      }
+    },
+    "KV_B_L16_AdamW": {
+      "tag": "KV_B_L16_AdamW",
+      "type": "kv_prefix",
+      "num_kv_tokens": 16,
+      "params": 1179648,
+      "optimizer": "adamw",
+      "kv_prefix_robust": false,
+      "max_delta_rms": null,
+      "init_rms": 2.5322,
+      "final_rms": 2.5449,
+      "delta_rms": 0.226,
+      "train_seconds": 56.0,
+      "nll_curve": {
+        "1": 3.3947,
+        "10": 0.4504,
+        "20": 0.1007,
+        "40": 0.0249,
+        "60": 0.0071,
+        "80": 0.0013
+      }
+    },
+    "KV_C_L16_AdamW": {
+      "tag": "KV_C_L16_AdamW",
+      "type": "kv_prefix",
+      "num_kv_tokens": 16,
+      "params": 1179648,
+      "optimizer": "adamw",
+      "kv_prefix_robust": false,
+      "max_delta_rms": null,
+      "init_rms": 2.5664,
+      "final_rms": 2.5773,
+      "delta_rms": 0.217,
+      "train_seconds": 54.6,
+      "nll_curve": {
+        "1": 2.5023,
+        "10": 0.3313,
+        "20": 0.0596,
+        "40": 0.018,
+        "60": 0.009,
+        "80": 0.0046
+      }
+    },
+    "NB_NR_SP_A": {
+      "tag": "NB_NR_SP_A",
+      "type": "input_sp",
+      "num_vectors": 128,
+      "params": 327680,
+      "init_type": "doc_semantic",
+      "optimizer": "muon",
+      "max_rms": 0.055,
+      "final_rms": 0.055,
+      "train_seconds": 171.4,
+      "nll_curve": {
+        "1": 2.0,
+        "10": 1.8968,
+        "20": 0.7733,
+        "40": 0.1855,
+        "60": 0.1172,
+        "100": 0.066
+      }
+    },
+    "NB_NR_SP_B": {
+      "tag": "NB_NR_SP_B",
+      "type": "input_sp",
+      "num_vectors": 128,
+      "params": 327680,
+      "init_type": "doc_semantic",
+      "optimizer": "muon",
+      "max_rms": 0.055,
+      "final_rms": 0.055,
+      "train_seconds": 165.2,
+      "nll_curve": {
+        "1": 2.9511,
+        "10": 1.4764,
+        "20": 0.639,
+        "40": 0.2594,
+        "60": 0.1392,
+        "100": 0.1118
+      }
+    },
+    "NB_NR_SP_C": {
+      "tag": "NB_NR_SP_C",
+      "type": "input_sp",
+      "num_vectors": 128,
+      "params": 327680,
+      "init_type": "doc_semantic",
+      "optimizer": "muon",
+      "max_rms": 0.055,
+      "final_rms": 0.055,
+      "train_seconds": 167.4,
+      "nll_curve": {
+        "1": 2.3864,
+        "10": 1.271,
+        "20": 0.3909,
+        "40": 0.1663,
+        "60": 0.0809,
+        "100": 0.1151
+      }
+    },
+    "NR_KV16_A": {
+      "tag": "NR_KV16_A",
+      "type": "kv_prefix",
+      "num_kv_tokens": 16,
+      "params": 1179648,
+      "optimizer": "adamw",
+      "kv_prefix_robust": true,
+      "max_delta_rms": 0.8,
+      "init_rms": 2.5493,
+      "final_rms": 2.5635,
+      "delta_rms": 0.2257,
+      "train_seconds": 71.9,
+      "nll_curve": {
+        "1": 1.8639,
+        "10": 0.5918,
+        "20": 0.1513,
+        "40": 0.0578,
+        "60": 0.0295,
+        "100": 0.0247
+      }
+    },
+    "NR_KV16_B": {
+      "tag": "NR_KV16_B",
+      "type": "kv_prefix",
+      "num_kv_tokens": 16,
+      "params": 1179648,
+      "optimizer": "adamw",
+      "kv_prefix_robust": true,
+      "max_delta_rms": 0.8,
+      "init_rms": 2.5322,
+      "final_rms": 2.5466,
+      "delta_rms": 0.231,
+      "train_seconds": 70.5,
+      "nll_curve": {
+        "1": 2.8057,
+        "10": 0.5227,
+        "20": 0.247,
+        "40": 0.0674,
+        "60": 0.0225,
+        "100": 0.0033
+      }
+    },
+    "NR_KV16_C": {
+      "tag": "NR_KV16_C",
+      "type": "kv_prefix",
+      "num_kv_tokens": 16,
+      "params": 1179648,
+      "optimizer": "adamw",
+      "kv_prefix_robust": true,
+      "max_delta_rms": 0.8,
+      "init_rms": 2.5664,
+      "final_rms": 2.5808,
+      "delta_rms": 0.2263,
+      "train_seconds": 69.5,
+      "nll_curve": {
+        "1": 1.6007,
+        "10": 0.5015,
+        "20": 0.2729,
+        "40": 0.0824,
+        "60": 0.0212,
+        "100": 0.0154
+      }
+    },
+    "KV_A_L16_AbstainCal": {
+      "tag": "KV_A_L16_AbstainCal",
+      "type": "kv_prefix",
+      "num_kv_tokens": 16,
+      "params": 1179648,
+      "optimizer": "adamw",
+      "kv_prefix_robust": false,
+      "max_delta_rms": null,
+      "init_rms": 2.5493,
+      "final_rms": 2.5597,
+      "delta_rms": 0.2214,
+      "train_seconds": 57.5,
+      "nll_curve": {
+        "1": 2.6813,
+        "10": 0.4041,
+        "20": 0.0736,
+        "40": 0.029,
+        "60": 0.009,
+        "80": 0.0032
+      }
+    },
+    "KV_A_L16_Thinking": {
+      "tag": "KV_A_L16_Thinking",
+      "type": "kv_prefix",
+      "num_kv_tokens": 16,
+      "params": 1179648,
+      "optimizer": "adamw",
+      "kv_prefix_robust": false,
+      "max_delta_rms": null,
+      "init_rms": 2.5493,
+      "final_rms": 2.561,
+      "delta_rms": 0.2365,
+      "train_seconds": 57.8,
+      "nll_curve": {
+        "1": 2.7745,
+        "10": 0.4865,
+        "20": 0.0352,
+        "40": 0.0121,
+        "60": 0.0039,
+        "80": 0.0031
+      }
+    }
+  },
+  "total_elapsed_sec": 2244.0
+}
