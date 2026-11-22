@@ -42,13 +42,13 @@
 
 ### 2.1 统一问题形式化
 
-设 $`f_{\theta_0}`$ 为具有 $`N_{\text{layer}}`$ 层、隐藏维度 $`d`$、分组查询注意力键值头数 $`H_{\text{kv}}`$ 与单头维度 $`d_h`$ 的自回归 Transformer 语言模型，其骨干参数 $`\theta_0`$ 在本文全部训练与推理阶段严格保持冻结。给定用户查询序列 $`x = (x_1, \dots, x_m)`$ 与回复序列 $`y = (y_1, \dots, y_T)`$，无外部模块时的条件语言模型分布记为 $`p_{\theta_0}(y_t \mid x, y_{<t})`$。
+设 $`f_{\theta_0}`$ 为具有 $`N_{\text{layer}}`$ 层、隐藏维度 $`d`$、分组查询注意力键值头数 $`H_{\text{kv}}`$ 与单头维度 $`d_h`$ 的自回归 Transformer 语言模型，其骨干参数 $`\theta_0`$ 在本文全部训练与推理阶段严格保持冻结。给定用户查询序列 $`x = (x_1, \dots, x_m)`$ 与回复序列 $`y = (y_1, \dots, y_T)`$，无外部模块时的条件语言模型分布记为 $`p_{\theta_0}(y_t \mid x, y_{\lt t})`$。
 
-当存在由强化学习专精教师 $`f_{\theta_j}`$、私有规范文档或程序化验证器 $`R(x, y)`$ 诱导的目标行为分布时，模块化适配学习轻量级外部连续参数 $`\psi`$，并通过插入方式 $`\mathcal{I}(\cdot; \psi)`$ 在伴随外部部署语境 $`\mathcal{C}`$（系统人设、多轮对话历史或外部检索片段）下诱导受控分布 $`p_{\theta_0, \psi}(y_t \mid \mathcal{C}, x, y_{<t})`$。本文研究的三类参数化形式统一表示为：
+当存在由强化学习专精教师 $`f_{\theta_j}`$、私有规范文档或程序化验证器 $`R(x, y)`$ 诱导的目标行为分布时，模块化适配学习轻量级外部连续参数 $`\psi`$，并通过插入方式 $`\mathcal{I}(\cdot; \psi)`$ 在伴随外部部署语境 $`\mathcal{C}`$（系统人设、多轮对话历史或外部检索片段）下诱导受控分布 $`p_{\theta_0, \psi}(y_t \mid \mathcal{C}, x, y_{\lt t})`$。本文研究的三类参数化形式统一表示为：
 
 **（1）起始位输入空间软提示（Prefix Input-SP）**：$`\psi = \mathbf{P} \in \mathbb{R}^{L \times d}`$，固定拼接于词嵌入序列起始处：$`\mathbf{E}_{\text{in}} = [\mathbf{P};\, \text{Emb}(x)]`$。
 
-**（2）逐层键值缓存软提示（`KV-PD`）**：$`\psi = \mathbf{Z}_{\text{KV}} = \lbrace (\mathbf{K}^{(\ell)}, \mathbf{V}^{(\ell)})\rbrace _{\ell=1}^{N_{\text{layer}}}`$，其中 $`\mathbf{K}^{(\ell)}, \mathbf{V}^{(\ell)} \in \mathbb{R}^{L_{\text{kv}} \times H_{\text{kv}} \times d_h}`$，通过缓存接口直接前置注入各层注意力模块。
+**（2）逐层键值缓存软提示（`KV-PD`）**：$`\psi = \mathbf{Z}_{\text{KV}} = \lbrace (\mathbf{K}^{(\ell)}, \mathbf{V}^{(\ell)})\rbrace_{\ell=1}^{N_{\text{layer}}}`$，其中 $`\mathbf{K}^{(\ell)}, \mathbf{V}^{(\ell)} \in \mathbb{R}^{L_{\text{kv}} \times H_{\text{kv}} \times d_h}`$，通过缓存接口直接前置注入各层注意力模块。
 
 **（3）语境鲁棒的任意槽位软提示（`CRSP`）**：$`\psi = \mathbf{P} \in \mathbb{R}^{L \times d}`$ 位于输入嵌入空间，依据语境划分 $`\mathcal{C} = (\mathcal{C}_{\text{pre}}, \mathcal{C}_{\text{post}})`$ 动态插入任意指定槽位 $`s \in \mathcal{S}`$：
 
@@ -65,17 +65,17 @@
 在大规模离线多模型蒸馏场景中，仅需从教师模型采样回复并经领域验证器筛选构成轨迹数据集 $`\mathcal{D}_j`$，在回复词元上最小化长度归一化负对数似然（Kim and Rush, 2016）：
 
 ```math
-\mathbf{P}_j^\star = \arg\min_{\mathbf{P}_j} \mathbb{E}_{(x,y) \sim \mathcal{D}_j} \left[ -\frac{1}{\lvert y \rvert} \sum_{t=1}^{\lvert y \rvert} \log p_{\theta_0}\big(y_t \mid \mathcal{I}(\mathbf{P}_j, x), y_{<t}\big) \right] \qquad \text{(2)}
+\mathbf{P}_j^\star = \arg\min_{\mathbf{P}_j} \mathbb{E}_{(x,y) \sim \mathcal{D}_j} \left[ -\frac{1}{\lvert y \rvert} \sum_{t=1}^{\lvert y \rvert} \log p_{\theta_0}\big(y_t \mid \mathcal{I}(\mathbf{P}_j, x), y_{\lt t}\big) \right] \qquad \text{(2)}
 ```
 
 其中前缀、软提示、系统消息与用户输入位置均不计入损失，仅对回复词元反传梯度。
 
 #### 2.2.2 Rao-Blackwellized Top-K 前向散度蒸馏
 
-当教师模型在轨迹上的逐词元预测分布可离线缓存时，单词元负对数似然仅利用了单个采样词元的硬标签，丢弃了教师在推理分叉点（如核查词、逻辑转折词与格式约束词）上的次优概率分配。为在有限训练步数内高密度对齐教师分布，同时避免大词表全分布存储开销，对每个时间步 $`t`$ 仅保留教师概率最高的 Top-$`K`$ 词元集合 $`\mathcal{V}_K(t)`$ 及其概率，将剩余词表质量归并为单点尾概率 $`r_j(t) = 1 - \sum_{v \in \mathcal{V}_K(t)} p_{\theta_j}(v \mid x, y_{<t})`$，构建 Rao-Blackwellized 前向交叉熵目标：
+当教师模型在轨迹上的逐词元预测分布可离线缓存时，单词元负对数似然仅利用了单个采样词元的硬标签，丢弃了教师在推理分叉点（如核查词、逻辑转折词与格式约束词）上的次优概率分配。为在有限训练步数内高密度对齐教师分布，同时避免大词表全分布存储开销，对每个时间步 $`t`$ 仅保留教师概率最高的 Top-$`K`$ 词元集合 $`\mathcal{V}_K(t)`$ 及其概率，将剩余词表质量归并为单点尾概率 $`r_j(t) = 1 - \sum_{v \in \mathcal{V}_K(t)} p_{\theta_j}(v \mid x, y_{\lt t})`$，构建 Rao-Blackwellized 前向交叉熵目标：
 
 ```math
-\mathcal{L}_{\text{RB-CE}}(\mathbf{P}_j) = \mathbb{E}_{(x,y) \sim \mathcal{D}_j} \left[ \frac{1}{\lvert y \rvert} \sum_{t=1}^{\lvert y \rvert} \left( -\sum_{v \in \mathcal{V}_K(t)} p_{\theta_j}(v \mid x, y_{<t}) \log p_{\theta_0,\mathbf{P}_j}(v \mid x, y_{<t}) - r_j(t) \log \Big(1 - \sum_{v \in \mathcal{V}_K(t)} p_{\theta_0,\mathbf{P}_j}(v \mid x, y_{<t})\Big) \right) \right] \qquad \text{(3)}
+\mathcal{L}_{\text{RB-CE}}(\mathbf{P}_j) = \mathbb{E}_{(x,y) \sim \mathcal{D}_j} \left[ \frac{1}{\lvert y \rvert} \sum_{t=1}^{\lvert y \rvert} \left( -\sum_{v \in \mathcal{V}_K(t)} p_{\theta_j}(v \mid x, y_{\lt t}) \log p_{\theta_0,\mathbf{P}_j}(v \mid x, y_{\lt t}) - r_j(t) \log \Big(1 - \sum_{v \in \mathcal{V}_K(t)} p_{\theta_0,\mathbf{P}_j}(v \mid x, y_{\lt t})\Big) \right) \right] \qquad \text{(3)}
 ```
 
 在固定教师轨迹分布上，最小化式 (3) 与最小化 Top-$`K`$ 支撑集及尾类合并空间上的精确前向 KL 散度等价（仅差与 $`\mathbf{P}_j`$ 无关的教师熵常数）。
@@ -105,7 +105,7 @@ p(y \mid x) = p_{\theta_0}\big(y \mid \mathcal{I}(\mathbf{P}_{1:k}, x)\big) \qqu
 对于二维矩阵参数 $`\mathbf{P}_j \in \mathbb{R}^{L \times d}`$，标准逐元素自适应优化器（AdamW）容易使参数更新集中在少数奇异方向上。作为对照与默认优化方案，矩阵正交化优化器 Muon（Liu et al., 2025）对 Nesterov 动量矩阵 $`\mathbf{M}_t = \mu \mathbf{M}_{t-1} + \mathbf{G}_t`$ 施加迭代 Newton-Schulz 近似极分解，提取正交因子 $`\text{Orth}(\mathbf{M}_t) = \mathbf{U}\mathbf{V}^\top`$ 并以各方向均衡的奇异值幅度更新参数：
 
 ```math
-\mathbf{P}_{t+1} = \mathbf{P}_t - \eta \sqrt{\max\left(1, \frac{L}{d}\right)}\,  \text{Orth}(\mathbf{M}_t) \qquad \text{(6)}
+\mathbf{P}_{t+1} = \mathbf{P}_t - \eta \sqrt{\max\left(1, \frac{L}{d}\right)}\, \text{Orth}(\mathbf{M}_t) \qquad \text{(6)}
 ```
 
 同时，为诊断不同优化器对模块几何结构及多专家拼接兼容性的影响，本文监测参数偏移量 $`\Delta\mathbf{P} = \mathbf{P}_{\text{final}} - \mathbf{P}_{\text{init}}`$ 的有效秩（Effective Rank，定义为归一化奇异值分布的指数香农熵 $`\exp(-\sum_i \tilde{\sigma}_i \log \tilde{\sigma}_i)`$）与单向量均方根范数（RMS Norm）。
@@ -120,7 +120,7 @@ p(y \mid x) = p_{\theta_0}\big(y \mid \mathcal{I}(\mathbf{P}_{1:k}, x)\big) \qqu
 
 除各项基准的绝对得分外，本节采用三项标准化相对指标：
 
-**（1）教师增益恢复率（Recovery, $`R`$）**：设冻结基座、强化学习教师与挂载软提示后的模型在目标基准上的得分分别为 $`A_S`$、$`A_T`$ 与 $`A_{S+P}`$（$`A_T > A_S`$），定义恢复率为：
+**（1）教师增益恢复率（Recovery, $`R`$）**：设冻结基座、强化学习教师与挂载软提示后的模型在目标基准上的得分分别为 $`A_S`$、$`A_T`$ 与 $`A_{S+P}`$（$`A_T \gt A_S`$），定义恢复率为：
 
 ```math
 R = \frac{A_{S+P} - A_S}{A_T - A_S} \times 100\% \qquad \text{(7)}
@@ -269,7 +269,7 @@ K(A) = \frac{D_{\text{KL}}(T \Vert B) - D_{\text{KL}}(T \Vert A)}{D_{\text{KL}}(
 第 3.6 节的注意力路径消融证实，外部控制模块主要通过在全部 Transformer 层中被回复查询向量读取而生效。`KV-PD` 直接省去输入嵌入层向深层的隐式非线性映射，将长度为 $`L_{\text{kv}}`$ 的全部 $`N_{\text{layer}}`$ 层分组查询注意力（GQA）键值张量设为可训练外部参数：
 
 ```math
-\mathbf{Z}_{\text{KV}} = \left\lbrace \big(\mathbf{K}^{(\ell)},\,  \mathbf{V}^{(\ell)}\big) \right\rbrace _{\ell=1}^{N_{\text{layer}}}, \qquad \mathbf{K}^{(\ell)}, \mathbf{V}^{(\ell)} \in \mathbb{R}^{L_{\text{kv}} \times H_{\text{kv}} \times d_h} \qquad \text{(10)}
+\mathbf{Z}_{\text{KV}} = \left\lbrace \big(\mathbf{K}^{(\ell)},\, \mathbf{V}^{(\ell)}\big) \right\rbrace_{\ell=1}^{N_{\text{layer}}}, \qquad \mathbf{K}^{(\ell)}, \mathbf{V}^{(\ell)} \in \mathbb{R}^{L_{\text{kv}} \times H_{\text{kv}} \times d_h} \qquad \text{(10)}
 ```
 
 每个虚拟键值词元对应的总参数量为 $`2 N_{\text{layer}} H_{\text{kv}} d_h`$。在分组查询注意力架构中，由于键值头数 $`H_{\text{kv}}`$ 显著小于查询头数，极短的缓存长度 $`L_{\text{kv}}`$ 即可在近似或更低的参数规模下为每一网络层提供独立的键值控制自由度。
@@ -287,7 +287,7 @@ K(A) = \frac{D_{\text{KL}}(T \Vert B) - D_{\text{KL}}(T \Vert A)}{D_{\text{KL}}(
 在训练与推理阶段，$`\mathbf{Z}_{\text{KV}}`$ 经由标准 `past_key_values` 接口直接前置注入各层注意力计算。第 $`\ell`$ 层对真实输入与生成词元查询向量 $`\mathbf{Q}_x^{(\ell)}`$ 的注意力计算直接拼接外部键值张量：
 
 ```math
-\text{Attn}^{(\ell)}(\mathbf{Q}_x^{(\ell)}) = \text{Softmax}\left(\frac{\mathbf{Q}_x^{(\ell)} \big[\mathbf{K}^{(\ell)};\,  \mathbf{K}_x^{(\ell)}\big]^\top}{\sqrt{d_h}}\right) \big[\mathbf{V}^{(\ell)};\,  \mathbf{V}_x^{(\ell)}\big] \qquad \text{(12)}
+\text{Attn}^{(\ell)}(\mathbf{Q}_x^{(\ell)}) = \text{Softmax}\left(\frac{\mathbf{Q}_x^{(\ell)} \big[\mathbf{K}^{(\ell)};\, \mathbf{K}_x^{(\ell)}\big]^\top}{\sqrt{d_h}}\right) \big[\mathbf{V}^{(\ell)};\, \mathbf{V}_x^{(\ell)}\big] \qquad \text{(12)}
 ```
 
 该注入方式从计算图层面消除了两项计算开销：前向计算无需重复编码虚拟前缀词元；反向传播时每一层的 $`\big(\mathbf{K}^{(\ell)}, \mathbf{V}^{(\ell)}\big)`$ 直接接收本层注意力输出的一阶梯度，无需启用激活重计算（Gradient Checkpointing）将梯度串联回传至第 0 层，从而显著降低单步墙钟耗时并提升深层优化稳定性。蒸馏目标沿用式 (3) 的 Rao-Blackwellized Top-$`K`$ 前向散度损失，优化器采用 AdamW。对于独立蒸馏的多个程序性策略专家，推理期可直接沿键值序列维拼接缓存张量 $`[\mathbf{Z}_{\text{KV}}^{(1)}; \mathbf{Z}_{\text{KV}}^{(2)}]`$ 实现零重训组合。
@@ -380,11 +380,11 @@ K(A) = \frac{D_{\text{KL}}(T \Vert B) - D_{\text{KL}}(T \Vert A)}{D_{\text{KL}}(
 
 为覆盖对话系统、检索增强生成与多轮智能体推理中的典型上下文结构，本文将推理期软提示的挂载位置形式化为六类槽位集合 $`\mathcal{S} = \lbrace P_0, P_1, P_2, P_3, P_4, P_5\rbrace`$：
 
-- **槽位 $`P_0`$（纯净起始）**：软提示置于序列索引 0 并紧接单轮用户查询：$`[\mathbf{P};\,  x]`$。
-- **槽位 $`P_1`$（系统中段）**：软提示插入固定系统人设文本之后、用户查询之前：$`[\mathcal{C}_{\text{sys}};\,  \mathbf{P};\,  x]`$。
-- **槽位 $`P_2`$（多轮中段）**：软提示插入多轮对话历史之后、当前用户查询之前：$`[\mathcal{C}_{\text{sys}};\,  \mathcal{C}_{\text{hist}};\,  \mathbf{P};\,  x]`$。
-- **槽位 $`P_3`$（检索后置）**：软提示插入长篇外部检索增强文档片段之后、当前用户查询之前：$`[\mathcal{C}_{\text{sys}};\,  \mathcal{C}_{\text{rag}};\,  \mathbf{P};\,  x]`$。
-- **槽位 $`P_4`$（查询后置）**：软提示挂载于多轮对话及当前用户查询文本全部结束之后、生成起始符之前：$`[\mathcal{C}_{\text{sys}};\,  \mathcal{C}_{\text{hist}};\,  x;\,  \mathbf{P}]`$。
+- **槽位 $`P_0`$（纯净起始）**：软提示置于序列索引 0 并紧接单轮用户查询：$`[\mathbf{P};\, x]`$。
+- **槽位 $`P_1`$（系统中段）**：软提示插入固定系统人设文本之后、用户查询之前：$`[\mathcal{C}_{\text{sys}};\, \mathbf{P};\, x]`$。
+- **槽位 $`P_2`$（多轮中段）**：软提示插入多轮对话历史之后、当前用户查询之前：$`[\mathcal{C}_{\text{sys}};\, \mathcal{C}_{\text{hist}};\, \mathbf{P};\, x]`$。
+- **槽位 $`P_3`$（检索后置）**：软提示插入长篇外部检索增强文档片段之后、当前用户查询之前：$`[\mathcal{C}_{\text{sys}};\, \mathcal{C}_{\text{rag}};\, \mathbf{P};\, x]`$。
+- **槽位 $`P_4`$（查询后置）**：软提示挂载于多轮对话及当前用户查询文本全部结束之后、生成起始符之前：$`[\mathcal{C}_{\text{sys}};\, \mathcal{C}_{\text{hist}};\, x;\, \mathbf{P}]`$。
 - **槽位 $`P_5`$（长偏移）**：软提示置于超长前置语境之后，用以检验大跨度旋转位置编码偏移下的行为不变性。
 
 仅在起始位训练（`Pos-0 SP`）或仅在前置随机干扰下训练（`PR-SP`）的传统软提示在非起始槽位退化的机理来自三方面：（1）真实语义前缀在自注意力归一化分母中争夺权重，稀释回复词元分配给 $`\mathbf{P}`$ 的注意力质量并扰动 $`\mathbf{P}`$ 经各层传播后的隐状态；（2）在槽位 $`P_4`$ 中，用户查询 $`x`$ 位于 $`\mathbf{P}`$ 之前，因果掩码阻断了查询词元对 $`\mathbf{P}`$ 的关注，同时使 $`\mathbf{P}`$ 的各层隐状态直接依赖于千变万化的查询内容，而前置随机化训练从未覆盖此类因果顺序；（3）单一位置训练缺乏显式的跨语境输出一致性约束。
@@ -398,7 +398,7 @@ K(A) = \frac{D_{\text{KL}}(T \Vert B) - D_{\text{KL}}(T \Vert A)}{D_{\text{KL}}(
 **（2）跨语境输出一致性损失项（$`\mathcal{L}_{\text{inv}}`$）**：对同一训练样本 $`(x, y)`$，同步构建纯净起始参考输入 $`P_0`$ 与随机非起始槽位上下文输入 $`(s, \mathcal{C})`$，对回复轨迹上的条件概率分布施加单向停止梯度 KL 一致性约束：
 
 ```math
-\mathcal{L}_{\text{inv}}(\mathbf{P}) = \mathbb{E}_{(x,y),\, (s,\mathcal{C}) \sim q_{\text{slot}}} \left[ \frac{1}{T} \sum_{t=1}^{T} D_{\text{KL}}\Big( \text{sg}\big[p_{\theta_0,\mathbf{P}}(\cdot \mid P_0, x, y_{<t})\big] \, \Big\Vert \, p_{\theta_0,\mathbf{P}}(\cdot \mid s, \mathcal{C}, x, y_{<t}) \Big) \right] \qquad \text{(14)}
+\mathcal{L}_{\text{inv}}(\mathbf{P}) = \mathbb{E}_{(x,y),\, (s,\mathcal{C}) \sim q_{\text{slot}}} \left[ \frac{1}{T} \sum_{t=1}^{T} D_{\text{KL}}\Big( \text{sg}\big[p_{\theta_0,\mathbf{P}}(\cdot \mid P_0, x, y_{\lt t})\big] \, \Big\Vert \, p_{\theta_0,\mathbf{P}}(\cdot \mid s, \mathcal{C}, x, y_{\lt t}) \Big) \right] \qquad \text{(14)}
 ```
 
 **（3）真实任务词元初始化与单向量范数裁剪**：以任务相关真实词元嵌入初始化 $`\mathbf{P}`$，每步更新后施加单向量均方根范数裁剪 $`\text{RMS}(\mathbf{p}_i) \le \rho_{\max}`$，防止多槽复杂梯度引发参数数值发散。
@@ -406,7 +406,7 @@ K(A) = \frac{D_{\text{KL}}(T \Vert B) - D_{\text{KL}}(T \Vert A)}{D_{\text{KL}}(
 当原始强化学习教师分布可直接访问时，有教师直通 `CRSP`（Direct CRSP）的完整优化目标为：
 
 ```math
-\mathcal{L}_{\text{Direct-CRSP}}(\mathbf{P}) = \mathbb{E}_{(s,\mathcal{C}) \sim q_{\text{slot}}} \Big[ \mathcal{L}_{\text{RB-CE}}\big(\mathbf{P};\,  s, \mathcal{C}\big) \Big] + \lambda_{\text{inv}}\,  \mathcal{L}_{\text{inv}}(\mathbf{P}) \qquad \text{(15)}
+\mathcal{L}_{\text{Direct-CRSP}}(\mathbf{P}) = \mathbb{E}_{(s,\mathcal{C}) \sim q_{\text{slot}}} \Big[ \mathcal{L}_{\text{RB-CE}}\big(\mathbf{P};\, s, \mathcal{C}\big) \Big] + \lambda_{\text{inv}}\, \mathcal{L}_{\text{inv}}(\mathbf{P}) \qquad \text{(15)}
 ```
 
 ### 6.3 路径一：基于纯输出分布的键值功能逆向编译（算法 1）
@@ -418,20 +418,20 @@ K(A) = \frac{D_{\text{KL}}(T \Vert B) - D_{\text{KL}}(T \Vert A)}{D_{\text{KL}}(
 设冻结骨干将输入矩阵 $`\mathbf{P}`$ 映射至全部 $`N_{\text{layer}}`$ 层键值张量的前向映射为 $`\Phi_{\text{KV}}(\mathbf{P})`$。无数据几何拟合（Geo-Inv）直接求解逐层张量相对 Frobenius 误差最小化问题（语境几何拟合 CR-Geo-Inv 额外在随机前置语境下匹配值张量）：
 
 ```math
-\min_{\mathbf{P}} \frac{1}{N_{\text{layer}}} \sum_{\ell=1}^{N_{\text{layer}}} \left( \frac{\Vert \mathbf{K}^{(\ell)}(\mathbf{P}) - \mathbf{K}_{\text{tgt}}^{(\ell)}\Vert _F^2}{\Vert \mathbf{K}_{\text{tgt}}^{(\ell)}\Vert _F^2} + \frac{\Vert \mathbf{V}^{(\ell)}(\mathbf{P}) - \mathbf{V}_{\text{tgt}}^{(\ell)}\Vert _F^2}{\Vert \mathbf{V}_{\text{tgt}}^{(\ell)}\Vert _F^2} \right) \qquad \text{(16)}
+\min_{\mathbf{P}} \frac{1}{N_{\text{layer}}} \sum_{\ell=1}^{N_{\text{layer}}} \left( \frac{\Vert \mathbf{K}^{(\ell)}(\mathbf{P}) - \mathbf{K}_{\text{tgt}}^{(\ell)}\Vert_F^2}{\Vert \mathbf{K}_{\text{tgt}}^{(\ell)}\Vert_F^2} + \frac{\Vert \mathbf{V}^{(\ell)}(\mathbf{P}) - \mathbf{V}_{\text{tgt}}^{(\ell)}\Vert_F^2}{\Vert \mathbf{V}_{\text{tgt}}^{(\ell)}\Vert_F^2} \right) \qquad \text{(16)}
 ```
 
 然而，`KV-PD` 在全部网络层上逐层独立优化，其收敛点 $`\mathbf{Z}_{\text{KV}}`$ 往往超出第 0 层低维输入嵌入经冻结网络前向计算所能精确生成的逐层键值范围，尤其在浅层无法找到精确对应的输入原像。
 
 #### 6.3.2 纯输出分布功能逆向编译（KV-Inv-CRSP）与中间层过约束分析
 
-鉴于逐层键值难以通过第 0 层输入精确生成，本文转向**输出分布等价**准则：仅要求 $`\mathbf{P}`$ 挂载于任意槽位 $`(s, \mathcal{C})`$ 时诱导的自回归输出分布与 $`P_0`$ 前置 $`\mathbf{Z}_{\text{KV}}`$ 诱导的输出分布一致。完全无需访问原强化学习教师，先由冻结骨干挂载 $`\mathbf{Z}_{\text{KV}}`$ 自生成（或重打分）无标注提示词轨迹并离线缓存源分布 Top-$`K`$ 概率 $`p_{\theta_0,\mathbf{Z}_{\text{KV}}}(\cdot \mid P_0, x, y_{<t})`$，随后最小化跨语境纯输出功能编译目标（算法 1）：
+鉴于逐层键值难以通过第 0 层输入精确生成，本文转向**输出分布等价**准则：仅要求 $`\mathbf{P}`$ 挂载于任意槽位 $`(s, \mathcal{C})`$ 时诱导的自回归输出分布与 $`P_0`$ 前置 $`\mathbf{Z}_{\text{KV}}`$ 诱导的输出分布一致。完全无需访问原强化学习教师，先由冻结骨干挂载 $`\mathbf{Z}_{\text{KV}}`$ 自生成（或重打分）无标注提示词轨迹并离线缓存源分布 Top-$`K`$ 概率 $`p_{\theta_0,\mathbf{Z}_{\text{KV}}}(\cdot \mid P_0, x, y_{\lt t})`$，随后最小化跨语境纯输出功能编译目标（算法 1）：
 
 ```math
-\mathcal{L}_{\text{KV-Inv}}(\mathbf{P}) = \mathbb{E}_{(s,\mathcal{C}) \sim q_{\text{slot}}} \Big[ \mathcal{L}_{\text{RB-CE}}\big(p_{\theta_0,\mathbf{P}}(\cdot \mid s,\mathcal{C}) \, \Vert \,  p_{\theta_0,\mathbf{Z}_{\text{KV}}}(\cdot \mid P_0)\big) \Big] + \lambda_{\text{inv}}\,  \mathcal{L}_{\text{inv}}(\mathbf{P}) \qquad \text{(17)}
+\mathcal{L}_{\text{KV-Inv}}(\mathbf{P}) = \mathbb{E}_{(s,\mathcal{C}) \sim q_{\text{slot}}} \Big[ \mathcal{L}_{\text{RB-CE}}\big(p_{\theta_0,\mathbf{P}}(\cdot \mid s,\mathcal{C}) \, \Vert \, p_{\theta_0,\mathbf{Z}_{\text{KV}}}(\cdot \mid P_0)\big) \Big] + \lambda_{\text{inv}}\, \mathcal{L}_{\text{inv}}(\mathbf{P}) \qquad \text{(17)}
 ```
 
-为检验额外匹配中间层隐藏态是否有益，同时构造隐状态联合逆向消融变体（叠加特征匹配项 $`\lambda_{\text{feat}} \sum_{\ell \in \mathcal{L}_{\text{feat}}} d(\mathbf{h}^{(\ell)}(\mathbf{P}; s,\mathcal{C}),\,  \mathbf{h}^{(\ell)}(\mathbf{Z}_{\text{KV}}; P_0))`$）。理论上，在包含长篇外部检索文档或对话历史的非起始语境中，骨干中间层隐状态必须同时编码外部语义，强行将其拉向无外部语境的 $`P_0`$ 隐状态会产生表示过约束；因此算法 1 默认设置 $`\lambda_{\text{feat}} = 0`$。
+为检验额外匹配中间层隐藏态是否有益，同时构造隐状态联合逆向消融变体（叠加特征匹配项 $`\lambda_{\text{feat}} \sum_{\ell \in \mathcal{L}_{\text{feat}}} d(\mathbf{h}^{(\ell)}(\mathbf{P}; s,\mathcal{C}),\, \mathbf{h}^{(\ell)}(\mathbf{Z}_{\text{KV}}; P_0))`$）。理论上，在包含长篇外部检索文档或对话历史的非起始语境中，骨干中间层隐状态必须同时编码外部语义，强行将其拉向无外部语境的 $`P_0`$ 隐状态会产生表示过约束；因此算法 1 默认设置 $`\lambda_{\text{feat}} = 0`$。
 
 ```text
 Algorithm 1: 基于纯输出分布的键值功能逆向编译（KV-Inv-CRSP）
@@ -474,10 +474,10 @@ Algorithm 1: 基于纯输出分布的键值功能逆向编译（KV-Inv-CRSP）
 **阶段二（多槽在线 GRPO 策略精调）**：以 $`\mathbf{P}_{\text{S1}}`$ 初始化并固定参考策略 $`\pi_{\text{ref}} = p_{\theta_0,\mathbf{P}_{\text{S1}}}`$，在多槽语境下最小化带重要性比率裁剪与信任域 KL 惩罚的组相对策略目标：
 
 ```math
-\mathcal{L}_{\text{Stage2}}(\mathbf{P}) = -\mathbb{E}_{(s,\mathcal{C}),\, \lbrace y_i\rbrace _{i=1}^G} \left[ \frac{1}{G} \sum_{i=1}^{G} \frac{1}{\lvert y_i \rvert} \sum_{t=1}^{\lvert y_i \rvert} \min\Big( r_{i,t} \hat{A}_i,\, \text{clip}(r_{i,t}, 1-\epsilon, 1+\epsilon)\hat{A}_i \Big) - \beta_{\text{kl}}\, D_{\text{KL}}\big(p_{\theta_0,\mathbf{P}} \, \Vert \, \pi_{\text{ref}}\big) \right] \qquad \text{(19)}
+\mathcal{L}_{\text{Stage2}}(\mathbf{P}) = -\mathbb{E}_{(s,\mathcal{C}),\, \lbrace y_i\rbrace_{i=1}^G} \left[ \frac{1}{G} \sum_{i=1}^{G} \frac{1}{\lvert y_i \rvert} \sum_{t=1}^{\lvert y_i \rvert} \min\Big( r_{i,t} \hat{A}_i,\, \text{clip}(r_{i,t}, 1-\epsilon, 1+\epsilon)\hat{A}_i \Big) - \beta_{\text{kl}}\, D_{\text{KL}}\big(p_{\theta_0,\mathbf{P}} \, \Vert \, \pi_{\text{ref}}\big) \right] \qquad \text{(19)}
 ```
 
-其中 $`r_{i,t} = p_{\theta_0,\mathbf{P}}(y_{i,t} \mid s,\mathcal{C}, x, y_{i,<t}) / p_{\theta_0,\mathbf{P}_{\text{old}}}(y_{i,t} \mid s,\mathcal{C}, x, y_{i,<t})`$ 为逐词元策略比率。
+其中 $`r_{i,t} = p_{\theta_0,\mathbf{P}}(y_{i,t} \mid s,\mathcal{C}, x, y_{i,\lt t}) / p_{\theta_0,\mathbf{P}_{\text{old}}}(y_{i,t} \mid s,\mathcal{C}, x, y_{i,\lt t})`$ 为逐词元策略比率。
 
 ```text
 Algorithm 2: 无强化学习教师的两阶段 CRSP 构造（Two-Stage TF-CRSP）
@@ -511,13 +511,13 @@ Algorithm 2: 无强化学习教师的两阶段 CRSP 构造（Two-Stage TF-CRSP�
 **（2）对称非目标任务输出保持损失项（Symmetric Null-Task Identity Preservation, $`\mathcal{L}_{\text{null}}`$）**：为每个领域专家 $`\mathbf{P}^{(k)}`$ 配备来自非目标领域的无关查询集合 $`\mathcal{D}_{\neg k}`$，要求 $`\mathbf{P}^{(k)}`$ 在非目标任务任意槽位下诱导的输出分布严格逼近无外挂模块的冻结基座分布：
 
 ```math
-\mathcal{L}_{\text{null}}\big(\mathbf{P}^{(k)}\big) = \mathbb{E}_{(x,y) \sim \mathcal{D}_{\neg k},\, (s,\mathcal{C}) \sim q_{\text{slot}}} \left[ \frac{1}{T} \sum_{t=1}^{T} D_{\text{KL}}\Big( \text{sg}\big[p_{\theta_0}(\cdot \mid \mathcal{C}, x, y_{<t})\big] \, \Big\Vert \, p_{\theta_0,\mathbf{P}^{(k)}}(\cdot \mid s, \mathcal{C}, x, y_{<t}) \Big) \right] \qquad \text{(20)}
+\mathcal{L}_{\text{null}}\big(\mathbf{P}^{(k)}\big) = \mathbb{E}_{(x,y) \sim \mathcal{D}_{\neg k},\, (s,\mathcal{C}) \sim q_{\text{slot}}} \left[ \frac{1}{T} \sum_{t=1}^{T} D_{\text{KL}}\Big( \text{sg}\big[p_{\theta_0}(\cdot \mid \mathcal{C}, x, y_{\lt t})\big] \, \Big\Vert \, p_{\theta_0,\mathbf{P}^{(k)}}(\cdot \mid s, \mathcal{C}, x, y_{\lt t}) \Big) \right] \qquad \text{(20)}
 ```
 
 由此构成组合安全单专家完整离线目标：
 
 ```math
-\mathcal{L}_{\text{CS-CR}}\big(\mathbf{P}^{(k)}\big) = \mathcal{L}_{\text{task}}\big(\mathbf{P}^{(k)};\,  \text{co-pres}\big) + \lambda_{\text{inv}}\,  \mathcal{L}_{\text{inv}}\big(\mathbf{P}^{(k)}\big) + \lambda_{\text{null}}\,  \mathcal{L}_{\text{null}}\big(\mathbf{P}^{(k)}\big) \qquad \text{(21)}
+\mathcal{L}_{\text{CS-CR}}\big(\mathbf{P}^{(k)}\big) = \mathcal{L}_{\text{task}}\big(\mathbf{P}^{(k)};\, \text{co-pres}\big) + \lambda_{\text{inv}}\, \mathcal{L}_{\text{inv}}\big(\mathbf{P}^{(k)}\big) + \lambda_{\text{null}}\, \mathcal{L}_{\text{null}}\big(\mathbf{P}^{(k)}\big) \qquad \text{(21)}
 ```
 
 在推理期物理布局上，本文进一步区分**不同位置分开插入**（如 `[Doc@P1 + Math@P2 + IF@P4]` 或 `[Math@P2 + IF@P4]`，由自然语言语义词元物理分隔不同领域专家以减少相邻连续向量之间的直接注意力干扰）与**同一位置相邻拼接**（`[IF; Math]@P2` 与 `[Math; IF]@P2`，用以检验严格置换不变性）。
@@ -555,7 +555,7 @@ Algorithm 2: 无强化学习教师的两阶段 CRSP 构造（Two-Stage TF-CRSP�
 | 无数据几何拟合（Geo-Inv） | -4.98 | +1.57 | -6.95 | -4.29 | -6.96 | -3.61 | -4.05 | 0.1803 | 0.782 / 0.723 / 0.738 |
 | 语境几何拟合（CR-Geo-Inv） | -8.01 | +2.04 | -1.11 | +9.16 | -7.57 | +8.30 | +2.16 | 0.1418 | 0.911 / 0.927 / 0.916 |
 | **键值功能逆向编译（算法 1，$`L=256`$，$`\lambda_{\text{feat}}=0`$）** | +18.86 | +26.35 | +33.80 | +42.75 | +15.70 | +39.42 | +31.60 | **0.0555** | 0.930 / 0.926 / 0.934 |
-| 隐状态联合逆向（$`L=256`$，$`\lambda_{\text{feat}}>0`$） | +17.93 | +24.15 | +31.32 | +40.57 | +13.20 | +37.29 | +29.31 | 0.0652 | 0.901 / 0.917 / 0.910 |
+| 隐状态联合逆向（$`L=256`$，$`\lambda_{\text{feat}}\gt 0`$） | +17.93 | +24.15 | +31.32 | +40.57 | +13.20 | +37.29 | +29.31 | 0.0652 | 0.901 / 0.917 / 0.910 |
 
 **表 6：六类部署槽位（$`P_0`$–$`P_5`$）上的相对同语境分布对齐增益、跨位置漂移及深层隐态余弦相似度对比。**
 
@@ -570,7 +570,7 @@ Algorithm 2: 无强化学习教师的两阶段 CRSP 构造（Two-Stage TF-CRSP�
 
 - **逐层键值几何拟合失效**：无数据几何拟合（27.6 秒）与语境几何拟合（53.6 秒）尽管将第 35 层误差压至 0.075–0.094，但第 0 层值张量相对误差分别高达 **96.26%** 与 **95.21%**（全网 36 层平均 V 误差超 31%），直接印证第 6.3.1 节所述第 0 层输入无法精确生成逐层独立优化键值张量的限制，六槽均值仅 -4.05% 与 +2.16%（IFBench $`P_0`$ 降至 31.25%）。
 - **纯输出分布功能逆向（算法 1，$`\lambda_{\text{feat}}=0`$）取得全场最低漂移**：在 163.7 秒内达到 **+31.60%** 非起始均值增益（$`P_3=+42.75\%`$，$`P_5=+39.42\%`$），并将跨位置漂移降至 **0.0555 nats**（比直通有教师 `CRSP` 的 0.0778 还低 28.7%）。
-- **隐状态联合逆向（$`\lambda_{\text{feat}}>0`$）引发非起始语境过约束**：相同耗时（167.1 秒）下，加入中间层隐状态对齐使全部六个槽位的增益严格下降（$`P_1`$–$`P_5`$ 均值由 +31.60% 降至 +29.31%，漂移升至 0.0652 nats），且在 IFBench（$`N=32`$）的 $`P_3`$ 检索干扰下回落至 34.38%，证实算法 1 坚持 $`\lambda_{\text{feat}}=0`$ 的必要性。
+- **隐状态联合逆向（$`\lambda_{\text{feat}}\gt 0`$）引发非起始语境过约束**：相同耗时（167.1 秒）下，加入中间层隐状态对齐使全部六个槽位的增益严格下降（$`P_1`$–$`P_5`$ 均值由 +31.60% 降至 +29.31%，漂移升至 0.0652 nats），且在 IFBench（$`N=32`$）的 $`P_3`$ 检索干扰下回落至 34.38%，证实算法 1 坚持 $`\lambda_{\text{feat}}=0`$ 的必要性。
 
 #### 7.3.2 无强化学习教师构造路径对比
 
@@ -689,7 +689,7 @@ Algorithm 2: 无强化学习教师的两阶段 CRSP 构造（Two-Stage TF-CRSP�
 | 固定起始位 $`P_0`$ 高速策略蒸馏与双专家组合 | `KV-PD`（真实文本前向初始化 + Top-64 前向散度） | $`L_{\text{kv}}=8/16`$，AdamW，无需激活重计算 | 72.3 秒完成（2.71× 提速），$`G_{\text{IF}}=+65.5\%`$，顺序差 0.12 pp |
 | 多域零泄露私有文档持续学习、精确遗忘与版本在线更新 | 自动路由 `KV-PD` + `Micro-RAG` + 增量 Delta 补丁 | 每域独立 $`L_{\text{kv}}=16/32`$，Top-1 路由，升级追加 $`L_\Delta=4`$ | 五域均值规则 57.5%、事实 96.0%、OOD 91.7%、零遗忘；4-Token 补丁 57 秒实现 83.3% 新规则与 0.0% 泄露 |
 | 已有 `KV-PD` 资产或强化学习教师，需任意槽位与多专家并发 | **算法 1（KV-Inv-CRSP）** + 组合安全训练 | $`\lambda_{\text{feat}}=0`$，$`L=64`$，$`\mathcal{L}_{\text{inv}}`$ + 双向 $`\mathcal{L}_{\text{null}}`$ + 离线共存 | IFBench（$`N=64`$）$`P_4`$ 达 53.1% 严格率 / 79.1% 闭合精度（源 KV 的 141.7%）；三专家干扰降 2.95×，置换差 0.00 pp |
-| 强检索文档干扰语境（`P3` 槽位，400+ 词元噪声） | 高容量直通 `CRSP`（有教师） | $`L=256`$，$`\lambda_{\text{inv}} > 0`$，Top-64 稠密监督 | IFBench（$`N=64`$）$`P_3`$ 达 46.9%（相对 $`P_4`$ 零漂移，较基座 +9.4 pp） |
+| 强检索文档干扰语境（`P3` 槽位，400+ 词元噪声） | 高容量直通 `CRSP`（有教师） | $`L=256`$，$`\lambda_{\text{inv}} \gt 0`$，Top-64 稠密监督 | IFBench（$`N=64`$）$`P_3`$ 达 46.9%（相对 $`P_4`$ 零漂移，较基座 +9.4 pp） |
 | 无强化学习教师权重，仅持有冻结基座与程序化验证器 | **算法 2（Two-Stage TF-CRSP）** | $`L=64`$，$`P_2`$ 优先；在线阶段保持策略与参考共存输入一致 | 留出 IFEval 三随机种子 $`P_2`$ 达 $`71.18 \pm 1.59\%`$（方差降 4.1×）；IFBench（$`N=32`$）$`P_2/P_4`$ 达 50.0% |
 | 多领域程序性专家并发推理物理布局 | 不同位置分开插入（如 `[Math@P2 + IF@P4]`） | 以自然语言用户查询词元物理分隔不同领域专家 | 避免相邻连续向量直接互相注意，较相邻拼接带来 +16.7 pp 增益（MATH 达 70.8%） |
 
