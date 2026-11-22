@@ -1,0 +1,167 @@
+launching exp9...
+=== Setup IFBench & deps ===
+Cloning into '/content/IFBench'...
+GPU: NVIDIA A100-SXM4-40GB | VRAM_GB: 42.4
+=== Launching exp9_multiseed_cr_grpo_and_composition.py ===
+=== Suite 7 (exp9): Multi-Seed Alg B (CR-MS-GRPO+) & 3-Expert Arbitrary-Slot Composition ===
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Generating train split:   0%|          | 0/541 [00:00<?, ? examples/s]Generating train split: 100%|██████████| 541/541 [00:00<00:00, 16857.73 examples/s]
+Generating test split:   0%|          | 0/500 [00:00<?, ? examples/s]Generating test split: 100%|██████████| 500/500 [00:00<00:00, 110685.17 examples/s]
+Loaded datasets: if_train96=96, ifeval_test96=96, ifbench64=64, math_train64=64, math_test48=48, doc_train=128, doc_test=24+12
+Fetching 2 files:   0%|          | 0/2 [00:00<?, ?it/s]Fetching 2 files:  50%|█████     | 1/2 [00:24<00:24, 24.35s/it]Fetching 2 files: 100%|██████████| 2/2 [00:24<00:00, 12.17s/it]
+Loading weights:   0%|          | 0/398 [00:00<?, ?it/s]Loading weights:   0%|          | 1/398 [00:00<01:06,  5.94it/s]Loading weights:   6%|▌         | 24/398 [00:00<00:03, 107.35it/s]Loading weights:  12%|█▏        | 46/398 [00:00<00:02, 148.64it/s]Loading weights:  17%|█▋        | 68/398 [00:00<00:01, 172.42it/s]Loading weights:  23%|██▎       | 91/398 [00:00<00:01, 189.83it/s]Loading weights:  28%|██▊       | 113/398 [00:00<00:01, 197.74it/s]Loading weights:  34%|███▍      | 135/398 [00:00<00:01, 203.12it/s]Loading weights:  39%|███▉      | 157/398 [00:00<00:01, 206.54it/s]Loading weights:  45%|████▍     | 179/398 [00:00<00:01, 208.17it/s]Loading weights:  51%|█████     | 201/398 [00:01<00:00, 209.79it/s]Loading weights:  56%|█████▌    | 223/398 [00:01<00:00, 210.89it/s]Loading weights:  62%|██████▏   | 245/398 [00:01<00:00, 210.16it/s]Loading weights:  67%|██████▋   | 267/398 [00:01<00:00, 210.23it/s]Loading weights:  73%|███████▎  | 289/398 [00:01<00:00, 209.97it/s]Loading weights:  78%|███████▊  | 311/398 [00:01<00:00, 208.95it/s]Loading weights:  84%|████████▎ | 333/398 [00:01<00:00, 209.32it/s]Loading weights:  89%|████████▉ | 355/398 [00:01<00:00, 210.07it/s]Loading weights:  95%|█████████▍| 377/398 [00:01<00:00, 210.54it/s]Loading weights: 100%|██████████| 398/398 [00:02<00:00, 196.49it/s]
+
+=== PHASE 1 (Track 1): 3-Seed Algorithm B Convergence & Scaled IFEval96 / IFBench64 ===
+    gen batch 48/288 done (out_len=768)
+    gen batch 96/288 done (out_len=768)
+    gen batch 144/288 done (out_len=768)
+    gen batch 192/288 done (out_len=768)
+    gen batch 240/288 done (out_len=768)
+    gen batch 288/288 done (out_len=768)
+  [IF96_BareHarvest      ] {'task': 'if', 'n_prompts': 96, 'n_samples': 3, 'pass_at_1_pct': 54.86, 'pass_at_N_pct': 73.96, 'num_wins': 125, 'sec': 339.2}
+  [IFEval96  | Bare Student (MultiTurn)            ] strict=70.83% (68/96) | inst=79.86% | closed=84/96 ( 81.0%) | t=225.0s
+
+  --- Track 1 Seed 42: Training Stage-1 TF3, Cold-Start TF2, and Full Alg B (TF3->TF2) [L=64] ---
+  [S1_TF3_seed42           ] step  1/24 | nll=0.5859 | anc=0.2940 | inv=0.1979 | null=0.0000 | rms=0.0208 | t=4.3s
+  [S1_TF3_seed42           ] step 12/24 | nll=0.4620 | anc=0.1526 | inv=0.1300 | null=0.0000 | rms=0.0290 | t=44.7s
+  [S1_TF3_seed42           ] step 24/24 | nll=0.4139 | anc=0.1613 | inv=0.1350 | null=0.0000 | rms=0.0304 | t=89.7s
+  [Cold_TF2_seed42         ] step  1/10 | rew=0.692 | strict= 70.8% | kl=0.1682 | rms=0.0201 | t=53.2s
+  [Cold_TF2_seed42         ] step  5/10 | rew=0.717 | strict= 75.0% | kl=0.0637 | rms=0.0209 | t=270.7s
+  [Cold_TF2_seed42         ] step 10/10 | rew=0.549 | strict= 45.8% | kl=0.0653 | rms=0.0212 | t=545.8s
+  [Full_AlgB_seed42        ] step  1/10 | rew=0.327 | strict= 41.7% | kl=0.1189 | rms=0.0305 | t=57.8s
+  [Full_AlgB_seed42        ] step  5/10 | rew=0.675 | strict= 70.8% | kl=0.8974 | rms=0.0308 | t=275.5s
+  [Full_AlgB_seed42        ] step 10/10 | rew=0.497 | strict= 41.7% | kl=0.1731 | rms=0.0309 | t=556.4s
+  [IFEval96  | s42 P2 Stage1_TF3                   ] strict=67.71% (65/96) | inst=76.91% | closed=89/96 ( 73.0%) | t=236.8s
+  [IFEval96  | s42 P4 Stage1_TF3                   ] strict=73.96% (71/96) | inst=80.73% | closed=88/96 ( 80.7%) | t=236.5s
+  [IFEval96  | s42 P4 Cold_TF2@step5               ] strict=71.88% (69/96) | inst=77.26% | closed=86/96 ( 80.2%) | t=236.4s
+  [IFEval96  | s42 P2 Cold_TF2@step10              ] strict=67.71% (65/96) | inst=72.92% | closed=81/96 ( 80.2%) | t=236.3s
+  [IFEval96  | s42 P4 Cold_TF2@step10              ] strict=66.67% (64/96) | inst=72.92% | closed=80/96 ( 80.0%) | t=236.3s
+  [IFEval96  | s42 P4 Full_AlgB@step5              ] strict=68.75% (66/96) | inst=75.52% | closed=84/96 ( 78.6%) | t=236.2s
+  [IFEval96  | s42 P2 Full_AlgB@step10             ] strict=70.83% (68/96) | inst=76.39% | closed=86/96 ( 79.1%) | t=236.5s
+  [IFEval96  | s42 P4 Full_AlgB@step10             ] strict=69.79% (67/96) | inst=75.87% | closed=82/96 ( 81.7%) | t=236.6s
+
+  --- Track 1 Seed 108: Training Stage-1 TF3, Cold-Start TF2, and Full Alg B (TF3->TF2) [L=64] ---
+  [S1_TF3_seed108          ] step  1/24 | nll=0.5885 | anc=0.2887 | inv=0.2020 | null=0.0000 | rms=0.0208 | t=3.6s
+  [S1_TF3_seed108          ] step 12/24 | nll=0.5043 | anc=0.1456 | inv=0.1156 | null=0.0000 | rms=0.0290 | t=43.7s
+  [S1_TF3_seed108          ] step 24/24 | nll=0.4142 | anc=0.1357 | inv=0.1099 | null=0.0000 | rms=0.0304 | t=87.9s
+  [Cold_TF2_seed108        ] step  1/10 | rew=0.875 | strict= 87.5% | kl=0.1007 | rms=0.0202 | t=53.6s
+  [Cold_TF2_seed108        ] step  5/10 | rew=0.046 | strict=  4.2% | kl=0.1124 | rms=0.0208 | t=273.0s
+  [Cold_TF2_seed108        ] step 10/10 | rew=0.283 | strict= 33.3% | kl=0.0968 | rms=0.0211 | t=547.9s
+  [Full_AlgB_seed108       ] step  1/10 | rew=0.613 | strict= 62.5% | kl=0.0662 | rms=0.0304 | t=56.2s
+  [Full_AlgB_seed108       ] step  5/10 | rew=-0.069 | strict=  0.0% | kl=0.0707 | rms=0.0307 | t=282.1s
+  [Full_AlgB_seed108       ] step 10/10 | rew=0.617 | strict= 62.5% | kl=0.0813 | rms=0.0308 | t=564.2s
+  [IFEval96  | s108 P2 Stage1_TF3                  ] strict=72.92% (70/96) | inst=80.03% | closed=85/96 ( 82.3%) | t=236.4s
+  [IFEval96  | s108 P4 Stage1_TF3                  ] strict=72.92% (70/96) | inst=77.78% | closed=86/96 ( 81.4%) | t=237.0s
+  [IFEval96  | s108 P4 Cold_TF2@step5              ] strict=59.38% (57/96) | inst=68.75% | closed=87/96 ( 65.5%) | t=236.6s
+  [IFEval96  | s108 P2 Cold_TF2@step10             ] strict=58.33% (56/96) | inst=65.10% | closed=77/96 ( 72.7%) | t=236.4s
+  [IFEval96  | s108 P4 Cold_TF2@step10             ] strict=63.54% (61/96) | inst=72.74% | closed=85/96 ( 71.8%) | t=236.5s
+  [IFEval96  | s108 P4 Full_AlgB@step5             ] strict=58.33% (56/96) | inst=62.85% | closed=69/96 ( 81.2%) | t=236.5s
+  [IFEval96  | s108 P2 Full_AlgB@step10            ] strict=69.79% (67/96) | inst=79.34% | closed=91/96 ( 73.6%) | t=236.5s
+  [IFEval96  | s108 P4 Full_AlgB@step10            ] strict=47.92% (46/96) | inst=52.95% | closed=68/96 ( 67.7%) | t=236.5s
+
+  --- Track 1 Seed 202: Training Stage-1 TF3, Cold-Start TF2, and Full Alg B (TF3->TF2) [L=64] ---
+  [S1_TF3_seed202          ] step  1/24 | nll=0.5800 | anc=0.2831 | inv=0.1837 | null=0.0000 | rms=0.0208 | t=3.9s
+  [S1_TF3_seed202          ] step 12/24 | nll=0.4195 | anc=0.1336 | inv=0.1067 | null=0.0000 | rms=0.0290 | t=44.8s
+  [S1_TF3_seed202          ] step 24/24 | nll=0.4479 | anc=0.1637 | inv=0.1369 | null=0.0000 | rms=0.0305 | t=88.6s
+  [Cold_TF2_seed202        ] step  1/10 | rew=0.633 | strict= 62.5% | kl=0.0899 | rms=0.0202 | t=54.1s
+  [Cold_TF2_seed202        ] step  5/10 | rew=0.525 | strict= 50.0% | kl=0.0729 | rms=0.0209 | t=276.6s
+  [Cold_TF2_seed202        ] step 10/10 | rew=0.275 | strict= 25.0% | kl=0.0473 | rms=0.0211 | t=548.9s
+  [Full_AlgB_seed202       ] step  1/10 | rew=0.427 | strict= 41.7% | kl=0.1244 | rms=0.0306 | t=58.7s
+  [Full_AlgB_seed202       ] step  5/10 | rew=0.373 | strict= 37.5% | kl=0.0913 | rms=0.0309 | t=285.0s
+  [Full_AlgB_seed202       ] step 10/10 | rew=0.015 | strict=  4.2% | kl=0.1885 | rms=0.0310 | t=563.0s
+  [IFEval96  | s202 P2 Stage1_TF3                  ] strict=66.67% (64/96) | inst=74.65% | closed=86/96 ( 74.4%) | t=236.9s
+  [IFEval96  | s202 P4 Stage1_TF3                  ] strict=65.62% (63/96) | inst=71.18% | closed=81/96 ( 77.8%) | t=236.8s
+  [IFEval96  | s202 P4 Cold_TF2@step5              ] strict=70.83% (68/96) | inst=76.04% | closed=86/96 ( 79.1%) | t=236.8s
+  [IFEval96  | s202 P2 Cold_TF2@step10             ] strict=70.83% (68/96) | inst=76.22% | closed=85/96 ( 80.0%) | t=237.0s
+  [IFEval96  | s202 P4 Cold_TF2@step10             ] strict=72.92% (70/96) | inst=80.73% | closed=89/96 ( 78.7%) | t=236.7s
+  [IFEval96  | s202 P4 Full_AlgB@step5             ] strict=45.83% (44/96) | inst=50.17% | closed=63/96 ( 69.8%) | t=237.1s
+  [IFEval96  | s202 P2 Full_AlgB@step10            ] strict=72.92% (70/96) | inst=79.86% | closed=90/96 ( 77.8%) | t=237.1s
+  [IFEval96  | s202 P4 Full_AlgB@step10            ] strict=44.79% (43/96) | inst=48.96% | closed=59/96 ( 72.9%) | t=236.8s
+
+  --- Track 1 Multi-Seed Summary on Held-Out IFEval96 (Mean +/- Std across 3 Seeds) ---
+    P2_Stage1_TF3         : strict = 69.10 +/- 3.35%  [67.71, 72.92, 66.67] | inst = 77.20% | closed_acc = 76.60%
+    P4_Stage1_TF3         : strict = 70.83 +/- 4.54%  [73.96, 72.92, 65.62] | inst = 76.56% | closed_acc = 79.95%
+    P4_Cold_TF2_step5     : strict = 67.36 +/- 6.93%  [71.88, 59.38, 70.83] | inst = 74.02% | closed_acc = 74.94%
+    P2_Cold_TF2_step10    : strict = 65.62 +/- 6.51%  [67.71, 58.33, 70.83] | inst = 71.41% | closed_acc = 77.66%
+    P4_Cold_TF2_step10    : strict = 67.71 +/- 4.78%  [66.67, 63.54, 72.92] | inst = 75.46% | closed_acc = 76.80%
+    P4_Full_AlgB_step5    : strict = 57.64 +/- 11.48%  [68.75, 58.33, 45.83] | inst = 62.85% | closed_acc = 76.52%
+    P2_Full_AlgB_step10   : strict = 71.18 +/- 1.59%  [70.83, 69.79, 72.92] | inst = 78.53% | closed_acc = 76.83%
+    P4_Full_AlgB_step10   : strict = 54.17 +/- 13.62%  [69.79, 47.92, 44.79] | inst = 59.26% | closed_acc = 74.08%
+
+  --- Scaled Official allenai/IFBench64 (64 Stratified Prompts, 2x IFBench32!) ---
+  [IFBench64 | Bare Student (MultiTurn)            ] strict=45.31% (29/64) | inst=43.24% | closed=51/64 ( 56.9%) | t=434.4s
+  [IFBench64 | P4 Stage1_TF3 (L64)                 ] strict=43.75% (28/64) | inst=40.54% | closed=47/64 ( 59.6%) | t=447.4s
+  [IFBench64 | P4 Cold_TF2 (L64)                   ] strict=32.81% (21/64) | inst=29.73% | closed=46/64 ( 45.6%) | t=447.9s
+  [IFBench64 | P2 Full_AlgB CS-CR (L64)            ] strict=37.50% (24/64) | inst=35.14% | closed=47/64 ( 51.1%) | t=448.1s
+  [IFBench64 | P4 Full_AlgB CS-CR (L64)            ] strict=42.19% (27/64) | inst=39.19% | closed=41/64 ( 65.8%) | t=448.1s
+
+=== PHASE 2 (Track 2): Zero-Post-RL Math (MATH-500) & Domain-Doc (HeliosPay v4.2) Specialists ===
+    gen batch 48/192 done (out_len=960)
+    gen batch 96/192 done (out_len=960)
+    gen batch 144/192 done (out_len=960)
+    gen batch 192/192 done (out_len=960)
+/usr/local/lib/python3.13/dist-packages/sympy/parsing/latex/_parse_latex_antlr.py:23: UserWarning: antlr4.error.ErrorListener module is not installed
+  ErrorListener = import_module('antlr4.error.ErrorListener',
+  [MATH64_BareHarvest    ] {'task': 'math', 'n_prompts': 64, 'n_samples': 3, 'pass_at_1_pct': 58.33, 'pass_at_N_pct': 65.62, 'num_wins': 78, 'sec': 354.4}
+  [E2_Math_Naive           ] step  1/24 | nll=0.2153 | anc=0.0753 | inv=0.1172 | null=0.0000 | rms=0.0209 | t=3.4s
+  [E2_Math_Naive           ] step 12/24 | nll=0.2196 | anc=0.0500 | inv=0.0340 | null=0.0000 | rms=0.0290 | t=41.4s
+  [E2_Math_Naive           ] step 24/24 | nll=0.1929 | anc=0.0459 | inv=0.0368 | null=0.0000 | rms=0.0303 | t=83.2s
+  [E2_Math_S1_CSCR         ] step  1/24 | nll=0.2385 | anc=0.1005 | inv=0.1365 | null=0.2422 | rms=0.0209 | t=4.2s
+  [E2_Math_S1_CSCR         ] step 12/24 | nll=0.1786 | anc=0.0572 | inv=0.0454 | null=0.1880 | rms=0.0288 | t=50.3s
+  [E2_Math_S1_CSCR         ] step 24/24 | nll=0.1575 | anc=0.0491 | inv=0.0407 | null=0.2433 | rms=0.0302 | t=100.8s
+  [E2_Math_CSCR            ] step  1/8 | rew=0.646 | strict= 70.8% | kl=0.0131 | rms=0.0303 | t=68.3s
+  [E2_Math_CSCR            ] step  4/8 | rew=0.740 | strict= 75.0% | kl=0.0507 | rms=0.0304 | t=277.2s
+  [E2_Math_CSCR            ] step  8/8 | rew=0.365 | strict= 41.7% | kl=0.0541 | rms=0.0304 | t=570.0s
+  [DocSelfCache HeliosPay ] Cached 128 Top-64 targets from In-Context Student in 8.0s
+  [E3_Doc_NaiveCR          ] step  1/75 | dist=2.6164 | nll=2.6483 | inv=0.1964 | null=0.0000 | rms=0.0223 | t=3.2s
+  [E3_Doc_NaiveCR          ] step 20/75 | dist=1.7313 | nll=1.8941 | inv=0.1308 | null=0.0000 | rms=0.0543 | t=63.1s
+  [E3_Doc_NaiveCR          ] step 75/75 | dist=0.8792 | nll=0.9130 | inv=0.1833 | null=0.0000 | rms=0.0550 | t=236.8s
+  [E3_Doc_CSCR             ] step  1/75 | dist=2.6544 | nll=2.6880 | inv=0.2546 | null=0.2358 | rms=0.0223 | t=4.0s
+  [E3_Doc_CSCR             ] step 20/75 | dist=1.8484 | nll=2.0108 | inv=0.1665 | null=0.2134 | rms=0.0540 | t=80.6s
+  [E3_Doc_CSCR             ] step 75/75 | dist=0.8605 | nll=0.9155 | inv=0.1493 | null=0.1762 | rms=0.0550 | t=301.8s
+
+=== PHASE 3 (Track 2): Multi-Expert Arbitrary-Slot Composition & Zero-Interference Suite ===
+  [Interf Naive    | if  ] bare->(doc=0.1272, math=0.1139, if=0.0773) | own->Triple KL=0.1570
+  [Interf Naive    | math] bare->(doc=0.0376, math=0.0507, if=0.0206) | own->Triple KL=0.0300
+  [Interf Naive    | doc ] bare->(doc=0.6982, math=0.1903, if=0.0663) | own->Triple KL=0.1725
+  [Interf CS-CR    | if  ] bare->(doc=0.0782, math=0.1077, if=0.1263) | own->Triple KL=0.0663
+  [Interf CS-CR    | math] bare->(doc=0.0263, math=0.0586, if=0.0446) | own->Triple KL=0.0286
+  [Interf CS-CR    | doc ] bare->(doc=0.8211, math=0.1944, if=0.0993) | own->Triple KL=0.1711
+
+  --- [Domain-Doc HeliosPay v4.2] Arbitrary-Slot & Multi-Expert Composition (36 items) ---
+  [Doc36     | Bare Student (0-Leakage)            ] overall= 0.00% ( 0/36) | rules=  0.0% ( 0/24) | facts=  0.0% ( 0/12) | t=45.9s
+  [Doc36     | In-Context Raw Doc (Upper)          ] overall=94.44% (34/36) | rules= 91.7% (22/24) | facts=100.0% (12/12) | t=71.4s
+  [Doc36     | Single Doc_Naive @ P1               ] overall= 0.00% ( 0/36) | rules=  0.0% ( 0/24) | facts=  0.0% ( 0/12) | t=88.1s
+  [Doc36     | Single Doc_CSCR @ P1                ] overall= 0.00% ( 0/36) | rules=  0.0% ( 0/24) | facts=  0.0% ( 0/12) | t=88.1s
+  [Doc36     | Single Doc_CSCR @ P2                ] overall= 0.00% ( 0/36) | rules=  0.0% ( 0/24) | facts=  0.0% ( 0/12) | t=88.1s
+  [Doc36     | Single Doc_CSCR @ P4                ] overall= 0.00% ( 0/36) | rules=  0.0% ( 0/24) | facts=  0.0% ( 0/12) | t=88.3s
+  [Doc36     | Dual Naive [Doc@P1 + IF@P4]         ] overall= 0.00% ( 0/36) | rules=  0.0% ( 0/24) | facts=  0.0% ( 0/12) | t=92.0s
+  [Doc36     | Dual CS-CR [Doc@P1 + IF@P4]         ] overall= 0.00% ( 0/36) | rules=  0.0% ( 0/24) | facts=  0.0% ( 0/12) | t=92.3s
+  [Doc36     | Triple Naive [P1+P2+P4]             ] overall= 0.00% ( 0/36) | rules=  0.0% ( 0/24) | facts=  0.0% ( 0/12) | t=95.9s
+  [Doc36     | Triple CS-CR [P1+P2+P4]             ] overall= 0.00% ( 0/36) | rules=  0.0% ( 0/24) | facts=  0.0% ( 0/12) | t=95.8s
+
+  --- [MATH48 Held-Out Level 3-5] Arbitrary-Slot & Multi-Expert Composition ---
+  [MATH48    | Bare Student (MultiTurn)            ] acc=64.58% (31/48) | closed=41/48 ( 75.6%) | t=207.4s
+  [MATH48    | Single Math_Naive @ P2              ] acc=66.67% (32/48) | closed=42/48 ( 76.2%) | t=215.7s
+  [MATH48    | Single Math_CSCR @ P2               ] acc=62.50% (30/48) | closed=41/48 ( 73.2%) | t=215.9s
+  [MATH48    | Single Math_CSCR @ P4               ] acc=62.50% (30/48) | closed=37/48 ( 81.1%) | t=215.9s
+  [MATH48    | Dual CS-CR [Math@P2 + IF@P4]        ] acc=70.83% (34/48) | closed=42/48 ( 81.0%) | t=224.2s
+  [MATH48    | Dual Adj [IF; Math] @ P2            ] acc=54.17% (26/48) | closed=36/48 ( 72.2%) | t=224.1s
+  [MATH48    | Dual Adj [Math; IF] @ P2            ] acc=52.08% (25/48) | closed=35/48 ( 71.4%) | t=224.0s
+  [MATH48    | Triple Naive [P1+P2+P4]             ] acc=64.58% (31/48) | closed=41/48 ( 75.6%) | t=232.5s
+  [MATH48    | Triple CS-CR [P1+P2+P4]             ] acc=54.17% (26/48) | closed=37/48 ( 70.3%) | t=232.6s
+
+  --- [IFEval96] Multi-Expert Composition & Permutation Invariance ---
+  [IFEval96  | Dual Naive [Doc@P1 + IF@P4]         ] strict=64.58% (62/96) | inst=72.05% | closed=84/96 ( 73.8%) | t=248.4s
+  [IFEval96  | Dual CS-CR [Doc@P1 + IF@P4]         ] strict=67.71% (65/96) | inst=74.31% | closed=82/96 ( 79.3%) | t=248.9s
+  [IFEval96  | Dual CS-CR [Math@P2 + IF@P4]        ] strict=68.75% (66/96) | inst=74.83% | closed=85/96 ( 77.7%) | t=248.5s
+  [IFEval96  | Dual Adj [IF; Math] @ P2            ] strict=71.88% (69/96) | inst=80.03% | closed=90/96 ( 76.7%) | t=248.9s
+  [IFEval96  | Dual Adj [Math; IF] @ P2            ] strict=71.88% (69/96) | inst=80.38% | closed=90/96 ( 76.7%) | t=248.5s
+  [IFEval96  | Triple Naive [P1+P2+P4]             ] strict=65.62% (63/96) | inst=73.78% | closed=84/96 ( 75.0%) | t=259.8s
+  [IFEval96  | Triple CS-CR [P1+P2+P4]             ] strict=68.75% (66/96) | inst=73.26% | closed=83/96 ( 79.5%) | t=259.8s
+
+  --- [Official IFBench64] Grand Finale: 3-Expert Simultaneous Split-Slot Composition ---
+  [IFBench64 | Triple Naive [P1+P2+P4]             ] strict=37.50% (24/64) | inst=36.49% | closed=48/64 ( 50.0%) | t=475.6s
+  [IFBench64 | Triple CS-CR [P1+P2+P4]             ] strict=35.94% (23/64) | inst=33.78% | closed=41/64 ( 56.1%) | t=476.0s
+
+=== Suite 7 (exp9) COMPLETE in 19328.5s ===
