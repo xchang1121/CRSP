@@ -1,5 +1,5 @@
 """
-Generate 11 clean, single-row, publication-grade figures strictly adhering to
+Generate 13 clean, single-row, publication-grade figures strictly adhering to
 the minimalist visual grammar and color palette of the CSPD manuscript:
   - pfig01_unified_overview.png
   - pfig02_cspd_continual_and_loo.png
@@ -12,6 +12,8 @@ the minimalist visual grammar and color palette of the CSPD manuscript:
   - pfig09_crsp_positional_heatmap_and_drift.png
   - pfig10_crsp_multiseed_and_scaled_ifbench64.png
   - pfig11_crsp_multiexpert_composition_and_duality.png
+  - pfig12_long_context_single_expert_and_mechanism.png
+  - pfig13_long_context_composition_and_doc_e2e.png
 
 All values are loaded directly from verified JSON artifacts; zero code-like
 ablation tags appear on any axis, legend, or annotation.
@@ -1095,6 +1097,229 @@ def make_pfig11():
     print("Saved:", path)
 
 
+# ==============================================================================
+# FIG 12: Long-Context Single-Expert Attenuation (0 -> 8192) & Attention Mass
+# ==============================================================================
+def make_pfig12():
+    d10  = load_res("exp10_results.json")
+    d10c = load_res("exp10c_results.json")
+
+    lens = ["0", "512", "1024", "2048", "4096", "8192"]
+    xl   = np.arange(len(lens))
+    xtl  = ["0", "512", "1k", "2k", "4k", "8k"]
+
+    fig, (ax1, ax2, ax3) = plt.subplots(
+        1, 3, figsize=(14.4, 4.15), gridspec_kw={"width_ratios": [1.05, 1.05, 1.05], "wspace": 0.30}
+    )
+
+    # (a) IF Single-Expert Alignment Gain vs Context Length
+    style_boxed(ax1, "both")
+    if_s = d10["partA_single_sweep_if"]
+    kv_if = d10c["kvpd_smooth_6pt"]["if"]
+    ax1.axhline(0.0, color=DARK, lw=0.8, ls="--", zorder=1)
+    ax1.plot(xl, [if_s["Direct_CRSP_L256_at_P2"][L]["g_vs_ctx"] for L in lens], "-o",  color=BLUE,   lw=2.0, ms=4.8, label="Direct CRSP @ P2 (L=256)", zorder=5)
+    ax1.plot(xl, [if_s["Alg1_KVInv_L64_at_P2"][L]["g_vs_ctx"]   for L in lens], "-^",  color=TEAL,   lw=1.9, ms=4.8, label="Alg. 1 CRSP @ P2 (L=64)",  zorder=5)
+    ax1.plot(xl, [kv_if[L]["g_vs_ctx"]                           for L in lens], "-D",  color=PURPLE, lw=1.9, ms=4.5, label="KV-PD @ P0 (L=16)",        zorder=4)
+    ax1.plot(xl, [if_s["PR_CSPD_L256_at_P0"][L]["g_vs_ctx"]      for L in lens], "-s",  color=ORANGE, lw=1.8, ms=4.5, label="PR-CSPD @ P0 (L=256)",     zorder=3)
+    ax1.plot(xl, [if_s["Pos0_CSPD_L256_at_P0"][L]["g_vs_ctx"]    for L in lens], "--s", color=GRAY,   lw=1.4, ms=4.0, label="Pos-0 CSPD @ P0 (L=256)",  zorder=2)
+    ax1.plot(xl, [if_s["Direct_CRSP_L256_at_P0"][L]["g_vs_ctx"]  for L in lens], ":x",  color=RED,    lw=1.7, ms=5.0, label="Direct CRSP @ P0 (ctrl)",  zorder=3)
+
+    ax1.annotate("", xy=(5, 30.24), xytext=(5, -8.36),
+                 arrowprops=dict(arrowstyle="<->", color=BLUE, lw=1.2))
+    ax1.text(4.82, 20.8, "+38.6 pp\n(same weights)", ha="right", va="center", fontsize=6.9, fontweight="bold", color=BLUE,
+             bbox=dict(boxstyle="round,pad=0.18", fc="#EEF5FB", ec=BLUE, lw=0.6))
+    ax1.set_xticks(xl)
+    ax1.set_xticklabels(xtl)
+    ax1.set_xlabel("Preceding context length (tokens)")
+    ax1.set_ylabel("Same-context KL reduction G (%)")
+    ax1.set_ylim(-18, 66)
+    ax1.set_title("(a) IF single-expert attenuation (0 → 8k)", pad=10)
+    ax1.legend(loc="upper right", frameon=True, facecolor="white", framealpha=0.92, edgecolor="#DDDDDD", fontsize=6.7, handlelength=1.8)
+
+    # (b) Math Single-Expert Alignment Gain vs Context Length
+    style_boxed(ax2, "both")
+    ma_s = d10["partA_single_sweep_math"]
+    kv_m = d10c["kvpd_smooth_6pt"]["math"]
+    ax2.axhline(0.0, color=DARK, lw=0.8, ls="--", zorder=1)
+    ax2.plot(xl, [ma_s["Direct_CRSP_Math_L64_P2"][L]["g_vs_ctx"] for L in lens], "-o", color=BLUE,   lw=2.0, ms=4.8, label="Direct CRSP @ P2 (L=64)", zorder=5)
+    ax2.plot(xl, [ma_s["Alg1_KVInv_Math_L64_P2"][L]["g_vs_ctx"]  for L in lens], "-^", color=TEAL,   lw=1.9, ms=4.8, label="Alg. 1 CRSP @ P2 (L=64)", zorder=5)
+    ax2.plot(xl, [kv_m[L]["g_vs_ctx"]                             for L in lens], "-D", color=PURPLE, lw=1.9, ms=4.5, label="KV-PD @ P0 (L=16)",       zorder=4)
+    ax2.plot(xl, [ma_s["PR_CSPD_Math_L256_at_P0"][L]["g_vs_ctx"] for L in lens], "-s", color=ORANGE, lw=1.8, ms=4.5, label="PR-CSPD @ P0 (L=256)",    zorder=3)
+    ctrl_vals = [ma_s["Direct_CRSP_Math_L64_P0"][L]["g_vs_ctx"] for L in lens]
+    ax2.plot(xl[:5], ctrl_vals[:5], ":x", color=RED, lw=1.7, ms=5.0, label="Direct CRSP @ P0 (ctrl)", zorder=3)
+    ax2.plot([4, 5], [ctrl_vals[4], -104], ":", color=RED, lw=1.7, zorder=3)
+    ax2.annotate("−225.5% @ 8k\n(off-scale)", xy=(5, -104), xytext=(3.45, -88), ha="center",
+                 arrowprops=dict(arrowstyle="->", color=RED, lw=1.0), fontsize=6.9, fontweight="bold", color=RED)
+    ax2.annotate("PR-CSPD\n−82.9%", xy=(5, -82.88), xytext=(4.62, -22), ha="center",
+                 arrowprops=dict(arrowstyle="->", color=ORANGE, lw=1.0), fontsize=6.9, fontweight="bold", color=ORANGE)
+    ax2.set_xticks(xl)
+    ax2.set_xticklabels(xtl)
+    ax2.set_xlabel("Preceding context length (tokens)")
+    ax2.set_ylabel("Same-context KL reduction G (%)")
+    ax2.set_ylim(-112, 68)
+    ax2.set_title("(b) Math single-expert attenuation (0 → 8k)", pad=10)
+    ax2.legend(loc="lower left", frameon=True, facecolor="white", framealpha=0.92, edgecolor="#DDDDDD", fontsize=6.8, handlelength=1.8)
+
+    # (c) Mechanistic Layerwise Response-to-Module Attention Mass
+    style_boxed(ax3, "both")
+    am = d10["partB_attention_mass"]
+    kv_am   = [am["KVPD_L16_at_P0"][L]["mean_mod_pct"]       for L in lens]
+    pr_am   = [am["PR_CSPD_L256_at_P0"][L]["mean_mod_pct"]   for L in lens]
+    cr_am   = [am["Direct_CRSP_L256_at_P4"][L]["mean_mod_pct"] for L in lens]
+    alg1_am = [am["Alg1_KVInv_L64_at_P4"][L]["mean_mod_pct"] for L in lens]
+
+    ax3.plot(xl, kv_am,   "-D", color=PURPLE, lw=2.1, ms=4.8, label="KV-PD @ P0 (16 tok)",         zorder=5)
+    ax3.plot(xl, pr_am,   "-s", color=ORANGE, lw=1.9, ms=4.6, label="PR-CSPD @ P0 (256 vec)",      zorder=4)
+    ax3.plot(xl, cr_am,   "-o", color=BLUE,   lw=1.8, ms=4.6, label="Direct CRSP @ P4 (256 vec)",  zorder=4)
+    ax3.plot(xl, alg1_am, "-^", color=TEAL,   lw=1.9, ms=4.8, label="Alg. 1 CRSP @ P4 (64 vec)",   zorder=5)
+
+    ax3.annotate("77.6% retained\n(3.5× vs PR-CSPD)", xy=(5, kv_am[-1]), xytext=(3.15, 32.8), ha="center",
+                 arrowprops=dict(arrowstyle="->", color=PURPLE, lw=1.0), fontsize=7.0, fontweight="bold", color=PURPLE)
+    ax3.annotate("−54.8% decay\n(shallow −71%)", xy=(5, pr_am[-1]), xytext=(3.95, 16.5), ha="center",
+                 arrowprops=dict(arrowstyle="->", color=ORANGE, lw=1.0), fontsize=6.9, fontweight="bold", color=ORANGE)
+    ax3.text(2.8, 2.3, "Alg. 1 @ P4 flat 512→8k (6.9% → 6.4%)", ha="center", fontsize=6.9, color=TEAL,
+             bbox=dict(boxstyle="round,pad=0.18", fc="#EEF7F6", ec=TEAL, lw=0.6))
+    ax3.set_xticks(xl)
+    ax3.set_xticklabels(xtl)
+    ax3.set_xlabel("Preceding context length (tokens)")
+    ax3.set_ylabel("Mean response→module attn. mass (%)")
+    ax3.set_ylim(0, 38)
+    ax3.set_title("(c) Layerwise attention-mass mechanism", pad=10)
+    ax3.legend(loc="center left", bbox_to_anchor=(0.01, 0.57), frameon=True, facecolor="white", framealpha=0.94, edgecolor="#DDDDDD", fontsize=6.6, handlelength=1.7)
+
+    path = os.path.join(OUT, "pfig12_long_context_single_expert_and_mechanism.png")
+    fig.savefig(path)
+    plt.close(fig)
+    print("Saved:", path)
+
+
+# ==============================================================================
+# FIG 13: Long-Context Dual-Expert Composition, E2E Benchmarks & Doc KV-PD
+# ==============================================================================
+def make_pfig13():
+    d10  = load_res("exp10_results.json")
+    d10b = load_res("exp10b_results.json")
+    d10c = load_res("exp10c_results.json")
+
+    fig, (ax1, ax2, ax3) = plt.subplots(
+        1, 3, figsize=(14.8, 4.25), gridspec_kw={"width_ratios": [1.06, 1.12, 1.06], "wspace": 0.30}
+    )
+
+    # (a) Dual-Expert Long-Context Mean Gain (0 -> 8k) & Order/Interference Gap
+    style_boxed(ax1, "both")
+    lc = ["0", "1024", "4096", "8192"]
+    xc = np.arange(len(lc))
+    xtc = ["0", "1k", "4k", "8k"]
+    ci, cm = d10["partC_composition_if"], d10["partC_composition_math"]
+    kvi, kvm = d10b["partC_kvpd_clean_verify"]["if"], d10b["partC_kvpd_clean_verify"]["math"]
+
+    def mean_pair(di, dm, key):
+        return [0.5 * (di[key][L]["g_vs_ctx"] + dm[key][L]["g_vs_ctx"]) for L in lc]
+
+    pr_mi   = mean_pair(ci, cm, "PR_CSPD_P0_Math_IF")
+    pr_im   = mean_pair(ci, cm, "PR_CSPD_P0_IF_Math")
+    kv_mi   = mean_pair(kvi, kvm, "KVPD_Dual_Math_IF")
+    dir_sp  = mean_pair(ci, cm, "Direct_CRSP_Split_M@P2_I@P4")
+    alg1_sp = mean_pair(ci, cm, "Alg1_CRSP_Split_M@P2_I@P4")
+
+    ax1.axhline(0.0, color=DARK, lw=0.8, ls="--", zorder=1)
+    ax1.plot(xc, dir_sp,  "-o",  color=BLUE,   lw=2.0, ms=5.0, label="Direct CRSP Split [M@P2+I@P4]", zorder=5)
+    ax1.plot(xc, alg1_sp, "-^",  color=TEAL,   lw=1.9, ms=5.0, label="Alg. 1 Split [M@P2+I@P4]",      zorder=5)
+    ax1.plot(xc, kv_mi,   "-D",  color=PURPLE, lw=1.9, ms=4.7, label="KV-PD Dual @ P0 (|Δ|≤0.2 pp)",  zorder=4)
+    ax1.plot(xc, pr_mi,   "-s",  color=ORANGE, lw=1.9, ms=4.7, label="PR-CSPD Dual @ P0 [M; I]",      zorder=3)
+    ax1.plot(xc, pr_im,   "--s", color=RED,    lw=1.5, ms=4.2, label="PR-CSPD Dual @ P0 [I; M]",      zorder=3)
+    ax1.fill_between(xc, pr_mi, pr_im, color=ORANGE, alpha=0.14, zorder=2)
+
+    ax1.annotate("Order gap 22.9 pp (IF)\nKL int. 0.386 (10.3×)", xy=(2.0, pr_mi[2]), xytext=(2.28, -14.0), ha="center",
+                 arrowprops=dict(arrowstyle="->", color=RED, lw=1.0), fontsize=6.6, fontweight="bold", color=RED,
+                 bbox=dict(boxstyle="round,pad=0.18", fc="#FDF2F2", ec=RED, lw=0.6))
+    ax1.text(2.05, 41.5, "Alg. 1 KL int. 0.032–0.042", ha="center", fontsize=6.7, color=TEAL,
+             bbox=dict(boxstyle="round,pad=0.18", fc="#EEF7F6", ec=TEAL, lw=0.6))
+    ax1.set_xticks(xc)
+    ax1.set_xticklabels(xtc)
+    ax1.set_xlabel("Preceding context length (tokens)")
+    ax1.set_ylabel("Mean dual-domain gain G (%)")
+    ax1.set_ylim(-68, 52)
+    ax1.set_title("(a) Dual-expert composition (0 → 8k)", pad=10)
+    ax1.legend(loc="lower left", frameon=True, facecolor="white", framealpha=0.95, edgecolor="#DDDDDD", fontsize=6.3, handlelength=1.6)
+
+    # (b) End-to-End Dual-Expert Accuracy at L_ctx = 4096 (IFEval48, IFBench32, MATH32)
+    style_boxed(ax2, "y")
+    ev_if  = d10c["e2e_ifeval48_4096"]
+    ev_ifb = d10c["e2e_ifbench32"]["4096"]
+    ev_ma  = d10c["e2e_math32"]["4096"]
+
+    benches = ["IFEval\n(N=48, L=4k)", "IFBench\n(N=32, L=4k)", "MATH\n(N=32, L=4k)"]
+    xb = np.arange(len(benches))
+    wb = 0.19
+    v_base = [ev_if["Base_Frozen"]["prompt_strict"],               ev_ifb["Base_Frozen"]["prompt_strict"],               ev_ma["Base_Frozen"]["acc"]]
+    v_pr   = [ev_if["PR_CSPD_Dual_P0"]["prompt_strict"],           ev_ifb["PR_CSPD_Dual_P0"]["prompt_strict"],           ev_ma["PR_CSPD_Dual_P0"]["acc"]]
+    v_kv   = [ev_if["KVPD_Dual_P0"]["prompt_strict"],              ev_ifb["KVPD_Dual_P0"]["prompt_strict"],              ev_ma["KVPD_Dual_P0"]["acc"]]
+    v_alg1 = [ev_if["Alg1_CRSP_Split_M@P2_I@P4"]["prompt_strict"], ev_ifb["Alg1_CRSP_Split_M@P2_I@P4"]["prompt_strict"], ev_ma["Alg1_CRSP_Split_M@P2_I@P4"]["acc"]]
+
+    b0 = ax2.bar(xb - 1.5*wb, v_base, wb, color=LBLUE,  edgecolor=DARK, lw=0.5, label="Frozen base",          zorder=3)
+    b1 = ax2.bar(xb - 0.5*wb, v_pr,   wb, color=ORANGE, edgecolor=DARK, lw=0.5, label="PR-CSPD Dual @ P0",    zorder=3)
+    b2 = ax2.bar(xb + 0.5*wb, v_kv,   wb, color=PURPLE, edgecolor=DARK, lw=0.5, label="KV-PD Dual @ P0",      zorder=3)
+    b3 = ax2.bar(xb + 1.5*wb, v_alg1, wb, color=TEAL,   edgecolor=DARK, lw=0.5, label="Alg. 1 Split [P2+P4]", zorder=3)
+
+    for bars in [b0, b1, b2, b3]:
+        for b in bars:
+            h = b.get_height()
+            ax2.text(b.get_x() + b.get_width()/2, h + 1.4, f"{h:.1f}", ha="center", va="bottom", fontsize=6.3)
+
+    ax2.annotate("−39.6 pp\nvs L=0", xy=(0 - 0.5*wb, v_pr[0] + 6.5), xytext=(0 - 0.5*wb, 82.0), ha="center",
+                 arrowprops=dict(arrowstyle="->", color=RED, lw=1.0), fontsize=6.4, fontweight="bold", color=RED,
+                 bbox=dict(boxstyle="round,pad=0.14", fc="#FDF2F2", ec=RED, lw=0.5))
+    ax2.annotate("−34.4 pp\nvs L=0", xy=(1 - 0.5*wb, v_pr[1] + 6.5), xytext=(1 - 0.5*wb, 72.0), ha="center",
+                 arrowprops=dict(arrowstyle="->", color=RED, lw=1.0), fontsize=6.4, fontweight="bold", color=RED,
+                 bbox=dict(boxstyle="round,pad=0.14", fc="#FDF2F2", ec=RED, lw=0.5))
+    ax2.set_xticks(xb)
+    ax2.set_xticklabels(benches, fontsize=7.8)
+    ax2.set_ylabel("End-to-end strict accuracy (%)")
+    ax2.set_ylim(0, 114)
+    ax2.set_title("(b) End-to-end dual accuracy at L=4096", pad=10)
+    ax2.legend(loc="upper right", ncol=2, frameon=True, facecolor="white", framealpha=0.94, edgecolor="#DDDDDD", fontsize=6.3, handlelength=1.4, columnspacing=0.65)
+
+    # (c) Zero-Leakage Document KV-PD (HeliosPay v4.2, N=36) Under Long Context (0 -> 4k)
+    style_boxed(ax3, "both")
+    ld = ["0", "1024", "2048", "4096"]
+    xd = np.arange(len(ld))
+    xtd = ["0", "1k", "2k", "4k"]
+    de = d10b["partE_doc_kvpd_longctx"]
+
+    r_kv32 = [de[L]["KVPD_L32_Only"]["rule_acc"]     for L in ld]
+    r_kv16 = [de[L]["KVPD_L16_Only"]["rule_acc"]     for L in ld]
+    f_rag32 = [de[L]["KVPD_L32_MicroRAG"]["fact_acc"] for L in ld]
+    f_rag16 = [de[L]["KVPD_L16_MicroRAG"]["fact_acc"] for L in ld]
+    r_man = [de["0"]["InContext_Manual_P0"]["rule_acc"], de["4096"]["InContext_Manual_P0"]["rule_acc"]]
+    f_man = [de["0"]["InContext_Manual_P0"]["fact_acc"], de["4096"]["InContext_Manual_P0"]["fact_acc"]]
+
+    ax3.plot(xd, f_rag32, "-o",  color=TEAL,   lw=2.0, ms=4.8, label="KV-PD L=32 + Micro-RAG (facts)", zorder=5)
+    ax3.plot(xd, f_rag16, "--^", color=GREEN,  lw=1.7, ms=4.6, label="KV-PD L=16 + Micro-RAG (facts)", zorder=4)
+    ax3.plot([0, 3], f_man, ":D", color=GRAY,  lw=1.5, ms=4.5, label="Full Manual @ P0 (facts)",       zorder=3)
+    ax3.plot(xd, r_kv32,  "-s",  color=PURPLE, lw=2.0, ms=4.8, label="KV-PD L=32 @ P0 (rules)",        zorder=5)
+    ax3.plot(xd, r_kv16,  "--s", color=ORANGE, lw=1.7, ms=4.4, label="KV-PD L=16 @ P0 (rules)",        zorder=4)
+    ax3.plot([0, 3], r_man, ":x", color=RED,   lw=1.7, ms=5.2, label="Full Manual @ P0 (rules)",       zorder=4)
+
+    ax3.annotate("Query-adjacent Micro-RAG:\n91.7% facts @ 4k", xy=(3, f_rag32[-1]), xytext=(1.35, 107.0), ha="center",
+                 arrowprops=dict(arrowstyle="->", color=TEAL, lw=1.0), fontsize=6.6, fontweight="bold", color=TEAL)
+    ax3.annotate("Short-ctx KV-PD rules\ncollapse to 0% @ ≥1k", xy=(1.0, 0.8), xytext=(1.95, 18.0), ha="center",
+                 arrowprops=dict(arrowstyle="->", color=PURPLE, lw=1.0), fontsize=6.6, fontweight="bold", color=PURPLE,
+                 bbox=dict(boxstyle="round,pad=0.16", fc="#F6F2FA", ec=PURPLE, lw=0.6))
+    ax3.set_xticks(xd)
+    ax3.set_xticklabels(xtd)
+    ax3.set_xlabel("Preceding context length (tokens)")
+    ax3.set_ylabel("HeliosPay v4.2 accuracy (%)")
+    ax3.set_ylim(-6, 120)
+    ax3.set_title("(c) Zero-leakage doc KV-PD (0 → 4k)", pad=10)
+    ax3.legend(loc="center right", bbox_to_anchor=(0.99, 0.45), frameon=True, facecolor="white", framealpha=0.95, edgecolor="#DDDDDD", fontsize=6.1, handlelength=1.6)
+
+    path = os.path.join(OUT, "pfig13_long_context_composition_and_doc_e2e.png")
+    fig.savefig(path)
+    plt.close(fig)
+    print("Saved:", path)
+
+
 if __name__ == "__main__":
     make_pfig01()
     make_pfig02()
@@ -1107,4 +1332,6 @@ if __name__ == "__main__":
     make_pfig09()
     make_pfig10()
     make_pfig11()
-    print("All 11 paper-style figures generated successfully.")
+    make_pfig12()
+    make_pfig13()
+    print("All 13 paper-style figures generated successfully.")
