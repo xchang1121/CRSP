@@ -1320,6 +1320,183 @@ def make_pfig13():
     print("Saved:", path)
 
 
+# ==============================================================================
+# FIG 14: Comprehensive Injection-Order & Multi-Expert Slot-Permutation Ablation
+# ==============================================================================
+def make_pfig14():
+    d1b  = load_res("exp1b_results.json")
+    d10  = load_res("exp10_results.json")
+    d10b = load_res("exp10b_results.json")
+    d11  = load_res("exp11_results.json")
+
+    fig, (ax1, ax2, ax3) = plt.subplots(
+        1, 3, figsize=(15.0, 4.35), gridspec_kw={"width_ratios": [1.08, 1.08, 1.12], "wspace": 0.30}
+    )
+
+    # (a) Dual-Expert Order/Swap Sensitivity |Δ| (pp) across Architectures & Slots
+    style_boxed(ax1, "y")
+    g1b = d1b["distributional_G"]
+    c10i, c10m = d10["partC_composition_if"], d10["partC_composition_math"]
+    kvi, kvm   = d10b["partC_kvpd_clean_verify"]["if"], d10b["partC_kvpd_clean_verify"]["math"]
+    pAi, pAm   = d11["partA_split_and_adj_order"]["if"], d11["partA_split_and_adj_order"]["math"]
+
+    cats_a = [
+        "No-PR\n(L=0)",
+        "PR-CSPD\n(L=0)",
+        "PR-CSPD\n@P0 (4k)",
+        "KV-PD\n@P0 (4k)",
+        "Direct\n@P4 (4k)",
+        "Alg. 1\n@P2 (4k)",
+        "Alg. 1\nSplit (4k)",
+    ]
+    gap_if = [
+        abs(g1b["ablation_nopr_Math_IF"]["G_if_pct"] - g1b["ablation_nopr_IF_Math"]["G_if_pct"]),
+        abs(g1b["cspd_concat_Math_IF"]["G_if_pct"]   - g1b["cspd_concat_IF_Math"]["G_if_pct"]),
+        abs(c10i["PR_CSPD_P0_Math_IF"]["4096"]["g_vs_ctx"] - c10i["PR_CSPD_P0_IF_Math"]["4096"]["g_vs_ctx"]),
+        abs(kvi["KVPD_Dual_Math_IF"]["4096"]["g_vs_ctx"]   - kvi["KVPD_Dual_IF_Math"]["4096"]["g_vs_ctx"]),
+        abs(pAi["Direct_Adj_M_I@P4"]["4096"]["g_vs_ctx"]   - pAi["Direct_Adj_I_M@P4"]["4096"]["g_vs_ctx"]),
+        abs(pAi["Alg1_Adj_M_I@P2"]["4096"]["g_vs_ctx"]     - pAi["Alg1_Adj_I_M@P2"]["4096"]["g_vs_ctx"]),
+        abs(pAi["Alg1_Split_M@P2_I@P4"]["4096"]["g_vs_ctx"] - pAi["Alg1_Split_I@P2_M@P4"]["4096"]["g_vs_ctx"]),
+    ]
+    gap_ma = [
+        abs(g1b["ablation_nopr_Math_IF"]["G_math_pct"] - g1b["ablation_nopr_IF_Math"]["G_math_pct"]),
+        abs(g1b["cspd_concat_Math_IF"]["G_math_pct"]   - g1b["cspd_concat_IF_Math"]["G_math_pct"]),
+        abs(c10m["PR_CSPD_P0_Math_IF"]["4096"]["g_vs_ctx"] - c10m["PR_CSPD_P0_IF_Math"]["4096"]["g_vs_ctx"]),
+        abs(kvm["KVPD_Dual_Math_IF"]["4096"]["g_vs_ctx"]   - kvm["KVPD_Dual_IF_Math"]["4096"]["g_vs_ctx"]),
+        abs(pAm["Direct_Adj_M_I@P4"]["4096"]["g_vs_ctx"]   - pAm["Direct_Adj_I_M@P4"]["4096"]["g_vs_ctx"]),
+        abs(pAm["Alg1_Adj_M_I@P2"]["4096"]["g_vs_ctx"]     - pAm["Alg1_Adj_I_M@P2"]["4096"]["g_vs_ctx"]),
+        abs(pAm["Alg1_Split_M@P2_I@P4"]["4096"]["g_vs_ctx"] - pAm["Alg1_Split_I@P2_M@P4"]["4096"]["g_vs_ctx"]),
+    ]
+    xa = np.arange(len(cats_a))
+    wa = 0.36
+    ba1 = ax1.bar(xa - wa/2, gap_if, wa, color=ORANGE, edgecolor=DARK, lw=0.5, label="IF order/swap gap |Δ|",   zorder=3)
+    ba2 = ax1.bar(xa + wa/2, gap_ma, wa, color=BLUE,   edgecolor=DARK, lw=0.5, label="Math order/swap gap |Δ|", zorder=3)
+    for b, v in zip(ba1, gap_if):
+        ax1.text(b.get_x() + b.get_width()/2, v + 0.55, f"{v:.1f}", ha="center", va="bottom", fontsize=6.1, color="#B85200")
+    for b, v in zip(ba2, gap_ma):
+        ax1.text(b.get_x() + b.get_width()/2, v + 0.55, f"{v:.1f}", ha="center", va="bottom", fontsize=6.1, color=BLUE)
+    ax1.axvline(1.5, color=GRAY, ls="--", lw=0.9)
+    ax1.annotate("3.57× lower\nwith PR", xy=(1 - wa/2, gap_if[1] + 2.5), xytext=(0.68, 15.8), ha="center",
+                 arrowprops=dict(arrowstyle="->", color="#B85200", lw=0.9), fontsize=6.2, fontweight="bold", color="#B85200")
+    ax1.annotate("0.0 pp\n(≤0.2 @ 0–8k)", xy=(3, 1.8), xytext=(3.0, 9.8), ha="center",
+                 arrowprops=dict(arrowstyle="->", color=PURPLE, lw=0.9), fontsize=6.1, fontweight="bold", color=PURPLE,
+                 bbox=dict(boxstyle="round,pad=0.14", fc="#F6F2FA", ec=PURPLE, lw=0.5))
+    ax1.annotate("P4 recency\nbias", xy=(4 + wa/2, 16.3), xytext=(4.65, 22.0), ha="center",
+                 arrowprops=dict(arrowstyle="->", color=BLUE, lw=0.9), fontsize=6.3, fontweight="bold", color=BLUE)
+    ax1.set_xticks(xa)
+    ax1.set_xticklabels(cats_a, fontsize=6.6)
+    ax1.set_ylabel("Order / slot-swap gap |Δ| (pp) ↓")
+    ax1.set_ylim(0, 29.5)
+    ax1.set_title("(a) Dual-expert order & slot-swap sensitivity", pad=10)
+    ax1.legend(loc="upper right", frameon=True, facecolor="white", framealpha=0.94, edgecolor="#DDDDDD", fontsize=6.5, handlelength=1.4)
+
+    # (b) Three-Expert All-6-Permutations ({Doc, Math, IF}) at L=4096 (symlog scale)
+    style_boxed(ax2, "y")
+    pB4k = d11["partB_3expert_all6_perms"]["L4096"]
+    fams_b = [
+        ("PR-CSPD\n@P0",        "PR_CSPD_P0_3Exp",        ORANGE),
+        ("KV-PD\n@P0",          "KVPD_P0_3Exp",           PURPLE),
+        ("Alg. 1 Split\n(P1,P2,P4)", "Alg1_Split_P1P2P4_3Exp", BLUE),
+        ("Alg. 1 Adj.\n@P2",    "Alg1_Adj_P2_3Exp",       TEAL),
+    ]
+    perm_keys = ["DMI", "DIM", "MDI", "MID", "IDM", "IMD"]
+    offsets = np.linspace(-0.20, 0.20, 6)
+    ax2.axhline(0.0, color=DARK, lw=0.8, ls="--", zorder=1)
+    for idx, (lbl, fkey, col) in enumerate(fams_b):
+        pdict = pB4k[fkey]["perms"]
+        vals = [pdict[pk]["avg3_g"] for pk in perm_keys]
+        mean_v = pB4k[fkey]["avg3_summary"]["mean"]
+        # Vertical range whisker
+        ax2.plot([idx, idx], [min(vals), max(vals)], color=col, lw=1.4, alpha=0.55, zorder=2)
+        for j, (pk, val) in enumerate(zip(perm_keys, vals)):
+            is_doc_first = pk.startswith("D")
+            pt_col = RED if (fkey in ("PR_CSPD_P0_3Exp", "Alg1_Split_P1P2P4_3Exp") and is_doc_first) else col
+            mk = "X" if (fkey in ("PR_CSPD_P0_3Exp", "Alg1_Split_P1P2P4_3Exp") and is_doc_first) else "o"
+            ax2.scatter(idx + offsets[j], val, s=34, color=pt_col, edgecolor="white", lw=0.4, marker=mk, zorder=4)
+        ax2.plot([idx - 0.27, idx + 0.27], [mean_v, mean_v], color=DARK, lw=1.8, zorder=5)
+
+    ax2.set_yscale("symlog", linthresh=25.0, linscale=0.95)
+    ax2.set_ylim(-680, 96)
+    ax2.set_yticks([-400, -150, -50, -20, 0, 20, 50])
+    ax2.set_yticklabels(["−400", "−150", "−50", "−20", "0", "+20", "+50"], fontsize=7.2)
+    ax2.set_xticks(range(len(fams_b)))
+    ax2.set_xticklabels([f[0] for f in fams_b], fontsize=7.2)
+    ax2.set_ylabel("3-domain mean gain Avg3 (%, symlog)")
+    ax2.set_title("(b) Three-expert all-6 permutations (L=4096)", pad=10)
+
+    # Clear callouts in Panel (b)
+    ax2.annotate("Doc first: −408%\n(spread 251 pp)", xy=(0.0, -150), xytext=(0.32, -38), ha="center",
+                 arrowprops=dict(arrowstyle="->", color=RED, lw=0.9), fontsize=6.0, fontweight="bold", color=RED,
+                 bbox=dict(boxstyle="round,pad=0.14", fc="#FDF2F2", ec=RED, lw=0.5))
+    ax2.annotate("All 6 perms:\n+0.3% (sp 0.12)", xy=(1.0, 1.5), xytext=(1.0, 44), ha="center",
+                 arrowprops=dict(arrowstyle="->", color=PURPLE, lw=0.9), fontsize=6.0, fontweight="bold", color=PURPLE,
+                 bbox=dict(boxstyle="round,pad=0.14", fc="#F6F2FA", ec=PURPLE, lw=0.5))
+    ax2.annotate("Doc@P1 (DMI/DIM)\n−139% / −137%", xy=(2.0, -148), xytext=(2.05, -400), ha="center",
+                 arrowprops=dict(arrowstyle="->", color=RED, lw=0.9), fontsize=6.0, fontweight="bold", color=RED,
+                 bbox=dict(boxstyle="round,pad=0.14", fc="#FDF2F2", ec=RED, lw=0.5))
+    ax2.text(2.0, 44, "Doc@P2/P4:\n+11..+22%", ha="center", va="bottom", fontsize=6.0, fontweight="bold", color=BLUE)
+    ax2.text(3.0, 44, "All 6 > +23%\nMDI +27.6%", ha="center", va="bottom", fontsize=6.0, fontweight="bold", color=TEAL,
+             bbox=dict(boxstyle="round,pad=0.14", fc="#EEF7F6", ec=TEAL, lw=0.5))
+
+    # (c) End-to-End Order/Slot-Swap Accuracy at L_ctx = 4096
+    style_boxed(ax3, "y")
+    pC = d11["partC_e2e_order_swap"]
+    c_labels = [
+        "MATH32\nAlg. 1 Split",
+        "IFBench32\nAlg. 1 Split",
+        "IFEval48\nAlg. 1 Split",
+        "IFBench32\nKV-PD @P0",
+        "IFBench32\nPR-CSPD @P0",
+    ]
+    fwd_vals = [
+        pC["math32"]["4096"]["Alg1_Split_M@P2_I@P4"]["acc"],
+        pC["ifbench32"]["4096"]["Alg1_Split_M@P2_I@P4"]["prompt_strict"],
+        pC["ifeval48"]["4096"]["Alg1_Split_M@P2_I@P4"]["prompt_strict"],
+        pC["ifbench32"]["4096"]["KVPD_P0_Math_IF"]["prompt_strict"],
+        pC["ifbench32"]["4096"]["PR_CSPD_P0_Math_IF"]["prompt_strict"],
+    ]
+    rev_vals = [
+        pC["math32"]["4096"]["Alg1_Split_I@P2_M@P4"]["acc"],
+        pC["ifbench32"]["4096"]["Alg1_Split_I@P2_M@P4"]["prompt_strict"],
+        pC["ifeval48"]["4096"]["Alg1_Split_I@P2_M@P4"]["prompt_strict"],
+        pC["ifbench32"]["4096"]["KVPD_P0_IF_Math"]["prompt_strict"],
+        pC["ifbench32"]["4096"]["PR_CSPD_P0_IF_Math"]["prompt_strict"],
+    ]
+    xc = np.arange(len(c_labels))
+    wc = 0.35
+    bc1 = ax3.bar(xc - wc/2, fwd_vals, wc, color=TEAL,   edgecolor=DARK, lw=0.5, label="Primary ([M@P2+I@P4] / [M; I])", zorder=3)
+    bc2 = ax3.bar(xc + wc/2, rev_vals, wc, color=LBLUE,  edgecolor=DARK, lw=0.5, label="Swapped ([I@P2+M@P4] / [I; M])", zorder=3)
+    # Color KV-PD and PR-CSPD distinct muted shades to echo architectures while keeping Fwd vs Rev clear
+    bc1[3].set_color(PURPLE); bc2[3].set_color("#C9B3DC")
+    bc1[4].set_color(ORANGE); bc2[4].set_color("#F7C99E")
+
+    for b, v in zip(bc1, fwd_vals):
+        ax3.text(b.get_x() + b.get_width()/2, v + 1.3, f"{v:.1f}", ha="center", va="bottom", fontsize=6.3)
+    for b, v in zip(bc2, rev_vals):
+        ax3.text(b.get_x() + b.get_width()/2, v + 1.3, f"{v:.1f}", ha="center", va="bottom", fontsize=6.3)
+
+    ax3.axvline(2.5, color=GRAY, ls="--", lw=0.9)
+    ax3.text(0.0, 81.0, "+25.0 pp", ha="center", fontsize=6.7, fontweight="bold", color=TEAL,
+             bbox=dict(boxstyle="round,pad=0.14", fc="#EEF7F6", ec=TEAL, lw=0.5))
+    ax3.text(1.0, 64.5, "+6.2 pp", ha="center", fontsize=6.5, fontweight="bold", color=TEAL)
+    ax3.text(2.0, 88.0, "|Δ|=2.1 pp", ha="center", fontsize=6.4, color=DARK)
+    ax3.text(3.0, 52.0, "|Δ|=0.0 pp", ha="center", fontsize=6.6, fontweight="bold", color=PURPLE,
+             bbox=dict(boxstyle="round,pad=0.14", fc="#F6F2FA", ec=PURPLE, lw=0.5))
+    ax3.text(4.0, 36.5, "Both\ncollapse", ha="center", fontsize=6.3, fontweight="bold", color=RED)
+
+    ax3.set_xticks(xc)
+    ax3.set_xticklabels(c_labels, fontsize=6.8)
+    ax3.set_ylabel("End-to-end strict accuracy (%)")
+    ax3.set_ylim(0, 108)
+    ax3.set_title("(c) End-to-end order swap at L=4096", pad=10)
+    ax3.legend(loc="upper right", frameon=True, facecolor="white", framealpha=0.94, edgecolor="#DDDDDD", fontsize=6.2, handlelength=1.4)
+
+    path = os.path.join(OUT, "pfig14_injection_order_and_slot_permutations.png")
+    fig.savefig(path)
+    plt.close(fig)
+    print("Saved:", path)
+
+
 if __name__ == "__main__":
     make_pfig01()
     make_pfig02()
@@ -1334,4 +1511,5 @@ if __name__ == "__main__":
     make_pfig11()
     make_pfig12()
     make_pfig13()
-    print("All 13 paper-style figures generated successfully.")
+    make_pfig14()
+    print("All 14 paper-style figures generated successfully.")
