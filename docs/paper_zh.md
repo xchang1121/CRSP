@@ -96,10 +96,7 @@ p(y \mid x) = p_{\theta_0}\big(y \mid \mathcal{I}(\mathbf{P}_{1:k}, x)\big) \qqu
 由于单个模块在训练时独立存在，而在推理拼接时可能位于其它模块之后，直接拼接会导致后置模块遭遇绝对位置偏移与陌生前导上下文。为此引入**前缀鲁棒训练（Prefix-Robust Training）**：在单域训练中对一半样本随机采样一段来自动态语料或词表的上下文前缀 $`\mathbf{F}`$ 置于 $`\mathbf{P}_j`$ 之前：
 
 ```math
-\tilde{\mathbf{E}}_{\text{in}} = \begin{cases}
-[\mathbf{F};\, \mathbf{P}_j;\, \text{Emb}(x)], & \text{以概率 } p_{\text{pr}} \\
-[\mathbf{P}_j;\, \text{Emb}(x)], & \text{以概率 } 1 - p_{\text{pr}}
-\end{cases} \qquad \text{(5)}
+\tilde{\mathbf{E}}_{\text{in}} = \begin{cases} [\mathbf{F};\, \mathbf{P}_j;\, \text{Emb}(x)], & \text{以概率 } p_{\text{pr}} \\ [\mathbf{P}_j;\, \text{Emb}(x)], & \text{以概率 } 1 - p_{\text{pr}} \end{cases} \qquad \text{(5)}
 ```
 
 前导前缀 $`\mathbf{F}`$ 保持冻结且不参与损失计算，在推理期移除。该机制迫使每个独立软提示在非零起始偏移下维持稳定的条件调制作用。
