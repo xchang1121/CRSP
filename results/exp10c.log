@@ -1,0 +1,121 @@
+launching exp10c...
+GPU: NVIDIA RTX PRO 6000 Blackwell Server Edition | VRAM_GB: 102.0
+============================================================================================
+Suite 8C (exp10c): Fast Batched L=4096 End-to-End Generation (MATH32, IFEval48, IFBench32)
+============================================================================================
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Generating train split:   0%|          | 0/541 [00:00<?, ? examples/s]Generating train split: 100%|██████████| 541/541 [00:00<00:00, 23578.20 examples/s]
+Generating test split:   0%|          | 0/500 [00:00<?, ? examples/s]Generating test split: 100%|██████████| 500/500 [00:00<00:00, 274928.16 examples/s]
+Loaded datasets: if_train96=96, ifeval_test96=96, ifbench64=64, math_train64=64, math_test48=48, doc_train=128, doc_test=24+12
+Generating test split:   0%|          | 0/4358 [00:00<?, ? examples/s]Generating test split: 100%|██████████| 4358/4358 [00:00<00:00, 204093.04 examples/s]
+Generating train split:   0%|          | 0/36718 [00:00<?, ? examples/s]Generating train split: 100%|██████████| 36718/36718 [00:00<00:00, 1550218.47 examples/s]
+Generating validation split:   0%|          | 0/3760 [00:00<?, ? examples/s]Generating validation split: 100%|██████████| 3760/3760 [00:00<00:00, 1176733.55 examples/s]
+  [LongCtx] Loaded 126 non-repeating Salesforce/wikitext passages.
+  [LongCtx Bundle] target=   0 -> actual_ctx_tokens=   0
+  [LongCtx Bundle] target= 512 -> actual_ctx_tokens= 512
+  [LongCtx Bundle] target=1024 -> actual_ctx_tokens=1024
+  [LongCtx Bundle] target=2048 -> actual_ctx_tokens=2048
+  [LongCtx Bundle] target=4096 -> actual_ctx_tokens=4096
+  [LongCtx Bundle] target=8192 -> actual_ctx_tokens=8192
+
+--- PHASE 1: Caching Post-RL Teacher Top-64 Targets ---
+  [Cache IF_Teacher    ] Loading Jackwang111/M2RL-RL_IF for 88 prompts...
+Fetching 2 files:   0%|          | 0/2 [00:00<?, ?it/s]Fetching 2 files:  50%|█████     | 1/2 [00:28<00:28, 28.61s/it]Fetching 2 files: 100%|██████████| 2/2 [00:28<00:00, 14.30s/it]
+Loading weights:   0%|          | 0/398 [00:00<?, ?it/s]Loading weights:   9%|▉         | 37/398 [00:00<00:01, 359.16it/s]Loading weights:  29%|██▊       | 114/398 [00:00<00:00, 588.74it/s]Loading weights:  48%|████▊     | 191/398 [00:00<00:00, 670.14it/s]Loading weights:  67%|██████▋   | 268/398 [00:00<00:00, 705.65it/s]Loading weights:  87%|████████▋ | 346/398 [00:00<00:00, 723.95it/s]Loading weights: 100%|██████████| 398/398 [00:00<00:00, 696.48it/s]
+    gen batch 32/88 done (out_len=768)
+    gen batch 64/88 done (out_len=768)
+    gen batch 88/88 done (out_len=768)
+  [Cache IF_Teacher    ] Cached 88 dense Top-64 targets & freed GPU in 119.6s
+  [Cache Math_Teacher  ] Loading Jackwang111/M2RL-RL_Math for 72 prompts...
+Fetching 2 files:   0%|          | 0/2 [00:00<?, ?it/s]Fetching 2 files:  50%|█████     | 1/2 [00:26<00:26, 26.24s/it]Fetching 2 files: 100%|██████████| 2/2 [00:26<00:00, 13.12s/it]
+Loading weights:   0%|          | 0/398 [00:00<?, ?it/s]Loading weights:  10%|▉         | 38/398 [00:00<00:00, 366.47it/s]Loading weights:  30%|██▉       | 119/398 [00:00<00:00, 619.42it/s]Loading weights:  49%|████▉     | 196/398 [00:00<00:00, 687.06it/s]Loading weights:  69%|██████▊   | 273/398 [00:00<00:00, 716.49it/s]Loading weights:  88%|████████▊ | 350/398 [00:00<00:00, 732.60it/s]Loading weights: 100%|██████████| 398/398 [00:00<00:00, 703.31it/s]
+    gen batch 32/72 done (out_len=768)
+    gen batch 64/72 done (out_len=768)
+    gen batch 72/72 done (out_len=768)
+  [Cache Math_Teacher  ] Cached 72 dense Top-64 targets & freed GPU in 110.2s
+
+--- Loading Frozen Backbone: Jackwang111/M2RL-SFT ---
+Fetching 2 files:   0%|          | 0/2 [00:00<?, ?it/s]Fetching 2 files:  50%|█████     | 1/2 [00:25<00:25, 25.49s/it]Fetching 2 files: 100%|██████████| 2/2 [00:25<00:00, 12.75s/it]
+Loading weights:   0%|          | 0/398 [00:00<?, ?it/s]Loading weights:   9%|▉         | 36/398 [00:00<00:01, 349.97it/s]Loading weights:  28%|██▊       | 112/398 [00:00<00:00, 575.24it/s]Loading weights:  48%|████▊     | 190/398 [00:00<00:00, 663.53it/s]Loading weights:  67%|██████▋   | 267/398 [00:00<00:00, 702.71it/s]Loading weights:  86%|████████▋ | 344/398 [00:00<00:00, 723.81it/s]Loading weights: 100%|██████████| 398/398 [00:00<00:00, 690.07it/s]
+
+--- PHASE 2: Training Procedural Experts ---
+  [PR_CSPD_IF_L256         ] step  1/45 | dist=0.5739 | rms=0.0205 | t=1.4s
+  [PR_CSPD_IF_L256         ] step 20/45 | dist=0.4409 | rms=0.0313 | t=23.3s
+  [PR_CSPD_IF_L256         ] step 45/45 | dist=0.3482 | rms=0.0332 | t=51.8s
+  [PR_CSPD_Math_L256       ] step  1/45 | dist=0.3072 | rms=0.0206 | t=1.1s
+  [PR_CSPD_Math_L256       ] step 20/45 | dist=0.2590 | rms=0.0303 | t=22.5s
+  [PR_CSPD_Math_L256       ] step 45/45 | dist=0.1631 | rms=0.0319 | t=50.7s
+  [KVPD_IF_L16         ] step  1/45 | dist=0.5247 | d_rms=0.021 | t=1.0s
+  [KVPD_IF_L16         ] step 20/45 | dist=0.3285 | d_rms=0.114 | t=19.4s
+  [KVPD_IF_L16         ] step 45/45 | dist=0.2779 | d_rms=0.130 | t=43.7s
+  [KVPD_Math_L16       ] step  1/45 | dist=0.2405 | d_rms=0.018 | t=1.0s
+  [KVPD_Math_L16       ] step 20/45 | dist=0.1689 | d_rms=0.092 | t=18.4s
+  [KVPD_Math_L16       ] step 45/45 | dist=0.2042 | d_rms=0.101 | t=42.1s
+  [Direct_CRSP_IF_L256       ] step  1/45 | dist=0.6801 | inv=0.1447 | null=0.1673 | rms=0.0207 | t=3.2s
+  [Direct_CRSP_IF_L256       ] step 20/45 | dist=0.5390 | inv=0.0968 | null=0.0311 | rms=0.0330 | t=64.7s
+  [Direct_CRSP_IF_L256       ] step 45/45 | dist=0.4403 | inv=0.0694 | null=0.0697 | rms=0.0352 | t=145.1s
+  [Direct_CRSP_Math_L64      ] step  1/45 | dist=0.3259 | inv=0.1385 | null=0.2035 | rms=0.0213 | t=2.6s
+  [Direct_CRSP_Math_L64      ] step 20/45 | dist=0.2755 | inv=0.0274 | null=0.1883 | rms=0.0385 | t=50.5s
+  [Direct_CRSP_Math_L64      ] step 45/45 | dist=0.2054 | inv=0.0327 | null=0.1017 | rms=0.0413 | t=112.3s
+  [AlgA KV_IF_Self     ] Self-generated & cached 64 pure-logit targets in 55.1s
+  [Alg1_KVInv_IF_L64         ] step  1/45 | dist=0.6623 | inv=0.1543 | null=0.1569 | rms=0.0212 | t=2.5s
+  [Alg1_KVInv_IF_L64         ] step 20/45 | dist=0.5647 | inv=0.0983 | null=0.0318 | rms=0.0394 | t=50.8s
+  [Alg1_KVInv_IF_L64         ] step 45/45 | dist=0.4407 | inv=0.0558 | null=0.0660 | rms=0.0425 | t=115.2s
+  [AlgA KV_Math_Self   ] Self-generated & cached 48 pure-logit targets in 57.0s
+  [Alg1_KVInv_Math_L64       ] step  1/45 | dist=0.3326 | inv=0.1650 | null=0.2035 | rms=0.0213 | t=2.6s
+  [Alg1_KVInv_Math_L64       ] step 20/45 | dist=0.2741 | inv=0.0229 | null=0.1795 | rms=0.0387 | t=50.1s
+  [Alg1_KVInv_Math_L64       ] step 45/45 | dist=0.2256 | inv=0.0234 | null=0.1170 | rms=0.0414 | t=112.2s
+
+--- PHASE 2B: Smooth-LR KV-PD 6-Point Sweep (0..8192) ---
+  [KVPD_Smooth if  ] 0:+58.1% | 512:+29.1% | 1024:+30.5% | 2048:+30.2% | 4096:+29.6% | 8192:+29.2%
+  [KVPD_Smooth math] 0:+30.3% | 512:+32.4% | 1024:+31.6% | 2048:+30.1% | 4096:+23.8% | 8192:+16.8%
+
+--- PHASE 3: MATH32 (N=32, 1536 tok) at L_ctx in {0, 4096} ---
+/usr/local/lib/python3.13/dist-packages/sympy/parsing/latex/_parse_latex_antlr.py:23: UserWarning: antlr4.error.ErrorListener module is not installed
+  ErrorListener = import_module('antlr4.error.ErrorListener',
+  [MATH32   L=4096 bs=32 | Base_Frozen                 ] acc=68.75% (22/32) | closed=28/32 ( 78.6%) | t=321.7s
+  [MATH32   L=4096 bs=32 | PR_CSPD_Math_P0             ] acc=59.38% (19/32) | closed=25/32 ( 76.0%) | t=336.0s
+  [MATH32   L=4096 bs=32 | KVPD_Math_P0                ] acc=56.25% (18/32) | closed=23/32 ( 78.3%) | t=322.3s
+  [MATH32   L=4096 bs=32 | Direct_CRSP_Math_P2         ] acc=50.00% (16/32) | closed=22/32 ( 72.7%) | t=325.1s
+  [MATH32   L=4096 bs=32 | Alg1_Math_P2                ] acc=53.12% (17/32) | closed=20/32 ( 85.0%) | t=325.1s
+  [MATH32   L=4096 bs=32 | PR_CSPD_Dual_P0             ] acc=53.12% (17/32) | closed=24/32 ( 70.8%) | t=350.5s
+  [MATH32   L=4096 bs=32 | KVPD_Dual_P0                ] acc=50.00% (16/32) | closed=20/32 ( 80.0%) | t=323.2s
+  [MATH32   L=4096 bs=32 | Alg1_CRSP_Split_M@P2_I@P4   ] acc=56.25% (18/32) | closed=23/32 ( 78.3%) | t=328.7s
+  [MATH32   L=   0 bs=32 | Base_Frozen                 ] acc=62.50% (20/32) | closed=24/32 ( 83.3%) | t=82.4s
+  [MATH32   L=   0 bs=32 | PR_CSPD_Math_P0             ] acc=46.88% (15/32) | closed=18/32 ( 83.3%) | t=97.7s
+  [MATH32   L=   0 bs=32 | KVPD_Math_P0                ] acc=34.38% (11/32) | closed=15/32 ( 73.3%) | t=83.4s
+  [MATH32   L=   0 bs=32 | Direct_CRSP_Math_P2         ] acc=59.38% (19/32) | closed=22/32 ( 86.4%) | t=86.2s
+  [MATH32   L=   0 bs=32 | Alg1_Math_P2                ] acc=53.12% (17/32) | closed=21/32 ( 81.0%) | t=86.2s
+  [MATH32   L=   0 bs=32 | PR_CSPD_Dual_P0             ] acc=53.12% (17/32) | closed=23/32 ( 73.9%) | t=112.8s
+  [MATH32   L=   0 bs=32 | KVPD_Dual_P0                ] acc=34.38% (11/32) | closed=13/32 ( 84.6%) | t=84.3s
+  [MATH32   L=   0 bs=32 | Alg1_CRSP_Split_M@P2_I@P4   ] acc=56.25% (18/32) | closed=23/32 ( 78.3%) | t=90.1s
+
+--- PHASE 4: IFEval48 (N=48, 1536 tok) at L_ctx = 4096 ---
+  [IFEval48 L=4096 bs=32 | Base_Frozen                 ] strict=70.83% (34/48) | closed=46/48 ( 73.9%) | t=496.6s
+  [IFEval48 L=4096 bs=32 | PR_CSPD_L256_at_P0          ] strict=64.58% (31/48) | closed=39/48 ( 79.5%) | t=518.4s
+  [IFEval48 L=4096 bs=32 | KVPD_L16_at_P0              ] strict=66.67% (32/48) | closed=35/48 ( 91.4%) | t=498.1s
+  [IFEval48 L=4096 bs=32 | Direct_CRSP_L256_at_P2      ] strict=70.83% (34/48) | closed=41/48 ( 82.9%) | t=518.5s
+  [IFEval48 L=4096 bs=32 | Alg1_KVInv_L64_at_P4        ] strict=70.83% (34/48) | closed=44/48 ( 77.3%) | t=502.2s
+  [IFEval48 L=4096 bs=32 | PR_CSPD_Dual_P0             ] strict=37.50% (18/48) | closed=32/48 ( 56.2%) | t=540.3s
+  [IFEval48 L=4096 bs=32 | KVPD_Dual_P0                ] strict=66.67% (32/48) | closed=34/48 ( 94.1%) | t=499.5s
+  [IFEval48 L=4096 bs=32 | Alg1_CRSP_Split_M@P2_I@P4   ] strict=81.25% (39/48) | closed=43/48 ( 90.7%) | t=507.6s
+
+--- PHASE 5: Official IFBench32 (N=32, 2048 tok) at L_ctx in {4096, 0} ---
+  [IFB32    L=4096 bs=32 | Base_Frozen                 ] strict=56.25% (18/32) | closed=28/32 ( 64.3%) | t=441.5s
+  [IFB32    L=4096 bs=32 | PR_CSPD_L256_at_P0          ] strict=59.38% (19/32) | closed=28/32 ( 67.9%) | t=460.6s
+  [IFB32    L=4096 bs=32 | KVPD_L16_at_P0              ] strict=37.50% (12/32) | closed=18/32 ( 66.7%) | t=442.7s
+  [IFB32    L=4096 bs=32 | Direct_CRSP_L256_at_P2      ] strict=46.88% (15/32) | closed=23/32 ( 65.2%) | t=460.6s
+  [IFB32    L=4096 bs=32 | Alg1_KVInv_L64_at_P4        ] strict=50.00% (16/32) | closed=22/32 ( 72.7%) | t=446.4s
+  [IFB32    L=4096 bs=32 | PR_CSPD_Dual_P0             ] strict=28.12% ( 9/32) | closed=25/32 ( 36.0%) | t=479.7s
+  [IFB32    L=4096 bs=32 | KVPD_Dual_P0                ] strict=50.00% (16/32) | closed=21/32 ( 76.2%) | t=443.9s
+  [IFB32    L=4096 bs=32 | Alg1_CRSP_Split_M@P2_I@P4   ] strict=56.25% (18/32) | closed=21/32 ( 85.7%) | t=451.0s
+  [IFB32    L=   0 bs=32 | Base_Frozen                 ] strict=46.88% (15/32) | closed=23/32 ( 65.2%) | t=126.5s
+  [IFB32    L=   0 bs=32 | PR_CSPD_L256_at_P0          ] strict=50.00% (16/32) | closed=22/32 ( 72.7%) | t=146.9s
+  [IFB32    L=   0 bs=32 | KVPD_L16_at_P0              ] strict=37.50% (12/32) | closed=16/32 ( 75.0%) | t=127.9s
+  [IFB32    L=   0 bs=32 | Direct_CRSP_L256_at_P2      ] strict=53.12% (17/32) | closed=24/32 ( 70.8%) | t=147.0s
+  [IFB32    L=   0 bs=32 | Alg1_KVInv_L64_at_P4        ] strict=56.25% (18/32) | closed=24/32 ( 75.0%) | t=131.6s
+  [IFB32    L=   0 bs=32 | PR_CSPD_Dual_P0             ] strict=62.50% (20/32) | closed=24/32 ( 83.3%) | t=167.2s
+  [IFB32    L=   0 bs=32 | KVPD_Dual_P0                ] strict=43.75% (14/32) | closed=16/32 ( 87.5%) | t=129.1s
+  [IFB32    L=   0 bs=32 | Alg1_CRSP_Split_M@P2_I@P4   ] strict=46.88% (15/32) | closed=21/32 ( 71.4%) | t=136.8s
+
+=== ALL DONE! exp10c_results.json saved in 13321.7s ===

@@ -1,0 +1,122 @@
+launching exp10b...
+Cloning into '/content/IFBench'...
+GPU: NVIDIA A100-SXM4-40GB | VRAM_GB: 42.4
+============================================================================================
+Suite 8B (exp10b): Long-Context E2E Generation & Fixed Doc KV-PD Attenuation
+============================================================================================
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Generating train split:   0%|          | 0/541 [00:00<?, ? examples/s]Generating train split: 100%|██████████| 541/541 [00:00<00:00, 11867.15 examples/s]
+Generating test split:   0%|          | 0/500 [00:00<?, ? examples/s]Generating test split: 100%|██████████| 500/500 [00:00<00:00, 111284.27 examples/s]
+Loaded datasets: if_train96=96, ifeval_test96=96, ifbench64=64, math_train64=64, math_test48=48, doc_train=128, doc_test=24+12
+Generating test split:   0%|          | 0/4358 [00:00<?, ? examples/s]Generating test split: 100%|██████████| 4358/4358 [00:00<00:00, 95473.47 examples/s]
+Generating train split:   0%|          | 0/36718 [00:00<?, ? examples/s]Generating train split: 100%|██████████| 36718/36718 [00:00<00:00, 725528.36 examples/s]
+Generating validation split:   0%|          | 0/3760 [00:00<?, ? examples/s]Generating validation split: 100%|██████████| 3760/3760 [00:00<00:00, 578291.34 examples/s]
+  [LongCtx] Loaded 126 non-repeating Salesforce/wikitext passages.
+  [LongCtx Bundle] target=   0 -> actual_ctx_tokens=   0
+  [LongCtx Bundle] target= 512 -> actual_ctx_tokens= 512
+  [LongCtx Bundle] target=1024 -> actual_ctx_tokens=1024
+  [LongCtx Bundle] target=2048 -> actual_ctx_tokens=2048
+  [LongCtx Bundle] target=4096 -> actual_ctx_tokens=4096
+  [LongCtx Bundle] target=8192 -> actual_ctx_tokens=8192
+
+--- PHASE 1: Caching Post-RL Teacher Top-64 Targets ---
+  [Cache IF_Teacher    ] Loading Jackwang111/M2RL-RL_IF for 88 prompts...
+Fetching 2 files:   0%|          | 0/2 [00:00<?, ?it/s]Fetching 2 files:  50%|█████     | 1/2 [00:25<00:25, 25.14s/it]Fetching 2 files: 100%|██████████| 2/2 [00:25<00:00, 12.57s/it]
+Loading weights:   0%|          | 0/398 [00:00<?, ?it/s]Loading weights:   0%|          | 1/398 [00:00<01:17,  5.15it/s]Loading weights:   7%|▋         | 26/398 [00:00<00:03, 108.06it/s]Loading weights:  12%|█▏        | 48/398 [00:00<00:02, 148.69it/s]Loading weights:  18%|█▊        | 70/398 [00:00<00:01, 172.16it/s]Loading weights:  23%|██▎       | 92/398 [00:00<00:01, 186.61it/s]Loading weights:  29%|██▊       | 114/398 [00:00<00:01, 195.90it/s]Loading weights:  34%|███▍      | 136/398 [00:00<00:01, 202.12it/s]Loading weights:  40%|███▉      | 158/398 [00:00<00:01, 205.90it/s]Loading weights:  45%|████▌     | 180/398 [00:01<00:01, 201.30it/s]Loading weights:  51%|█████     | 203/398 [00:01<00:00, 208.02it/s]Loading weights:  57%|█████▋    | 225/398 [00:01<00:00, 208.79it/s]Loading weights:  62%|██████▏   | 247/398 [00:01<00:00, 209.89it/s]Loading weights:  68%|██████▊   | 269/398 [00:01<00:00, 211.16it/s]Loading weights:  73%|███████▎  | 291/398 [00:01<00:00, 211.99it/s]Loading weights:  79%|███████▊  | 313/398 [00:01<00:00, 212.22it/s]Loading weights:  84%|████████▍ | 335/398 [00:01<00:00, 212.48it/s]Loading weights:  90%|████████▉ | 357/398 [00:01<00:00, 212.38it/s]Loading weights:  95%|█████████▌| 379/398 [00:01<00:00, 212.46it/s]Loading weights: 100%|██████████| 398/398 [00:02<00:00, 197.08it/s]
+    gen batch 32/88 done (out_len=768)
+    gen batch 64/88 done (out_len=768)
+    gen batch 88/88 done (out_len=768)
+  [Cache IF_Teacher    ] Cached 88 dense Top-64 targets & freed GPU in 192.9s
+  [Cache Math_Teacher  ] Loading Jackwang111/M2RL-RL_Math for 72 prompts...
+Fetching 2 files:   0%|          | 0/2 [00:00<?, ?it/s]Fetching 2 files:  50%|█████     | 1/2 [00:29<00:29, 29.12s/it]Fetching 2 files: 100%|██████████| 2/2 [00:29<00:00, 14.56s/it]
+Loading weights:   0%|          | 0/398 [00:00<?, ?it/s]Loading weights:   0%|          | 1/398 [00:00<01:09,  5.72it/s]Loading weights:   5%|▌         | 20/398 [00:00<00:04, 88.53it/s]Loading weights:  11%|█         | 44/398 [00:00<00:02, 146.51it/s]Loading weights:  17%|█▋        | 66/398 [00:00<00:01, 170.53it/s]Loading weights:  22%|██▏       | 88/398 [00:00<00:01, 185.68it/s]Loading weights:  28%|██▊       | 110/398 [00:00<00:01, 195.60it/s]Loading weights:  33%|███▎      | 132/398 [00:00<00:01, 201.62it/s]Loading weights:  39%|███▊      | 154/398 [00:00<00:01, 205.94it/s]Loading weights:  44%|████▍     | 175/398 [00:00<00:01, 205.79it/s]Loading weights:  49%|████▉     | 196/398 [00:01<00:00, 205.61it/s]Loading weights:  55%|█████▌    | 220/398 [00:01<00:00, 214.09it/s]Loading weights:  61%|██████    | 242/398 [00:01<00:00, 214.10it/s]Loading weights:  66%|██████▋   | 264/398 [00:01<00:00, 213.74it/s]Loading weights:  72%|███████▏  | 286/398 [00:01<00:00, 214.02it/s]Loading weights:  77%|███████▋  | 308/398 [00:01<00:00, 213.98it/s]Loading weights:  83%|████████▎ | 330/398 [00:01<00:00, 214.45it/s]Loading weights:  88%|████████▊ | 352/398 [00:01<00:00, 214.55it/s]Loading weights:  94%|█████████▍| 374/398 [00:01<00:00, 214.93it/s]Loading weights:  99%|█████████▉| 396/398 [00:02<00:00, 215.00it/s]Loading weights: 100%|██████████| 398/398 [00:02<00:00, 197.17it/s]
+    gen batch 32/72 done (out_len=768)
+    gen batch 64/72 done (out_len=768)
+    gen batch 72/72 done (out_len=768)
+  [Cache Math_Teacher  ] Cached 72 dense Top-64 targets & freed GPU in 192.1s
+
+--- Loading Frozen Backbone: Jackwang111/M2RL-SFT ---
+Fetching 2 files:   0%|          | 0/2 [00:00<?, ?it/s]Fetching 2 files:  50%|█████     | 1/2 [00:25<00:25, 25.37s/it]Fetching 2 files: 100%|██████████| 2/2 [00:25<00:00, 12.68s/it]
+Loading weights:   0%|          | 0/398 [00:00<?, ?it/s]Loading weights:   0%|          | 1/398 [00:00<01:09,  5.69it/s]Loading weights:   6%|▌         | 22/398 [00:00<00:03, 96.69it/s]Loading weights:  11%|█         | 44/398 [00:00<00:02, 142.63it/s]Loading weights:  17%|█▋        | 66/398 [00:00<00:01, 168.27it/s]Loading weights:  22%|██▏       | 88/398 [00:00<00:01, 183.25it/s]Loading weights:  28%|██▊       | 110/398 [00:00<00:01, 193.38it/s]Loading weights:  33%|███▎      | 131/398 [00:00<00:01, 196.48it/s]Loading weights:  39%|███▊      | 154/398 [00:00<00:01, 205.08it/s]Loading weights:  44%|████▍     | 175/398 [00:00<00:01, 205.32it/s]Loading weights:  50%|████▉     | 198/398 [00:01<00:00, 211.10it/s]Loading weights:  55%|█████▌    | 220/398 [00:01<00:00, 211.84it/s]Loading weights:  61%|██████    | 242/398 [00:01<00:00, 211.64it/s]Loading weights:  66%|██████▋   | 264/398 [00:01<00:00, 212.57it/s]Loading weights:  72%|███████▏  | 286/398 [00:01<00:00, 213.02it/s]Loading weights:  77%|███████▋  | 308/398 [00:01<00:00, 213.57it/s]Loading weights:  83%|████████▎ | 330/398 [00:01<00:00, 213.64it/s]Loading weights:  88%|████████▊ | 352/398 [00:01<00:00, 213.63it/s]Loading weights:  94%|█████████▍| 374/398 [00:01<00:00, 213.66it/s]Loading weights:  99%|█████████▉| 396/398 [00:02<00:00, 213.40it/s]Loading weights: 100%|██████████| 398/398 [00:02<00:00, 196.13it/s]
+
+--- PART E: Fixed Zero-Leakage HeliosPay v4.2 KV-PD Under Long Context (0 -> 4096) ---
+  [KVPD_Doc_L16            ] step   1/90 | nll=2.5417 | delta_rms=0.0245 | t=1.3s
+  [KVPD_Doc_L16            ] step  30/90 | nll=0.0131 | delta_rms=0.1765 | t=22.3s
+  [KVPD_Doc_L16            ] step  60/90 | nll=0.0038 | delta_rms=0.1908 | t=44.0s
+  [KVPD_Doc_L16            ] step  90/90 | nll=0.0036 | delta_rms=0.1918 | t=65.6s
+  [KVPD_Doc_L32            ] step   1/90 | nll=2.5358 | delta_rms=0.0244 | t=0.9s
+  [KVPD_Doc_L32            ] step  30/90 | nll=0.0128 | delta_rms=0.1712 | t=22.0s
+  [KVPD_Doc_L32            ] step  60/90 | nll=0.0048 | delta_rms=0.1837 | t=43.9s
+  [KVPD_Doc_L32            ] step  90/90 | nll=0.0019 | delta_rms=0.1842 | t=65.6s
+  [Doc36    L=   0 | KVPD_L16_Only                 ] overall=36.11% (13/36) | rules= 50.0% (12/24) | facts=  8.3% ( 1/12) | t=15.5s
+  [Doc36    L=   0 | KVPD_L16_MicroRAG             ] overall=61.11% (22/36) | rules= 50.0% (12/24) | facts= 83.3% (10/12) | t=15.4s
+  [Doc36    L=   0 | KVPD_L32_Only                 ] overall=50.00% (18/36) | rules= 66.7% (16/24) | facts= 16.7% ( 2/12) | t=15.6s
+  [Doc36    L=   0 | KVPD_L32_MicroRAG             ] overall=69.44% (25/36) | rules= 66.7% (16/24) | facts= 75.0% ( 9/12) | t=15.5s
+  [Doc36    L=   0 | Base_NoDoc                    ] overall= 0.00% ( 0/36) | rules=  0.0% ( 0/24) | facts=  0.0% ( 0/12) | t=39.3s
+  [Doc36    L=   0 | InContext_Manual_P0           ] overall=52.78% (19/36) | rules= 29.2% ( 7/24) | facts=100.0% (12/12) | t=38.5s
+  [Doc36    L=1024 | KVPD_L16_Only                 ] overall= 0.00% ( 0/36) | rules=  0.0% ( 0/24) | facts=  0.0% ( 0/12) | t=19.8s
+  [Doc36    L=1024 | KVPD_L16_MicroRAG             ] overall=27.78% (10/36) | rules=  0.0% ( 0/24) | facts= 83.3% (10/12) | t=19.8s
+  [Doc36    L=1024 | KVPD_L32_Only                 ] overall= 2.78% ( 1/36) | rules=  0.0% ( 0/24) | facts=  8.3% ( 1/12) | t=20.3s
+  [Doc36    L=1024 | KVPD_L32_MicroRAG             ] overall=25.00% ( 9/36) | rules=  0.0% ( 0/24) | facts= 75.0% ( 9/12) | t=20.3s
+  [Doc36    L=2048 | KVPD_L16_Only                 ] overall= 0.00% ( 0/36) | rules=  0.0% ( 0/24) | facts=  0.0% ( 0/12) | t=32.0s
+  [Doc36    L=2048 | KVPD_L16_MicroRAG             ] overall=22.22% ( 8/36) | rules=  0.0% ( 0/24) | facts= 66.7% ( 8/12) | t=32.6s
+  [Doc36    L=2048 | KVPD_L32_Only                 ] overall= 2.78% ( 1/36) | rules=  0.0% ( 0/24) | facts=  8.3% ( 1/12) | t=52.9s
+  [Doc36    L=2048 | KVPD_L32_MicroRAG             ] overall=22.22% ( 8/36) | rules=  0.0% ( 0/24) | facts= 66.7% ( 8/12) | t=49.9s
+  [Doc36    L=4096 | KVPD_L16_Only                 ] overall= 0.00% ( 0/36) | rules=  0.0% ( 0/24) | facts=  0.0% ( 0/12) | t=51.8s
+  [Doc36    L=4096 | KVPD_L16_MicroRAG             ] overall=27.78% (10/36) | rules=  0.0% ( 0/24) | facts= 83.3% (10/12) | t=51.0s
+  [Doc36    L=4096 | KVPD_L32_Only                 ] overall= 0.00% ( 0/36) | rules=  0.0% ( 0/24) | facts=  0.0% ( 0/12) | t=57.6s
+  [Doc36    L=4096 | KVPD_L32_MicroRAG             ] overall=30.56% (11/36) | rules=  0.0% ( 0/24) | facts= 91.7% (11/12) | t=56.2s
+  [Doc36    L=4096 | Base_NoDoc                    ] overall= 0.00% ( 0/36) | rules=  0.0% ( 0/24) | facts=  0.0% ( 0/12) | t=30.5s
+  [Doc36    L=4096 | InContext_Manual_P0           ] overall=36.11% (13/36) | rules=  4.2% ( 1/24) | facts=100.0% (12/12) | t=34.7s
+
+--- PHASE 2: Training Procedural Experts (CSPD, KV-PD, Direct CRSP, Alg. 1) ---
+  [PR_CSPD_IF_L256         ] step  1/45 | dist=0.5629 | rms=0.0205 | t=3.1s
+  [PR_CSPD_IF_L256         ] step 20/45 | dist=0.4111 | rms=0.0311 | t=58.3s
+  [PR_CSPD_IF_L256         ] step 45/45 | dist=0.3783 | rms=0.0331 | t=131.1s
+  [PR_CSPD_Math_L256       ] step  1/45 | dist=0.3456 | rms=0.0206 | t=2.9s
+  [PR_CSPD_Math_L256       ] step 20/45 | dist=0.2181 | rms=0.0304 | t=58.6s
+  [PR_CSPD_Math_L256       ] step 45/45 | dist=0.1882 | rms=0.0321 | t=131.5s
+  [KVPD_IF_L16         ] step  1/45 | dist=0.5135 | d_rms=0.021 | t=2.2s
+  [KVPD_IF_L16         ] step 20/45 | dist=0.3640 | d_rms=0.114 | t=42.2s
+  [KVPD_IF_L16         ] step 45/45 | dist=0.2781 | d_rms=0.131 | t=94.8s
+  [KVPD_Math_L16       ] step  1/45 | dist=0.2798 | d_rms=0.019 | t=2.2s
+  [KVPD_Math_L16       ] step 20/45 | dist=0.1971 | d_rms=0.093 | t=41.8s
+  [KVPD_Math_L16       ] step 45/45 | dist=0.2098 | d_rms=0.103 | t=94.0s
+  [Direct_CRSP_IF_L256       ] step  1/45 | dist=0.6685 | inv=0.1480 | null=0.1101 | rms=0.0207 | t=5.2s
+  [Direct_CRSP_IF_L256       ] step 20/45 | dist=0.5571 | inv=0.0931 | null=0.0250 | rms=0.0330 | t=104.3s
+  [Direct_CRSP_IF_L256       ] step 45/45 | dist=0.4490 | inv=0.0666 | null=0.0451 | rms=0.0352 | t=234.7s
+  [Direct_CRSP_Math_L64      ] step  1/45 | dist=0.3772 | inv=0.1493 | null=0.2433 | rms=0.0213 | t=4.5s
+  [Direct_CRSP_Math_L64      ] step 20/45 | dist=0.3169 | inv=0.0337 | null=0.1939 | rms=0.0387 | t=88.2s
+  [Direct_CRSP_Math_L64      ] step 45/45 | dist=0.2059 | inv=0.0293 | null=0.0912 | rms=0.0417 | t=196.9s
+  [AlgA KV_IF_Self     ] Self-generated & cached 64 pure-logit targets in 103.4s
+  [Alg1_KVInv_IF_L64         ] step  1/45 | dist=0.6520 | inv=0.1515 | null=0.1053 | rms=0.0212 | t=4.3s
+  [Alg1_KVInv_IF_L64         ] step 20/45 | dist=0.5579 | inv=0.0909 | null=0.0370 | rms=0.0390 | t=86.9s
+  [Alg1_KVInv_IF_L64         ] step 45/45 | dist=0.4779 | inv=0.0626 | null=0.0424 | rms=0.0421 | t=196.2s
+  [AlgA KV_Math_Self   ] Self-generated & cached 48 pure-logit targets in 107.2s
+  [Alg1_KVInv_Math_L64       ] step  1/45 | dist=0.3651 | inv=0.1575 | null=0.2433 | rms=0.0213 | t=4.5s
+  [Alg1_KVInv_Math_L64       ] step 20/45 | dist=0.2953 | inv=0.0291 | null=0.2081 | rms=0.0386 | t=88.9s
+  [Alg1_KVInv_Math_L64       ] step 45/45 | dist=0.2067 | inv=0.0219 | null=0.1055 | rms=0.0414 | t=197.9s
+
+--- PART C_KV_VERIFY: Smooth-LR KV-PD Single & Dual Concat Across 0..8192 ---
+  [KV-Verify KVPD_IF_Solo      ] IF: 0:+53.9% | 1024:+32.1% | 4096:+29.9% | 8192:+26.2% || Math: 0:-19.6% | 1024: -1.6% | 4096:-13.4% | 8192: -9.9%
+  [KV-Verify KVPD_Math_Solo    ] IF: 0:-49.1% | 1024:-12.8% | 4096: -8.1% | 8192: -8.8% || Math: 0:+24.8% | 1024:+18.6% | 4096:+17.1% | 8192:+12.2%
+  [KV-Verify KVPD_Dual_Math_IF ] IF: 0:+20.4% | 1024:+25.1% | 4096:+27.1% | 8192:+25.1% || Math: 0: -2.2% | 1024:+19.2% | 4096:+11.6% | 8192: +8.9%
+  [KV-Verify KVPD_Dual_IF_Math ] IF: 0:+20.6% | 1024:+25.3% | 4096:+27.1% | 8192:+25.2% || Math: 0: -2.1% | 1024:+19.4% | 4096:+11.5% | 8192: +8.9%
+
+--- PART D1: IFEval48 (N=48, 1536 tok) at L_ctx in {0, 2048, 4096} ---
+  [IFEval48 L=   0 | Base_Frozen                   ] strict=79.17% (38/48) | closed=46/48 ( 82.6%) | t=223.5s
+  [IFEval48 L=   0 | PR_CSPD_L256_at_P0            ] strict=75.00% (36/48) | closed=42/48 ( 85.7%) | t=244.1s
+  [IFEval48 L=   0 | KVPD_L16_at_P0                ] strict=70.83% (34/48) | closed=41/48 ( 82.9%) | t=224.3s
+  [IFEval48 L=   0 | Direct_CRSP_L256_at_P2        ] strict=72.92% (35/48) | closed=40/48 ( 87.5%) | t=244.0s
+  [IFEval48 L=   0 | Direct_CRSP_L256_at_P4        ] strict=70.83% (34/48) | closed=40/48 ( 85.0%) | t=244.3s
+  [IFEval48 L=   0 | Alg1_KVInv_L64_at_P4          ] strict=70.83% (34/48) | closed=42/48 ( 81.0%) | t=228.6s
+  [IFEval48 L=   0 | PR_CSPD_Dual_P0               ] strict=77.08% (37/48) | closed=44/48 ( 84.1%) | t=270.8s
+  [IFEval48 L=   0 | KVPD_Dual_P0                  ] strict=68.75% (33/48) | closed=34/48 ( 97.1%) | t=225.5s
+  [IFEval48 L=   0 | Alg1_CRSP_Split_M@P2_I@P4     ] strict=75.00% (36/48) | closed=43/48 ( 83.7%) | t=233.3s
+  [IFEval48 L=2048 | Base_Frozen                   ] strict=72.92% (35/48) | closed=44/48 ( 79.5%) | t=463.4s
+  [IFEval48 L=2048 | PR_CSPD_L256_at_P0            ] strict=77.08% (37/48) | closed=45/48 ( 82.2%) | t=542.0s
+  [IFEval48 L=2048 | KVPD_L16_at_P0                ] strict=75.00% (36/48) | closed=40/48 ( 90.0%) | t=521.3s
+  [IFEval48 L=2048 | Direct_CRSP_L256_at_P2        ] strict=75.00% (36/48) | closed=41/48 ( 87.8%) | t=552.4s
+  [IFEval48 L=2048 | Direct_CRSP_L256_at_P4        ] strict=72.92% (35/48) | closed=41/48 ( 85.4%) | t=552.5s
+  [IFEval48 L=2048 | Alg1_KVInv_L64_at_P4          ] strict=72.92% (35/48) | closed=40/48 ( 87.5%) | t=527.7s
+  [IFEval48 L=2048 | PR_CSPD_Dual_P0               ] strict=77.08% (37/48) | closed=44/48 ( 84.1%) | t=559.4s

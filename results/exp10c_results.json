@@ -1,0 +1,449 @@
+{
+  "meta": {
+    "gpu": "NVIDIA RTX PRO 6000 Blackwell Server Edition",
+    "vram_gb": 102.0,
+    "actual_ctx_tokens": {
+      "0": 0,
+      "512": 512,
+      "1024": 1024,
+      "2048": 2048,
+      "4096": 4096,
+      "8192": 8192
+    },
+    "total_wall_sec": 13321.7
+  },
+  "kvpd_smooth_6pt": {
+    "if": {
+      "0": {
+        "kl": 0.11596,
+        "base_kl": 0.27691,
+        "g_vs_ctx": 58.12
+      },
+      "512": {
+        "kl": 0.28672,
+        "drift_kl": 0.19084,
+        "base_kl": 0.40453,
+        "g_vs_ctx": 29.12
+      },
+      "1024": {
+        "kl": 0.28338,
+        "drift_kl": 0.18487,
+        "base_kl": 0.40799,
+        "g_vs_ctx": 30.54
+      },
+      "2048": {
+        "kl": 0.28641,
+        "drift_kl": 0.18788,
+        "base_kl": 0.4105,
+        "g_vs_ctx": 30.23
+      },
+      "4096": {
+        "kl": 0.28645,
+        "drift_kl": 0.1898,
+        "base_kl": 0.40704,
+        "g_vs_ctx": 29.63
+      },
+      "8192": {
+        "kl": 0.27906,
+        "drift_kl": 0.18518,
+        "base_kl": 0.39444,
+        "g_vs_ctx": 29.25
+      }
+    },
+    "math": {
+      "0": {
+        "kl": 0.03953,
+        "base_kl": 0.05673,
+        "g_vs_ctx": 30.32
+      },
+      "512": {
+        "kl": 0.09671,
+        "drift_kl": 0.0535,
+        "base_kl": 0.14298,
+        "g_vs_ctx": 32.36
+      },
+      "1024": {
+        "kl": 0.09258,
+        "drift_kl": 0.05042,
+        "base_kl": 0.13533,
+        "g_vs_ctx": 31.59
+      },
+      "2048": {
+        "kl": 0.08667,
+        "drift_kl": 0.04515,
+        "base_kl": 0.12407,
+        "g_vs_ctx": 30.14
+      },
+      "4096": {
+        "kl": 0.08282,
+        "drift_kl": 0.04353,
+        "base_kl": 0.10873,
+        "g_vs_ctx": 23.83
+      },
+      "8192": {
+        "kl": 0.08334,
+        "drift_kl": 0.04546,
+        "base_kl": 0.1002,
+        "g_vs_ctx": 16.83
+      }
+    }
+  },
+  "e2e_math32": {
+    "4096": {
+      "Base_Frozen": {
+        "acc": 68.75,
+        "n_ok": 22,
+        "n_total": 32,
+        "closed_think": 28,
+        "closed_acc": 78.57,
+        "eval_sec": 321.7
+      },
+      "PR_CSPD_Math_P0": {
+        "acc": 59.38,
+        "n_ok": 19,
+        "n_total": 32,
+        "closed_think": 25,
+        "closed_acc": 76.0,
+        "eval_sec": 336.0
+      },
+      "KVPD_Math_P0": {
+        "acc": 56.25,
+        "n_ok": 18,
+        "n_total": 32,
+        "closed_think": 23,
+        "closed_acc": 78.26,
+        "eval_sec": 322.3
+      },
+      "Direct_CRSP_Math_P2": {
+        "acc": 50.0,
+        "n_ok": 16,
+        "n_total": 32,
+        "closed_think": 22,
+        "closed_acc": 72.73,
+        "eval_sec": 325.1
+      },
+      "Alg1_Math_P2": {
+        "acc": 53.12,
+        "n_ok": 17,
+        "n_total": 32,
+        "closed_think": 20,
+        "closed_acc": 85.0,
+        "eval_sec": 325.1
+      },
+      "PR_CSPD_Dual_P0": {
+        "acc": 53.12,
+        "n_ok": 17,
+        "n_total": 32,
+        "closed_think": 24,
+        "closed_acc": 70.83,
+        "eval_sec": 350.5
+      },
+      "KVPD_Dual_P0": {
+        "acc": 50.0,
+        "n_ok": 16,
+        "n_total": 32,
+        "closed_think": 20,
+        "closed_acc": 80.0,
+        "eval_sec": 323.2
+      },
+      "Alg1_CRSP_Split_M@P2_I@P4": {
+        "acc": 56.25,
+        "n_ok": 18,
+        "n_total": 32,
+        "closed_think": 23,
+        "closed_acc": 78.26,
+        "eval_sec": 328.7
+      }
+    },
+    "0": {
+      "Base_Frozen": {
+        "acc": 62.5,
+        "n_ok": 20,
+        "n_total": 32,
+        "closed_think": 24,
+        "closed_acc": 83.33,
+        "eval_sec": 82.4
+      },
+      "PR_CSPD_Math_P0": {
+        "acc": 46.88,
+        "n_ok": 15,
+        "n_total": 32,
+        "closed_think": 18,
+        "closed_acc": 83.33,
+        "eval_sec": 97.7
+      },
+      "KVPD_Math_P0": {
+        "acc": 34.38,
+        "n_ok": 11,
+        "n_total": 32,
+        "closed_think": 15,
+        "closed_acc": 73.33,
+        "eval_sec": 83.4
+      },
+      "Direct_CRSP_Math_P2": {
+        "acc": 59.38,
+        "n_ok": 19,
+        "n_total": 32,
+        "closed_think": 22,
+        "closed_acc": 86.36,
+        "eval_sec": 86.2
+      },
+      "Alg1_Math_P2": {
+        "acc": 53.12,
+        "n_ok": 17,
+        "n_total": 32,
+        "closed_think": 21,
+        "closed_acc": 80.95,
+        "eval_sec": 86.2
+      },
+      "PR_CSPD_Dual_P0": {
+        "acc": 53.12,
+        "n_ok": 17,
+        "n_total": 32,
+        "closed_think": 23,
+        "closed_acc": 73.91,
+        "eval_sec": 112.8
+      },
+      "KVPD_Dual_P0": {
+        "acc": 34.38,
+        "n_ok": 11,
+        "n_total": 32,
+        "closed_think": 13,
+        "closed_acc": 84.62,
+        "eval_sec": 84.3
+      },
+      "Alg1_CRSP_Split_M@P2_I@P4": {
+        "acc": 56.25,
+        "n_ok": 18,
+        "n_total": 32,
+        "closed_think": 23,
+        "closed_acc": 78.26,
+        "eval_sec": 90.1
+      }
+    }
+  },
+  "e2e_ifeval48_4096": {
+    "Base_Frozen": {
+      "prompt_strict": 70.83,
+      "inst_strict": 78.82,
+      "n_strict": 34,
+      "n_total": 48,
+      "closed_think": 46,
+      "closed_acc": 73.91,
+      "eval_sec": 496.6
+    },
+    "PR_CSPD_L256_at_P0": {
+      "prompt_strict": 64.58,
+      "inst_strict": 71.88,
+      "n_strict": 31,
+      "n_total": 48,
+      "closed_think": 39,
+      "closed_acc": 79.49,
+      "eval_sec": 518.4
+    },
+    "KVPD_L16_at_P0": {
+      "prompt_strict": 66.67,
+      "inst_strict": 70.14,
+      "n_strict": 32,
+      "n_total": 48,
+      "closed_think": 35,
+      "closed_acc": 91.43,
+      "eval_sec": 498.1
+    },
+    "Direct_CRSP_L256_at_P2": {
+      "prompt_strict": 70.83,
+      "inst_strict": 75.0,
+      "n_strict": 34,
+      "n_total": 48,
+      "closed_think": 41,
+      "closed_acc": 82.93,
+      "eval_sec": 518.5
+    },
+    "Alg1_KVInv_L64_at_P4": {
+      "prompt_strict": 70.83,
+      "inst_strict": 77.78,
+      "n_strict": 34,
+      "n_total": 48,
+      "closed_think": 44,
+      "closed_acc": 77.27,
+      "eval_sec": 502.2
+    },
+    "PR_CSPD_Dual_P0": {
+      "prompt_strict": 37.5,
+      "inst_strict": 46.88,
+      "n_strict": 18,
+      "n_total": 48,
+      "closed_think": 32,
+      "closed_acc": 56.25,
+      "eval_sec": 540.3
+    },
+    "KVPD_Dual_P0": {
+      "prompt_strict": 66.67,
+      "inst_strict": 67.71,
+      "n_strict": 32,
+      "n_total": 48,
+      "closed_think": 34,
+      "closed_acc": 94.12,
+      "eval_sec": 499.5
+    },
+    "Alg1_CRSP_Split_M@P2_I@P4": {
+      "prompt_strict": 81.25,
+      "inst_strict": 85.07,
+      "n_strict": 39,
+      "n_total": 48,
+      "closed_think": 43,
+      "closed_acc": 90.7,
+      "eval_sec": 507.6
+    }
+  },
+  "e2e_ifbench32": {
+    "4096": {
+      "Base_Frozen": {
+        "prompt_strict": 56.25,
+        "inst_strict": 55.56,
+        "n_strict": 18,
+        "n_total": 32,
+        "closed_think": 28,
+        "closed_acc": 64.29,
+        "eval_sec": 441.5
+      },
+      "PR_CSPD_L256_at_P0": {
+        "prompt_strict": 59.38,
+        "inst_strict": 61.11,
+        "n_strict": 19,
+        "n_total": 32,
+        "closed_think": 28,
+        "closed_acc": 67.86,
+        "eval_sec": 460.6
+      },
+      "KVPD_L16_at_P0": {
+        "prompt_strict": 37.5,
+        "inst_strict": 36.11,
+        "n_strict": 12,
+        "n_total": 32,
+        "closed_think": 18,
+        "closed_acc": 66.67,
+        "eval_sec": 442.7
+      },
+      "Direct_CRSP_L256_at_P2": {
+        "prompt_strict": 46.88,
+        "inst_strict": 47.22,
+        "n_strict": 15,
+        "n_total": 32,
+        "closed_think": 23,
+        "closed_acc": 65.22,
+        "eval_sec": 460.6
+      },
+      "Alg1_KVInv_L64_at_P4": {
+        "prompt_strict": 50.0,
+        "inst_strict": 47.22,
+        "n_strict": 16,
+        "n_total": 32,
+        "closed_think": 22,
+        "closed_acc": 72.73,
+        "eval_sec": 446.4
+      },
+      "PR_CSPD_Dual_P0": {
+        "prompt_strict": 28.12,
+        "inst_strict": 27.78,
+        "n_strict": 9,
+        "n_total": 32,
+        "closed_think": 25,
+        "closed_acc": 36.0,
+        "eval_sec": 479.7
+      },
+      "KVPD_Dual_P0": {
+        "prompt_strict": 50.0,
+        "inst_strict": 47.22,
+        "n_strict": 16,
+        "n_total": 32,
+        "closed_think": 21,
+        "closed_acc": 76.19,
+        "eval_sec": 443.9
+      },
+      "Alg1_CRSP_Split_M@P2_I@P4": {
+        "prompt_strict": 56.25,
+        "inst_strict": 52.78,
+        "n_strict": 18,
+        "n_total": 32,
+        "closed_think": 21,
+        "closed_acc": 85.71,
+        "eval_sec": 451.0
+      }
+    },
+    "0": {
+      "Base_Frozen": {
+        "prompt_strict": 46.88,
+        "inst_strict": 44.44,
+        "n_strict": 15,
+        "n_total": 32,
+        "closed_think": 23,
+        "closed_acc": 65.22,
+        "eval_sec": 126.5
+      },
+      "PR_CSPD_L256_at_P0": {
+        "prompt_strict": 50.0,
+        "inst_strict": 50.0,
+        "n_strict": 16,
+        "n_total": 32,
+        "closed_think": 22,
+        "closed_acc": 72.73,
+        "eval_sec": 146.9
+      },
+      "KVPD_L16_at_P0": {
+        "prompt_strict": 37.5,
+        "inst_strict": 33.33,
+        "n_strict": 12,
+        "n_total": 32,
+        "closed_think": 16,
+        "closed_acc": 75.0,
+        "eval_sec": 127.9
+      },
+      "Direct_CRSP_L256_at_P2": {
+        "prompt_strict": 53.12,
+        "inst_strict": 50.0,
+        "n_strict": 17,
+        "n_total": 32,
+        "closed_think": 24,
+        "closed_acc": 70.83,
+        "eval_sec": 147.0
+      },
+      "Alg1_KVInv_L64_at_P4": {
+        "prompt_strict": 56.25,
+        "inst_strict": 52.78,
+        "n_strict": 18,
+        "n_total": 32,
+        "closed_think": 24,
+        "closed_acc": 75.0,
+        "eval_sec": 131.6
+      },
+      "PR_CSPD_Dual_P0": {
+        "prompt_strict": 62.5,
+        "inst_strict": 58.33,
+        "n_strict": 20,
+        "n_total": 32,
+        "closed_think": 24,
+        "closed_acc": 83.33,
+        "eval_sec": 167.2
+      },
+      "KVPD_Dual_P0": {
+        "prompt_strict": 43.75,
+        "inst_strict": 41.67,
+        "n_strict": 14,
+        "n_total": 32,
+        "closed_think": 16,
+        "closed_acc": 87.5,
+        "eval_sec": 129.1
+      },
+      "Alg1_CRSP_Split_M@P2_I@P4": {
+        "prompt_strict": 46.88,
+        "inst_strict": 44.44,
+        "n_strict": 15,
+        "n_total": 32,
+        "closed_think": 21,
+        "closed_acc": 71.43,
+        "eval_sec": 136.8
+      }
+    }
+  }
+}
