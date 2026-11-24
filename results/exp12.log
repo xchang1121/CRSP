@@ -1,0 +1,218 @@
+launching exp12...
+Cloning into '/content/IFBench'...
+GPU: NVIDIA RTX PRO 6000 Blackwell Server Edition | VRAM_GB: 102.0
+ALL 6 CPU ALIGNMENT & EXPORT UNIT TESTS PASSED!
+==============================================================================================
+Suite 10 (exp12): Reference Step-200 CSPD Audit, Complete-EOS Upgrade & 36-Layer Pathway
+==============================================================================================
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+  [Scaffold Audit] verify_qwen_system_scaffold PASSED!
+Generating train split:   0%|          | 0/541 [00:00<?, ? examples/s]Generating train split: 100%|██████████| 541/541 [00:00<00:00, 26875.10 examples/s]
+Generating test split:   0%|          | 0/500 [00:00<?, ? examples/s]Generating test split: 100%|██████████| 500/500 [00:00<00:00, 269176.23 examples/s]
+Loaded datasets: if_train96=96, ifeval_test96=96, ifbench64=64, math_train64=64, math_test48=48, doc_train=128, doc_test=24+12
+Generating train split:   0%|          | 0/7500 [00:00<?, ? examples/s]Generating train split: 100%|██████████| 7500/7500 [00:00<00:00, 282807.83 examples/s]
+Generating test split:   0%|          | 0/5000 [00:00<?, ? examples/s]Generating test split: 100%|██████████| 5000/5000 [00:00<00:00, 790125.84 examples/s]
+Generating test split:   0%|          | 0/4358 [00:00<?, ? examples/s]Generating test split: 100%|██████████| 4358/4358 [00:00<00:00, 1028631.22 examples/s]
+Generating train split:   0%|          | 0/36718 [00:00<?, ? examples/s]Generating train split: 100%|██████████| 36718/36718 [00:00<00:00, 1635634.68 examples/s]
+Generating validation split:   0%|          | 0/3760 [00:00<?, ? examples/s]Generating validation split: 100%|██████████| 3760/3760 [00:00<00:00, 1317398.97 examples/s]
+  [LongCtx] Loaded 126 non-repeating Salesforce/wikitext passages.
+  [LongCtx Bundle] target=   0 -> actual_ctx_tokens=   0
+  [LongCtx Bundle] target= 512 -> actual_ctx_tokens= 512
+  [LongCtx Bundle] target=1024 -> actual_ctx_tokens=1024
+  [LongCtx Bundle] target=2048 -> actual_ctx_tokens=2048
+  [LongCtx Bundle] target=4096 -> actual_ctx_tokens=4096
+  [LongCtx Bundle] target=8192 -> actual_ctx_tokens=8192
+
+--- PHASE 1: Caching Val Targets & Complete EOS-Terminated Train Targets ---
+  [Cache IF_Val24      ] Loading Jackwang111/M2RL-RL_IF for 24 prompts...
+Fetching 2 files:   0%|          | 0/2 [00:00<?, ?it/s]Fetching 2 files:  50%|█████     | 1/2 [00:24<00:24, 24.63s/it]Fetching 2 files: 100%|██████████| 2/2 [00:33<00:00, 15.25s/it]Fetching 2 files: 100%|██████████| 2/2 [00:33<00:00, 16.66s/it]
+Loading weights:   0%|          | 0/398 [00:00<?, ?it/s]Loading weights:   8%|▊         | 31/398 [00:00<00:01, 309.59it/s]Loading weights:  27%|██▋       | 108/398 [00:00<00:00, 578.76it/s]Loading weights:  46%|████▋     | 185/398 [00:00<00:00, 663.35it/s]Loading weights:  66%|██████▌   | 262/398 [00:00<00:00, 703.10it/s]Loading weights:  84%|████████▍ | 335/398 [00:00<00:00, 710.84it/s]Loading weights: 100%|██████████| 398/398 [00:00<00:00, 683.47it/s]
+    gen batch 24/24 done (out_len=768)
+  [Cache IF_Val24      ] Cached 24 dense Top-64 targets & freed GPU in 70.1s
+  [Cache Math_Val24    ] Loading Jackwang111/M2RL-RL_Math for 24 prompts...
+Fetching 2 files:   0%|          | 0/2 [00:00<?, ?it/s]Fetching 2 files:  50%|█████     | 1/2 [00:26<00:26, 26.29s/it]Fetching 2 files: 100%|██████████| 2/2 [00:26<00:00, 13.14s/it]
+Loading weights:   0%|          | 0/398 [00:00<?, ?it/s]Loading weights:   9%|▉         | 37/398 [00:00<00:01, 360.50it/s]Loading weights:  29%|██▉       | 115/398 [00:00<00:00, 601.49it/s]Loading weights:  48%|████▊     | 192/398 [00:00<00:00, 673.68it/s]Loading weights:  68%|██████▊   | 269/398 [00:00<00:00, 710.22it/s]Loading weights:  87%|████████▋ | 345/398 [00:00<00:00, 722.55it/s]Loading weights: 100%|██████████| 398/398 [00:00<00:00, 696.51it/s]
+    gen batch 24/24 done (out_len=768)
+  [Cache Math_Val24    ] Cached 24 dense Top-64 targets & freed GPU in 54.0s
+  [EOS-Cache IF_EOS_Train  ] Loading Jackwang111/M2RL-RL_IF for 96 prompts (max_gen=1536)...
+Loading weights:   0%|          | 0/398 [00:00<?, ?it/s]Loading weights:   9%|▉         | 37/398 [00:00<00:00, 364.27it/s]Loading weights:  29%|██▉       | 115/398 [00:00<00:00, 606.12it/s]Loading weights:  48%|████▊     | 192/398 [00:00<00:00, 678.57it/s]Loading weights:  68%|██████▊   | 269/398 [00:00<00:00, 714.05it/s]Loading weights:  87%|████████▋ | 346/398 [00:00<00:00, 729.16it/s]Loading weights: 100%|██████████| 398/398 [00:00<00:00, 700.84it/s]
+    gen batch 32/96 done (out_len=1536)
+    gen batch 64/96 done (out_len=1536)
+    gen batch 96/96 done (out_len=1536)
+  [EOS-Cache IF_EOS_Train  ] kept=49 (verified=49, closed_eos=49/96, mean_tok=902.8) in 227.6s
+  [EOS-Cache Math_EOS_Train] Loading Jackwang111/M2RL-RL_Math for 96 prompts (max_gen=1536)...
+Loading weights:   0%|          | 0/398 [00:00<?, ?it/s]Loading weights:   9%|▉         | 37/398 [00:00<00:01, 357.36it/s]Loading weights:  28%|██▊       | 113/398 [00:00<00:00, 587.13it/s]Loading weights:  47%|████▋     | 186/398 [00:00<00:00, 650.56it/s]Loading weights:  65%|██████▍   | 258/398 [00:00<00:00, 670.87it/s]Loading weights:  84%|████████▎ | 333/398 [00:00<00:00, 697.58it/s]Loading weights: 100%|██████████| 398/398 [00:00<00:00, 671.63it/s]
+    gen batch 32/96 done (out_len=1536)
+    gen batch 64/96 done (out_len=1536)
+    gen batch 96/96 done (out_len=1536)
+/usr/local/lib/python3.13/dist-packages/sympy/parsing/latex/_parse_latex_antlr.py:23: UserWarning: antlr4.error.ErrorListener module is not installed
+  ErrorListener = import_module('antlr4.error.ErrorListener',
+  [EOS-Cache Math_EOS_Train] kept=64 (verified=39, closed_eos=73/96, mean_tok=634.0) in 275.3s
+
+--- Loading Frozen Backbone: Jackwang111/M2RL-SFT ---
+Fetching 2 files:   0%|          | 0/2 [00:00<?, ?it/s]Fetching 2 files:  50%|█████     | 1/2 [00:25<00:25, 25.31s/it]Fetching 2 files: 100%|██████████| 2/2 [00:25<00:00, 12.66s/it]
+Loading weights:   0%|          | 0/398 [00:00<?, ?it/s]Loading weights:  11%|█         | 42/398 [00:00<00:00, 416.94it/s]Loading weights:  29%|██▉       | 115/398 [00:00<00:00, 599.90it/s]Loading weights:  48%|████▊     | 192/398 [00:00<00:00, 670.37it/s]Loading weights:  68%|██████▊   | 269/398 [00:00<00:00, 702.44it/s]Loading weights:  87%|████████▋ | 345/398 [00:00<00:00, 720.61it/s]Loading weights: 100%|██████████| 398/398 [00:00<00:00, 696.05it/s]
+
+--- Loading Reference Step-200 Prompts (M, C, S, I) ---
+  [Ref M.pt] SHA256 OK | shape=(256, 2560) | rms=0.4044 (row med 0.3889, max 0.5859) | erank=249.6
+  [Ref C.pt] SHA256 OK | shape=(256, 2560) | rms=0.4134 (row med 0.4093, max 0.6500) | erank=246.2
+  [Ref S.pt] SHA256 OK | shape=(256, 2560) | rms=0.3750 (row med 0.3627, max 0.5739) | erank=251.1
+  [Ref I.pt] SHA256 OK | shape=(256, 2560) | rms=0.3693 (row med 0.3483, max 0.5555) | erank=250.0
+
+--- PART A1: Official I.pt & M.pt Across Six Deployment Slots (P0-P5) ---
+  [6-Slot Official_I   | P0_Clean      ] G_slot=+40.29% | G_p0=+40.29%
+  [6-Slot Official_I   | P0_FullCtx    ] G_slot=+37.56% | G_p0= +7.72% | drift=0.1871
+  [6-Slot Official_I   | P1_SysEnd     ] G_slot=+44.07% | G_p0=+34.09% | drift=0.0188
+  [6-Slot Official_I   | P2_MultiTurn  ] G_slot=+11.71% | G_p0=-11.75% | drift=0.1567
+  [6-Slot Official_I   | P3_PostRAG    ] G_slot=+23.06% | G_p0=-18.94% | drift=0.1715
+  [6-Slot Official_I   | P4_PostQuery  ] G_slot=-46.03% | G_p0=-84.82% | drift=0.3612
+  [6-Slot Official_I   | P5_AllCombined] G_slot=-26.00% | G_p0=-86.22% | drift=0.3633
+  [6-Slot Official_M   | P0_Clean      ] G_slot=+31.94% | G_p0=+31.94%
+  [6-Slot Official_M   | P0_FullCtx    ] G_slot=+53.38% | G_p0=-41.69% | drift=0.0811
+  [6-Slot Official_M   | P1_SysEnd     ] G_slot=+54.87% | G_p0=+34.03% | drift=0.0027
+  [6-Slot Official_M   | P2_MultiTurn  ] G_slot=+36.83% | G_p0=-21.19% | drift=0.0461
+  [6-Slot Official_M   | P3_PostRAG    ] G_slot=+64.59% | G_p0=-23.23% | drift=0.0511
+  [6-Slot Official_M   | P4_PostQuery  ] G_slot=-34.84% | G_p0=-158.70% | drift=0.1457
+  [6-Slot Official_M   | P5_AllCombined] G_slot= +7.88% | G_p0=-179.96% | drift=0.1599
+
+--- PART A2: Official I.pt & M.pt Long-Context Sweep (0 -> 8192) & 9-Layer Attn Mass ---
+  [Official_I_at_P0      ] IF=[0:+40.3% | 512:+43.4% | 1024:+42.8% | 2048:+38.8% | 4096:+36.5% | 8192:+29.5%] | drift8k=0.2108
+  [Official_M_at_P0      ] MATH=[0:+31.9% | 512:+54.9% | 1024:+55.7% | 2048:+50.1% | 4096:+43.9% | 8192:+33.0%] | drift8k=0.0599
+  [Official_I_at_P0 Attn ] mean_mod_pct=[0:7.44% | 512:2.94% | 1024:2.45% | 2048:2.72% | 4096:2.02% | 8192:1.59%]
+
+--- PART A3: Official Dual ([M;I]/[I;M]) & 4-Expert (MCSI/ISCM) Composition (0 -> 8192) ---
+  [Official_Dual_MI@P0   ] IF=[0: +8.7% | 1024:+30.5% | 4096:+24.3% | 8192:+16.7%] | Math=[0:+22.6% | 1024:+55.3% | 4096:+42.5% | 8192:+33.9%] | intf=[0:0.0988 | 1024:0.0535 | 4096:0.0519 | 8192:0.0507]
+  [Official_Dual_IM@P0   ] IF=[0: +7.1% | 1024:+32.2% | 4096:+29.6% | 8192:+23.3%] | Math=[0:+21.5% | 1024:+52.6% | 4096:+39.0% | 8192:+28.9%] | intf=[0:0.1394 | 1024:0.0422 | 4096:0.0373 | 8192:0.0336]
+  [Official_MCSI@P0      ] IF=[0: +6.3% | 1024:+21.2% | 4096:+15.7% | 8192: +7.1%] | Math=[0: +6.6% | 1024:+43.7% | 4096:+31.5% | 8192:+16.1%] | intf=[0:0.1172 | 1024:0.0792 | 4096:0.0837 | 8192:0.0783]
+  [Official_ISCM@P0      ] IF=[0: +2.2% | 1024:+24.9% | 4096:+24.2% | 8192:+19.4%] | Math=[0:+15.0% | 1024:+40.4% | 4096:+30.7% | 8192:+18.9%] | intf=[0:0.1619 | 1024:0.0609 | 4096:0.0581 | 8192:0.0510]
+
+--- PART B: Complete-EOS Training (KV-PD-EOS & Alg. 1 CRSP-EOS with Fast lm_head) ---
+  [KVPD_IF_EOS_L16     ] step  1/45 | dist=0.5040 | d_rms=0.021 | t=1.9s
+  [KVPD_IF_EOS_L16     ] step 20/45 | dist=0.3146 | d_rms=0.111 | t=35.2s
+  [KVPD_IF_EOS_L16     ] step 45/45 | dist=0.2926 | d_rms=0.126 | t=75.1s
+  [KVPD_Math_EOS_L16   ] step  1/45 | dist=0.1939 | d_rms=0.018 | t=1.4s
+  [KVPD_Math_EOS_L16   ] step 20/45 | dist=0.1326 | d_rms=0.093 | t=24.1s
+  [KVPD_Math_EOS_L16   ] step 45/45 | dist=0.1061 | d_rms=0.103 | t=54.9s
+  [Alg1-EOS KV_IF_Self_EOS ] kept=56/80 (mean_tok=974.2) in 202.3s
+  [Alg1_IF_EOS_L64         ] step  1/45 | dist=0.5355 | inv=0.1365 | null=0.1431 | rms=0.0212 | t=5.1s
+  [Alg1_IF_EOS_L64         ] step 20/45 | dist=0.4468 | inv=0.0368 | null=0.0510 | rms=0.0392 | t=91.3s
+  [Alg1_IF_EOS_L64         ] step 45/45 | dist=0.3330 | inv=0.0269 | null=0.0437 | rms=0.0422 | t=198.6s
+  [Alg1-EOS KV_Math_Self_EOS] kept=56/80 (mean_tok=690.6) in 213.2s
+  [Alg1_Math_EOS_L64       ] step  1/45 | dist=0.3002 | inv=0.1515 | null=0.1714 | rms=0.0213 | t=4.1s
+  [Alg1_Math_EOS_L64       ] step 20/45 | dist=0.2611 | inv=0.0366 | null=0.1449 | rms=0.0395 | t=65.6s
+  [Alg1_Math_EOS_L64       ] step 45/45 | dist=0.2322 | inv=0.0164 | null=0.1672 | rms=0.0425 | t=151.1s
+
+--- PART C: 36-Layer Cumulative Causal Attention Pathway Ablation (CSPD vs KV-PD vs CRSP) ---
+  [Pathway Off_I@P0_L0           ] sanity_diff=0.000000 | first=[0..0: -7.2% | 0..8: -1.4% | 0..12: +9.6% | 0..16:+19.5% | 0..24:+80.6% | 0..36:+100.0%] | last=[0..36:+100.0% | 8..36:+106.5% | 12..36:+108.4% | 16..36:+106.9% | 24..36:+43.8% | 36..36: -7.2%] (8.5s)
+  [Pathway KVPD@P0_L0            ] sanity_diff=0.000000 | first=[0..0:-21.7% | 0..8:-18.0% | 0..12:-14.0% | 0..16:+10.8% | 0..24:+61.1% | 0..36:+100.0%] | last=[0..36:+100.0% | 8..36:+98.6% | 12..36:+101.6% | 16..36:+94.3% | 24..36:+37.7% | 36..36:-21.7%] (7.7s)
+  [Pathway Alg1@P4_L0            ] sanity_diff=0.000000 | first=[0..0:-22.9% | 0..8:-18.3% | 0..12: -6.5% | 0..16:+15.0% | 0..24:+63.2% | 0..36:+100.0%] | last=[0..36:+100.0% | 8..36:+105.4% | 12..36:+103.4% | 16..36:+115.0% | 24..36:+54.8% | 36..36:-22.9%] (7.4s)
+  [Pathway Off_I@P0_L4096        ] sanity_diff=0.000000 | first=[0..0:+17.2% | 0..8:+22.5% | 0..12:+25.7% | 0..16:+28.7% | 0..24:+79.1% | 0..36:+100.0%] | last=[0..36:+100.0% | 8..36:+97.1% | 12..36:+95.8% | 16..36:+93.2% | 24..36:+42.3% | 36..36:+17.2%] (53.7s)
+  [Pathway KVPD@P0_L4096         ] sanity_diff=0.000000 | first=[0..0: +8.7% | 0..8:+13.9% | 0..12:+23.4% | 0..16:+43.2% | 0..24:+80.0% | 0..36:+100.0%] | last=[0..36:+100.0% | 8..36:+95.6% | 12..36:+91.4% | 16..36:+77.7% | 24..36:+36.7% | 36..36: +8.7%] (64.9s)
+  [Pathway Alg1@P4_L4096         ] sanity_diff=0.000000 | first=[0..0:-11.2% | 0..8:+21.9% | 0..12:+26.7% | 0..16:+38.4% | 0..24:+85.5% | 0..36:+100.0%] | last=[0..36:+100.0% | 8..36:+86.1% | 12..36:+77.9% | 16..36:+78.7% | 24..36:+26.6% | 36..36:-11.2%] (50.4s)
+
+--- PART D: Engineering Verification (Response-Only lm_head & Virtual-Token Export) ---
+  [FastHead L= 512 T= 909] VRAM 8874->8690 MB (saved 184 MB) | 128->114 ms (1.12x) | diff=0.000000
+  [FastHead L=2048 T=2445] VRAM 10503->9006 MB (saved 1497 MB) | 288->276 ms (1.05x) | diff=0.000000
+  [FastHead L=4096 T=4493] VRAM 12674->9725 MB (saved 2949 MB) | 548->523 ms (1.05x) | diff=0.000000
+Traceback (most recent call last):
+  File "/content/cspd/exp12_official_cspd_and_eos_upgrade.py", line 1115, in <module>
+    main()
+    ~~~~^^
+  File "/content/cspd/exp12_official_cspd_and_eos_upgrade.py", line 1071, in main
+    results["partD_engineering_verify"]["virtual_token_export"] = verify_virtual_token_export_and_tied_hazard(student, tokenizer, tmpl, off_p["I"], sp_alg1_if_eos)
+                                                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/dist-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+    return func(*args, **kwargs)
+  File "/content/cspd/exp12_official_cspd_and_eos_upgrade.py", line 745, in verify_virtual_token_export_and_tied_hazard
+    src_dir = Path(snapshot_download(STUDENT_ID, local_files_only=True))
+                   ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/dist-packages/huggingface_hub/utils/_validators.py", line 89, in _inner_fn
+    return fn(*args, **kwargs)
+  File "/usr/local/lib/python3.13/dist-packages/huggingface_hub/utils/_http.py", line 266, in _inner
+    return fn(*args, **kwargs)
+  File "/usr/local/lib/python3.13/dist-packages/huggingface_hub/_snapshot_download.py", line 330, in snapshot_download
+    _raise_if_incomplete_snapshot(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        tree_cache_folder=tree_cache_folder,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+        api_call_error=api_call_error,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/usr/local/lib/python3.13/dist-packages/huggingface_hub/_snapshot_download.py", line 586, in _raise_if_incomplete_snapshot
+    raise IncompleteSnapshotError(
+    ...<4 lines>...
+    ) from api_call_error
+huggingface_hub.errors.IncompleteSnapshotError: The cached snapshot for 'Jackwang111/M2RL-SFT' (revision 'main', commit aa49d49a86b15ac920cf356c359f299edd0c1eb3) is incomplete: 6 file(s) are missing (.gitattributes, .msc, .mv, ... (3 more)). Outgoing traffic is disabled ('local_files_only=True'). Re-run the download with network access to complete the snapshot.
+Traceback (most recent call last):
+  File "/content/cspd/exp12_official_cspd_and_eos_upgrade.py", line 43, in <module>
+    from transformers import AutoModelForCausalLM, AutoTokenize
+ImportError: cannot import name 'AutoTokenize' from 'transformers' (/usr/local/lib/python3.13/dist-packages/transformers/__init__.py)
+==============================================================================================
+Suite 10 (exp12): Reference Step-200 CSPD Audit, Complete-EOS Upgrade & 36-Layer Pathway
+==============================================================================================
+  [Scaffold Audit] verify_qwen_system_scaffold PASSED!
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Loaded datasets: if_train96=96, ifeval_test96=96, ifbench64=64, math_train64=64, math_test48=48, doc_train=128, doc_test=24+12
+  [LongCtx] Loaded 126 non-repeating Salesforce/wikitext passages.
+  [LongCtx Bundle] target=   0 -> actual_ctx_tokens=   0
+  [LongCtx Bundle] target= 512 -> actual_ctx_tokens= 512
+  [LongCtx Bundle] target=1024 -> actual_ctx_tokens=1024
+  [LongCtx Bundle] target=2048 -> actual_ctx_tokens=2048
+  [LongCtx Bundle] target=4096 -> actual_ctx_tokens=4096
+  [LongCtx Bundle] target=8192 -> actual_ctx_tokens=8192
+
+--- RESUME MODE (--resume-de): Loading existing exp12_results.json & exp12_eos_modules.pt ---
+Loading weights:   0%|          | 0/398 [00:00<?, ?it/s]Loading weights:  12%|█▏        | 48/398 [00:00<00:00, 465.79it/s]Loading weights:  31%|███▏      | 125/398 [00:00<00:00, 637.10it/s]Loading weights:  51%|█████     | 203/398 [00:00<00:00, 691.12it/s]Loading weights:  70%|███████   | 280/398 [00:00<00:00, 716.88it/s]Loading weights:  89%|████████▉ | 356/398 [00:00<00:00, 731.00it/s]Loading weights: 100%|██████████| 398/398 [00:00<00:00, 711.21it/s]
+  [Ref M.pt] SHA256 OK | shape=(256, 2560) | rms=0.4044 (row med 0.3889, max 0.5859) | erank=249.6
+  [Ref C.pt] SHA256 OK | shape=(256, 2560) | rms=0.4134 (row med 0.4093, max 0.6500) | erank=246.2
+  [Ref S.pt] SHA256 OK | shape=(256, 2560) | rms=0.3750 (row med 0.3627, max 0.5739) | erank=251.1
+  [Ref I.pt] SHA256 OK | shape=(256, 2560) | rms=0.3693 (row med 0.3483, max 0.5555) | erank=250.0
+
+--- PART D: Engineering Verification (Response-Only lm_head & Virtual-Token Export) ---
+  [FastHead L= 512 T= 909] VRAM 8833->8677 MB (saved 156 MB) | 309->120 ms (2.57x) | diff=0.000000
+  [FastHead L=2048 T=2445] VRAM 10498->9001 MB (saved 1497 MB) | 299->281 ms (1.06x) | diff=0.000000
+  [FastHead L=4096 T=4493] VRAM 12669->9720 MB (saved 2949 MB) | 548->521 ms (1.05x) | diff=0.000000
+Loading weights:   0%|          | 0/398 [00:00<?, ?it/s]Loading weights:  11%|█▏        | 45/398 [00:00<00:00, 449.37it/s]Loading weights:  31%|███       | 124/398 [00:00<00:00, 640.40it/s]Loading weights:  51%|█████     | 201/398 [00:00<00:00, 697.22it/s]Loading weights:  70%|██████▉   | 278/398 [00:00<00:00, 724.66it/s]Loading weights:  89%|████████▉ | 355/398 [00:00<00:00, 735.86it/s]Loading weights: 100%|██████████| 398/398 [00:00<00:00, 711.30it/s]
+  [VirtualToken Export] P0 diff=0.000000 | P4 diff=0.000000 | Tied logits @P0: real_max=31.9, Official_I_max=408.0 (beats -100 guard=True), CRSP_max=19.0
+
+--- PART E1: MATH32 End-to-End (L=0 & L=4096) ---
+/usr/local/lib/python3.13/dist-packages/sympy/parsing/latex/_parse_latex_antlr.py:23: UserWarning: antlr4.error.ErrorListener module is not installed
+  ErrorListener = import_module('antlr4.error.ErrorListener',
+  [MATH32   L=   0 bs=32 | Official_M@P0               ] acc=31.25% (10/32) | closed=13/32 ( 76.9%) | t=97.9s
+  [MATH32   L=   0 bs=32 | Official_Dual_MI@P0         ] acc=21.88% ( 7/32) | closed=10/32 ( 70.0%) | t=112.8s
+  [MATH32   L=   0 bs=32 | Official_MCSI@P0            ] acc=37.50% (12/32) | closed=14/32 ( 85.7%) | t=143.3s
+  [MATH32   L=   0 bs=32 | KVPD_Math_EOS@P0            ] acc=46.88% (15/32) | closed=19/32 ( 79.0%) | t=83.3s
+  [MATH32   L=   0 bs=32 | Alg1_Split_EOS_M@P2_I@P4    ] acc=43.75% (14/32) | closed=21/32 ( 66.7%) | t=90.1s
+  [MATH32   L=4096 bs=32 | Official_M@P0               ] acc=62.50% (20/32) | closed=25/32 ( 80.0%) | t=335.9s
+  [MATH32   L=4096 bs=32 | Official_Dual_MI@P0         ] acc=59.38% (19/32) | closed=24/32 ( 79.2%) | t=350.5s
+  [MATH32   L=4096 bs=32 | Official_MCSI@P0            ] acc=68.75% (22/32) | closed=27/32 ( 81.5%) | t=379.5s
+  [MATH32   L=4096 bs=32 | KVPD_Math_EOS@P0            ] acc=65.62% (21/32) | closed=26/32 ( 80.8%) | t=322.3s
+  [MATH32   L=4096 bs=32 | Alg1_Split_EOS_M@P2_I@P4    ] acc=62.50% (20/32) | closed=26/32 ( 76.9%) | t=328.7s
+
+--- PART E2: IFBench32 End-to-End (L=0 & L=4096) ---
+  [IFB32    L=   0 bs=32 | Official_I@P0               ] strict=21.88% ( 7/32) | closed= 9/32 ( 77.8%) | t=147.0s
+  [IFB32    L=   0 bs=32 | Official_Dual_MI@P0         ] strict=21.88% ( 7/32) | closed=10/32 ( 70.0%) | t=167.2s
+  [IFB32    L=   0 bs=32 | Official_MCSI@P0            ] strict=25.00% ( 8/32) | closed=10/32 ( 80.0%) | t=207.3s
+  [IFB32    L=   0 bs=32 | KVPD_IF_EOS@P0              ] strict=40.62% (13/32) | closed=18/32 ( 72.2%) | t=127.9s
+  [IFB32    L=   0 bs=32 | Alg1_Split_EOS_M@P2_I@P4    ] strict=53.12% (17/32) | closed=20/32 ( 85.0%) | t=136.8s
+  [IFB32    L=4096 bs=32 | Official_I@P0               ] strict=50.00% (16/32) | closed=20/32 ( 80.0%) | t=460.6s
+  [IFB32    L=4096 bs=32 | Official_Dual_MI@P0         ] strict=43.75% (14/32) | closed=19/32 ( 73.7%) | t=479.7s
+  [IFB32    L=4096 bs=32 | Official_MCSI@P0            ] strict=46.88% (15/32) | closed=24/32 ( 62.5%) | t=517.8s
+  [IFB32    L=4096 bs=32 | KVPD_IF_EOS@P0              ] strict=56.25% (18/32) | closed=21/32 ( 85.7%) | t=442.7s
+  [IFB32    L=4096 bs=32 | Alg1_Split_EOS_M@P2_I@P4    ] strict=53.12% (17/32) | closed=22/32 ( 77.3%) | t=451.1s
+
+--- PART E3: IFEval48 End-to-End (L=0 & L=4096) ---
+  [IFEval48 L=   0 bs=48 | Official_I@P0               ] strict=31.25% (15/48) | closed=17/48 ( 88.2%) | t=148.1s
+  [IFEval48 L=   0 bs=48 | Official_Dual_MI@P0         ] strict=33.33% (16/48) | closed=18/48 ( 88.9%) | t=171.0s
+  [IFEval48 L=   0 bs=48 | Official_MCSI@P0            ] strict=52.08% (25/48) | closed=30/48 ( 83.3%) | t=216.7s
+  [IFEval48 L=   0 bs=48 | KVPD_IF_EOS@P0              ] strict=70.83% (34/48) | closed=36/48 ( 94.4%) | t=126.9s
+  [IFEval48 L=   0 bs=48 | Alg1_Split_EOS_M@P2_I@P4    ] strict=70.83% (34/48) | closed=38/48 ( 89.5%) | t=136.7s
+  [IFEval48 L=4096 bs=32 | Official_I@P0               ] strict=56.25% (27/48) | closed=37/48 ( 73.0%) | t=518.5s
+  [IFEval48 L=4096 bs=32 | Official_Dual_MI@P0         ] strict=41.67% (20/48) | closed=30/48 ( 66.7%) | t=540.3s
+  [IFEval48 L=4096 bs=32 | Official_MCSI@P0            ] strict=62.50% (30/48) | closed=38/48 ( 79.0%) | t=583.6s
+  [IFEval48 L=4096 bs=32 | KVPD_IF_EOS@P0              ] strict=77.08% (37/48) | closed=43/48 ( 86.0%) | t=498.3s
+  [IFEval48 L=4096 bs=32 | Alg1_Split_EOS_M@P2_I@P4    ] strict=66.67% (32/48) | closed=39/48 ( 82.0%) | t=507.6s
+
+=== ALL DONE! exp12_results.json saved in 8858.3s ===
