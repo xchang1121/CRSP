@@ -11,7 +11,7 @@ Code, experimental logs, quantitative results, publication figures, CPU contract
 
 ## Full Technical Paper & Figures
 
-- **Paper (Chinese)**: [docs/paper_zh.md](docs/paper_zh.md) (complete 11-section paper with 15 embedded figures, 22 tables, Algorithm 1 & 2, Related Work, and 69 references)
+- **Paper (Chinese)**: [docs/paper_zh.md](docs/paper_zh.md) (streamlined 10-section paper with 15 embedded figures, 17 tables, Algorithm 1 & 2, Related Work, and 69 references)
 - **Publication Figures**: [docs/figures/](docs/figures/) (`pfig01`–`pfig15`, 220 DPI)
 
 ## Repository Layout
