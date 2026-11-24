@@ -416,7 +416,7 @@ def plot_suite1(res3_path: str, out_dir: str):
                 fontsize=7.7, fontweight="bold", color="#065F46",
                 bbox=dict(boxstyle="round,pad=0.3", fc="#ECFDF5", ec="#10B981", lw=1.0))
 
-    # --- Panel (d): Official allenai/IFBench (32 Prompts) Accuracy & Inference Speed ---
+    # --- Panel (d): IFBench (32 Prompts) Accuracy & Inference Speed ---
     ax = axes[1, 1]
     if_cfgs = [
         ("Student\n(No SP)", "student_no_sp"),
@@ -437,7 +437,7 @@ def plot_suite1(res3_path: str, out_dir: str):
     ax.set_xticklabels([n for n, _ in if_cfgs], fontsize=8.0)
     ax.set_ylabel("IFBench Accuracy (%)")
     ax.set_ylim(0, 114)
-    ax.set_title("(d) Official allenai/IFBench (32 Prompts): Accuracy & Inference Latency")
+    ax.set_title("(d) IFBench (32 Prompts): Accuracy & Inference Latency")
 
     ax2 = ax.twinx()
     ax2.spines["top"].set_visible(False)
@@ -472,8 +472,10 @@ def plot_suite1(res3_path: str, out_dir: str):
 
 
 if __name__ == "__main__":
-    root = r"C:\Users\singm\.gemini\antigravity\scratch\composable-soft-prompt-distillation\results"
-    out = r"C:\Users\singm\.gemini\antigravity\brain\8aba4b5d-6a54-4e44-b641-a0c487b94d0d"
+    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    root = os.path.join(repo_root, "results")
+    out = os.environ.get("FIG_OUT_DIR", os.path.join(repo_root, "docs", "figures"))
+    os.makedirs(out, exist_ok=True)
     res3 = os.path.join(root, "exp3_results.json")
     if os.path.exists(res3):
         plot_suite1(res3, out)

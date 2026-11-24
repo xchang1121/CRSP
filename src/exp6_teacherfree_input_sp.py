@@ -13,7 +13,7 @@ Tests 5 Teacher-Free Input-Space SP acquisition methods (L=256, Task-Inst Init, 
                       -> dense Top-64 logit compilation into Arbitrary-Context Input-SP!
 
 Also trains TF-Math (Teacher-Free Input-SP on MATH) and evaluates:
-  - Official allenai/IFBench (40 stratified prompts, max_new_tokens=2560) across all 5 methods + Dual [Math; IF]
+  - IFBench (40 stratified prompts, max_new_tokens=2560) across all 5 methods + Dual [Math; IF]
   - Held-Out MATH-500 (40 disjoint Level 3-5 prompts) for Student, TF-Math, Dual [Math; IF]
   - CRITICAL Arbitrary-Context Assembly Stress Test (C0 Clean vs C1 Dynamic 120-tok System Persona
     vs C2 180-tok Pre-Context / Multi-Turn History placed BEFORE Input-SP vs fixed KV prefix!)
@@ -283,7 +283,7 @@ def compute_ref_mean_logprobs(
 # ---------------------------------------------------------------------------
 
 def load_verifiable_datasets():
-    # IF training pool: google/IFEval (strictly disjoint from allenai/IFBench test!)
+    # IF training pool: google/IFEval (strictly disjoint from IFBench test!)
     ifeval_ds = load_dataset("google/IFEval", split="train")
     if_pool = []
     for row in ifeval_ds:
@@ -1241,7 +1241,7 @@ def main():
     save()
 
     # --- STEP 3: Official IFBench40 Benchmark Across ALL 5 Teacher-Free Methods ---
-    print("\n=== Step 3: Official allenai/IFBench (40 prompts, C0 Clean System) ===", flush=True)
+    print("\n=== Step 3: IFBench (40 prompts, C0 Clean System) ===", flush=True)
     results["ifbench40_C0_clean"]["student_no_sp"] = eval_ifbench40(student, tokenizer, tmpl, ifbench40, "sp", [], tag="C0: Student (No SP)")
     results["ifbench40_C0_clean"]["TF_RFT"] = eval_ifbench40(student, tokenizer, tmpl, ifbench40, "sp", [sp_rft], tag="C0: TF-RFT (1-Rd BoN)")
     results["ifbench40_C0_clean"]["TF_IterRFT"] = eval_ifbench40(student, tokenizer, tmpl, ifbench40, "sp", [sp_iter_rft], tag="C0: TF-IterRFT (2-Rd)")

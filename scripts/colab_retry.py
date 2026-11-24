@@ -1,9 +1,10 @@
 import os
+import shutil
 import subprocess
 import sys
 import time
 
-COLAB = "/home/singm/.local/bin/colab"
+COLAB = shutil.which("colab") or os.path.expanduser("~/.local/bin/colab")
 
 
 def get_env():

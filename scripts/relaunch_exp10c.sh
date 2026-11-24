@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
-export PATH="/home/singm/.local/bin:/usr/bin:/bin"
-ROOT="/mnt/c/Users/singm/.gemini/antigravity/scratch/composable-soft-prompt-distillation"
+export PATH="$HOME/.local/bin:/usr/bin:/bin"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CR="python3 $ROOT/scripts/colab_retry.py"
 
 python3 -m py_compile "$ROOT/src/exp10c_fast_4096_e2e.py"

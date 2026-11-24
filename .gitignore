@@ -12,9 +12,10 @@ __pycache__/
 *.safetensors
 *.ckpt
 
-# Third-party reference files (kept local only)
+# Third-party reference files & local manifests (kept local only)
 paper.pdf
 paper.md
+ref_prompts_manifest.json
 
 # OS / Editor
 .DS_Store

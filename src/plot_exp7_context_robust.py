@@ -6,7 +6,7 @@ Arbitrary-Position Insertion & Context-Robust Soft Prompt Distillation (CR-SP).
   (a) 9-Method x 6-Position (P0..P5) Heatmap of Exact KL Gap Closed G(P, s) (%)
   (b) Cross-Position Behavioral Drift KL(p_P0 || p_s) across P1..P5 (Lower = More Context-Invariant!)
   (c) Layerwise Hidden-State Representation Cosine Invariance cos(H_l(P | P2/P4), H_l(P | P0)) across Depth (L0..L36)
-  (d) Official allenai/IFBench32 End-to-End Strict Accuracy across P0 (Start), P2 (Multi-Turn Mid),
+  (d) IFBench32 End-to-End Strict Accuracy across P0 (Start), P2 (Multi-Turn Mid),
       P3 (Post-RAG), P4 (Post-Query Late Injection) & Split-Position Multi-Expert Assembly!
 """
 
@@ -48,8 +48,10 @@ RED    = "#DC2626"
 PURPLE = "#7C3AED"
 SLATE  = "#64748B"
 
-ROOT = r"C:\Users\singm\.gemini\antigravity\scratch\composable-soft-prompt-distillation\results"
-OUT_DIR = r"C:\Users\singm\.gemini\antigravity\brain\8aba4b5d-6a54-4e44-b641-a0c487b94d0d"
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ROOT = os.path.join(REPO_ROOT, "results")
+OUT_DIR = os.environ.get("FIG_OUT_DIR", os.path.join(REPO_ROOT, "docs", "figures"))
+os.makedirs(OUT_DIR, exist_ok=True)
 
 d = json.load(open(os.path.join(ROOT, "exp7_results.json")))
 pm = d["position_matrix"]["methods"]

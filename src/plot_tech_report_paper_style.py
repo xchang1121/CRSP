@@ -497,7 +497,7 @@ def make_fig4(D, out_dir):
     ib2 = ax.bar(xi + wi/2, s_acc, wi, label="Overall Strict Acc @2560 tok (%)", color=BLUE)
     ax.set_xticks(xi)
     ax.set_xticklabels([n for n, _ in if_cfgs], fontsize=7.9)
-    ax.set_ylabel("Official allenai/IFBench Accuracy (%)")
+    ax.set_ylabel("IFBench Accuracy (%)")
     ax.set_ylim(0, 114)
     ax.grid(True, axis="y", alpha=0.22)
     ax.set_title("(b) Official IFBench32 Accuracy & Wall-Clock Serving Latency")
@@ -826,8 +826,10 @@ def make_fig7(D, out_dir):
 
 
 if __name__ == "__main__":
-    root = r"C:\Users\singm\.gemini\antigravity\scratch\composable-soft-prompt-distillation\results"
-    out = r"C:\Users\singm\.gemini\antigravity\brain\8aba4b5d-6a54-4e44-b641-a0c487b94d0d"
+    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    root = os.path.join(repo_root, "results")
+    out = os.environ.get("FIG_OUT_DIR", os.path.join(repo_root, "docs", "figures"))
+    os.makedirs(out, exist_ok=True)
     D = load_all(root)
     make_fig1(D, out)
     make_fig2(D, out)

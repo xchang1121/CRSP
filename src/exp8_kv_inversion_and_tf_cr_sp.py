@@ -28,7 +28,7 @@ Directly investigates the user's two core research questions on frozen M2RL-SFT 
 Evaluates:
   - Layer-by-layer geometric inversion error profile (layers 0..35) for Inv1a & Inv1b
   - Full 11-Method x 6-Position (P0..P5) Distributional & Hidden-State Drift Matrix
-  - Official allenai/IFBench32 real end-to-end strict accuracy across P0 (Start), P2 (Multi-Turn Mid),
+  - IFBench32 real end-to-end strict accuracy across P0 (Start), P2 (Multi-Turn Mid),
     P3 (Post-RAG), and P4 (Post-Query Late Injection) for both Q1 & Q2 tracks!
 """
 
@@ -1162,9 +1162,9 @@ def main():
     save()
 
     # =========================================================================
-    # PHASE 4: OFFICIAL allenai/IFBench32 REAL END-TO-END ACROSS P0/P2/P3/P4
+    # PHASE 4: IFBench32 REAL END-TO-END ACROSS P0/P2/P3/P4
     # =========================================================================
-    print("\n=== Phase 4: Official allenai/IFBench32 End-to-End Evaluation (Q1 KV-Inv & Q2 Teacher-Free CR) ===", flush=True)
+    print("\n=== Phase 4: IFBench32 End-to-End Evaluation (Q1 KV-Inv & Q2 Teacher-Free CR) ===", flush=True)
 
     # --- Q1 Track: KV_Distilled BEFORE vs AFTER Geometric & Functional Inversion ---
     results["ifbench32_evals"]["P0_KV_Distilled_L16"] = eval_kv_ifbench32_p0(student, tokenizer, tmpl, ifbench32, kv_dist_l16, tag="P0-KV: KV_Distilled_L16")

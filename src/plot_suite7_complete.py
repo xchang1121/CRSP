@@ -2,7 +2,7 @@
 Generate two publication-grade 200 DPI ICML/arXiv figures for Suite 7 (exp9 + exp9b):
   1) tr_fig11_multiseed_and_postrl_scaled.png:
        (a) Track 1: 3-Seed IFEval96 Mean +/- Std (Zero-Post-RL vs Post-RL Direct & Alg A KV-Inv2)
-       (b) Scaled Official allenai/IFBench64 (64 Prompts): 3-Way Head-to-Head + P0 KV Ceiling
+       (b) Scaled IFBench64 (64 Prompts): 3-Way Head-to-Head + P0 KV Ceiling
        (c) Adversarial P3 Post-RAG (420-tok Distractor) & Closed-Think Precision Frontier
        (d) Zero-Leakage Declarative Capacity & Recency Law on HeliosPay v4.2 (Doc36)
   2) tr_fig12_composition_and_interference.png:
@@ -50,8 +50,10 @@ RED    = "#DC2626"
 PURPLE = "#7C3AED"
 SLATE  = "#64748B"
 
-ROOT = r"C:\Users\singm\.gemini\antigravity\scratch\composable-soft-prompt-distillation\results"
-OUT_DIR = r"C:\Users\singm\.gemini\antigravity\brain\8aba4b5d-6a54-4e44-b641-a0c487b94d0d"
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ROOT = os.path.join(REPO_ROOT, "results")
+OUT_DIR = os.environ.get("FIG_OUT_DIR", os.path.join(REPO_ROOT, "docs", "figures"))
+os.makedirs(OUT_DIR, exist_ok=True)
 
 d9 = json.load(open(os.path.join(ROOT, "exp9_results.json")))
 d9b = json.load(open(os.path.join(ROOT, "exp9b_results.json")))
@@ -105,7 +107,7 @@ ax.set_ylabel("Held-Out IFEval96 Strict Acc (%)  [Label: Strict (Closed%)]")
 ax.set_title("(a) 3-Seed IFEval96 (288 Eval Pairs/Method): Zero-Post-RL vs Post-RL CS-CR")
 ax.grid(axis="y", alpha=0.38)
 
-# --- (b) Scaled Official allenai/IFBench64 (64 Stratified Prompts) ---
+# --- (b) Scaled IFBench64 (64 Stratified Prompts) ---
 ax = axes[0, 1]
 b9 = d9["track1_ifbench64"]
 b9b = d9b["ifbench64_evals"]
@@ -141,7 +143,7 @@ ax.set_xticks(xb)
 ax.set_xticklabels([b[0] for b in spec_b], fontsize=6.9)
 ax.set_ylim(0, 72)
 ax.set_ylabel("Official IFBench64 Strict Acc (%)  [2x IFBench32]")
-ax.set_title("(b) Scaled Official allenai/IFBench64 (64 Prompts): Zero-Post-RL vs Post-RL Pathways")
+ax.set_title("(b) Scaled IFBench64 (64 Prompts): Zero-Post-RL vs Post-RL Pathways")
 ax.grid(axis="y", alpha=0.38)
 
 # --- (c) Adversarial P3 Post-RAG (420-tok Distractor) Staircase & Closed-Think Gain ---

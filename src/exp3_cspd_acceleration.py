@@ -11,7 +11,7 @@ Systematically benchmarks 4 efficiency & convergence-speed axes on identical hel
                                          vs Low-Rank Factorized SP (r=32) vs Prompt Length Frontier (L=16, 64, 256)
   Axis 4 (Architecture Paradigm Shift): KV-CSPD (Direct Layerwise KV-Cache Prefix, L_kv=8 [0.59M, 32x shorter]
                                         & L_kv=16 [1.18M, 16x shorter]) + Zero-Training KV Concatenation [KV_M; KV_I]!
-  Plus End-to-End Official allenai/IFBench Verification for top winners!
+  Plus End-to-End IFBench Verification for top winners!
 """
 
 import gc

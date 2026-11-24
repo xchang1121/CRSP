@@ -7,7 +7,7 @@ Uses the EXACT Paper Table 2 4B checkpoints from HuggingFace:
   - IF RL Expert Teacher:   Jackwang111/M2RL-RL_IF
   - Math RL Expert Teacher: Jackwang111/M2RL-RL_Math
 
-And the EXACT official allenai/IFBench evaluator (/content/IFBench/data/IFBench_test.jsonl)!
+And the EXACT IFBench evaluator (/content/IFBench/data/IFBench_test.jsonl)!
 
 Key Scientific Upgrade over Stage A v1 (30-epoch 1-hot NLL overfitting on 32 traces):
   CSPD Eq. (1) optimizes E_{y ~ p_T}[ -1/|y| sum_t log p_S(y_t | I(P,x), y_{<t}) ].
@@ -21,7 +21,7 @@ Reproduces:
   2. Training dynamics G(A) across updates 0, 10, 20, 40, 60 (Fig. 11a)
   3. Zero-training concatenation composition [P_math; P_if] & reverse [P_if; P_math] (Table 2)
   4. Table 5 Ablations: Prefix-Robust Training (on vs off) & Optimizer (Muon vs AdamW)
-  5. Official allenai/IFBench end-to-end generation accuracy & recovery (Table 2 benchmark!)
+  5. IFBench end-to-end generation accuracy & recovery (Table 2 benchmark!)
   6. Section 4 & Appendix G Mechanistic Analysis:
      - Eq. (5) exact full-vocab Teacher-Student KL gap closed G(A): SP vs written instructions
      - Fig. 6b / 11c: Most raised & lowered tokens + reasoning/checking token shifts
@@ -777,8 +777,8 @@ def main():
         print(f"  [{dom_name}] Top lowered: {tok_info['top_lowered_tokens'][:6]}", flush=True)
     save_results()
 
-    # === Phase 4: Official allenai/IFBench End-to-End Task Generation ===
-    print("\n=== Phase 4: Official allenai/IFBench Task Generation (40 prompts, max_new=3072) ===", flush=True)
+    # === Phase 4: IFBench End-to-End Task Generation ===
+    print("\n=== Phase 4: IFBench Task Generation (40 prompts, max_new=3072) ===", flush=True)
     ifbench_configs = [
         ("student_no_sp", []),
         ("single_P_if", [sp_if]),

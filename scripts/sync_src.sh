@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 export PATH="$HOME/.local/bin:$PATH"
-ROOT="/mnt/c/Users/singm/.gemini/antigravity/scratch/composable-soft-prompt-distillation"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # Pack all .py files in src/ (stripping any CR) into base64 tar.gz and extract to /content/cspd
 TMP_PY="/tmp/cspd_sync_upload.py"

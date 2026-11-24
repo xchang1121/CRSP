@@ -4,7 +4,7 @@ export PATH="$HOME/.local/bin:$PATH"
 SCRIPT_PY="${1:-test_kv_smoke.py}"
 LOG_NAME="${2:-kvsmoke}"
 
-bash /mnt/c/Users/singm/.gemini/antigravity/scratch/composable-soft-prompt-distillation/scripts/sync_src.sh
+bash "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/sync_src.sh"
 sleep 2
 
 cat > /tmp/launch_generic.py << EOF

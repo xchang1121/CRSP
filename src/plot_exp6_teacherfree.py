@@ -40,8 +40,10 @@ RED    = "#DC2626"
 PURPLE = "#7C3AED"
 SLATE  = "#64748B"
 
-ROOT = r"C:\Users\singm\.gemini\antigravity\scratch\composable-soft-prompt-distillation\results"
-OUT_DIR = r"C:\Users\singm\.gemini\antigravity\brain\8aba4b5d-6a54-4e44-b641-a0c487b94d0d"
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ROOT = os.path.join(REPO_ROOT, "results")
+OUT_DIR = os.environ.get("FIG_OUT_DIR", os.path.join(REPO_ROOT, "docs", "figures"))
+os.makedirs(OUT_DIR, exist_ok=True)
 
 d = json.load(open(os.path.join(ROOT, "exp6_results.json")))
 

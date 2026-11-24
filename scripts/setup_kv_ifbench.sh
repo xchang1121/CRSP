@@ -10,7 +10,9 @@ print('DynamicCache.update sig:', inspect.signature(DynamicCache.update))
 print('DynamicCache.get_seq_length src:\n', inspect.getsource(DynamicCache.get_seq_length))
 print('DynamicCache.update src:\n', inspect.getsource(DynamicCache.update))
 if not os.path.exists('/content/IFBench'):
-    subprocess.run(['git', 'clone', '--depth', '1', 'https://github.com/allenai/IFBench.git', '/content/IFBench'], check=True)
+    repo = os.environ.get('EVAL_LIB_REPO', '')
+    if repo:
+        subprocess.run(['git', 'clone', '--depth', '1', repo, '/content/IFBench'], check=True)
 subprocess.run([sys.executable, '-m', 'pip', 'install', '-q', 'langdetect', 'immutabledict', 'emoji', 'syllapy'], check=True)
 import nltk
 for pkg in ['punkt', 'punkt_tab', 'averaged_perceptron_tagger', 'averaged_perceptron_tagger_eng', 'stopwords']:

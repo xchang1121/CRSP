@@ -3,7 +3,7 @@ Fast 2-minute verification of:
 1. Rao-Blackwellized CSPD (exact conditional expectation of Eq. 1 = Forward KL from RL Teacher on teacher traces)
    vs naive 1-hot NLL on 35 IF traces -> check held-out G(A) (Eq. 5) & Attention Pathways K(A) (Eq. 6)!
 2. Check M2RL-RL_IF vs M2RL-SFT on IFEval with max_new_tokens=3072 (check closed_think!)
-   and check whether allenai/IFBench_test is available on HuggingFace.
+   and check whether IFBench_test is available on HuggingFace.
 """
 import collections, gc, json, math, os, random, sys, time
 os.environ["HF_HUB_DISABLE_IMPLICIT_TOKEN"] = "1"

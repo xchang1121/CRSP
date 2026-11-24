@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
-export PATH="/home/singm/.local/bin:/usr/bin:/bin"
-ROOT="/mnt/c/Users/singm/.gemini/antigravity/scratch/composable-soft-prompt-distillation"
+export PATH="$HOME/.local/bin:/usr/bin:/bin"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 python3 - "$ROOT/src" << 'PYEOF'
 import io, os, sys, tarfile
@@ -24,7 +24,7 @@ mkdir -p /content/cspd
 tar -xzf /content/cspd_src.tar.gz -C /content/cspd
 echo "=== Setup IFBench & deps ==="
 if [ ! -d /content/IFBench ]; then
-    git clone --depth 1 https://github.com/allenai/IFBench.git /content/IFBench
+    if [ -n "${EVAL_LIB_REPO:-}" ]; then git clone --depth 1 "${EVAL_LIB_REPO}" /content/IFBench; fi
 fi
 python3 -m pip install -q langdetect immutabledict emoji syllapy
 python3 - << 'P2'

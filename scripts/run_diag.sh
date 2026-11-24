@@ -20,7 +20,7 @@ EOF
 
 timeout 25 colab exec -s cspd -f /tmp/kill_exp1.py || (timeout 15 colab restart-kernel -s cspd && sleep 1 && timeout 25 colab exec -s cspd -f /tmp/kill_exp1.py)
 sleep 2
-bash /mnt/c/Users/singm/.gemini/antigravity/scratch/composable-soft-prompt-distillation/scripts/sync_src.sh
+bash "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/sync_src.sh"
 sleep 2
 
 cat > /tmp/launch_diag.py << 'EOF'

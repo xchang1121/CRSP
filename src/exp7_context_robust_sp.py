@@ -30,7 +30,7 @@ Investigates:
          * Exact KL Gap Closed G(P, s) vs Teacher
          * Positional Behavioral Drift KL(p_P0 || p_s) (measures invariance across insertion positions!)
          * Layerwise Hidden-State Cosine Invariance cos(H_l(P | C_s), H_l(P | Clean)) at layers [0, 9, 18, 27, 35]
-     - Official allenai/IFBench32 Real End-to-End Generation across P0, P2 (Multi-Turn), P3 (Post-RAG),
+     - IFBench32 Real End-to-End Generation across P0, P2 (Multi-Turn), P3 (Post-RAG),
        P4 (Post-Query Late Injection), AND Split-Position Multi-Expert Assembly ([Sys: Math] + [History] + [Q + CR-IF])!
 """
 
@@ -1194,8 +1194,8 @@ def main():
     )
     save()
 
-    # Step 4: Official allenai/IFBench32 Real End-to-End Evaluation across Insertion Positions!
-    print("\n=== Step 4: Official allenai/IFBench32 End-to-End Evaluation across Insertion Positions ===", flush=True)
+    # Step 4: IFBench32 Real End-to-End Evaluation across Insertion Positions!
+    print("\n=== Step 4: IFBench32 End-to-End Evaluation across Insertion Positions ===", flush=True)
     # P0 Clean Start
     results["ifbench32_by_position"]["P0_Student"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "P0_Clean_Start", [], tag="P0-Start: Student")
     results["ifbench32_by_position"]["P0_A1_Pos0_Only"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "P0_Clean_Start", [sp_a1], tag="P0-Start: A1 Pos0-Only")

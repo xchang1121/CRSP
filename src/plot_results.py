@@ -31,7 +31,7 @@ def plot_stageA(res_path: str, out_dir: str):
 
     fig, axes = plt.subplots(2, 2, figsize=(14.5, 9.2))
 
-    # --- Panel (a): Official allenai/IFBench Task Accuracy ---
+    # --- Panel (a): IFBench Task Accuracy ---
     ax = axes[0, 0]
     cfg_order = [
         ("student_no_sp", "Student\n(No SP)"),
@@ -60,7 +60,7 @@ def plot_stageA(res_path: str, out_dir: str):
     ax.set_xticklabels(labels, fontsize=8.3)
     ax.set_ylabel("Accuracy (%)")
     ax.set_ylim(0, 102)
-    ax.set_title("(a) Official allenai/IFBench (40 prompts, max_tok=3072)")
+    ax.set_title("(a) IFBench (40 prompts, max_tok=3072)")
     ax.legend(frameon=False, fontsize=8.2, loc="upper left")
     for bar in b1:
         h = bar.get_height()

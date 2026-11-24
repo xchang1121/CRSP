@@ -17,9 +17,10 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
-ROOT = r"C:\Users\singm\.gemini\antigravity\scratch\composable-soft-prompt-distillation"
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RES = os.path.join(ROOT, "results")
-OUT = r"C:\Users\singm\.gemini\antigravity\brain\8aba4b5d-6a54-4e44-b641-a0c487b94d0d"
+OUT = os.environ.get("FIG_OUT_DIR", os.path.join(ROOT, "docs", "figures"))
+os.makedirs(OUT, exist_ok=True)
 
 def load_json(name):
     with open(os.path.join(RES, name), "r", encoding="utf-8") as f:

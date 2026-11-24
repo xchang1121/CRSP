@@ -41,8 +41,10 @@ RED    = "#DC2626"
 PURPLE = "#7C3AED"
 SLATE  = "#64748B"
 
-ROOT = r"C:\Users\singm\.gemini\antigravity\scratch\composable-soft-prompt-distillation\results"
-OUT_DIR = r"C:\Users\singm\.gemini\antigravity\brain\8aba4b5d-6a54-4e44-b641-a0c487b94d0d"
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ROOT = os.path.join(REPO_ROOT, "results")
+OUT_DIR = os.environ.get("FIG_OUT_DIR", os.path.join(REPO_ROOT, "docs", "figures"))
+os.makedirs(OUT_DIR, exist_ok=True)
 
 d = json.load(open(os.path.join(ROOT, "exp9_results.json")))
 
@@ -88,7 +90,7 @@ ax.set_title("(a) Track 1: 3-Seed Algorithm B Convergence & Variance (IFEval96, 
 ax.grid(axis="y", alpha=0.4)
 
 # ---------------------------------------------------------------------------
-# (b) Track 1 + 2: Scaled Official allenai/IFBench64 (2x IFBench32) + Triple Split
+# (b) Track 1 + 2: Scaled IFBench64 (2x IFBench32) + Triple Split
 # ---------------------------------------------------------------------------
 ax = axes[0, 1]
 b64 = d["track1_ifbench64"]

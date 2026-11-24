@@ -14,7 +14,7 @@ Two core research tracks requested as direct follow-up to Suite 6 (exp8):
     - Mid-point checkpoints at step 5 vs final step 10 to measure 2x convergence speedup.
     - Scaled held-out benchmarks:
         * IFEval96 (96 strictly disjoint google/IFEval prompts x 3 seeds = 288 eval pairs/method!)
-        * Official allenai/IFBench64 (64 stratified prompts, 2x larger than IFBench32!)
+        * IFBench64 (64 stratified prompts, 2x larger than IFBench32!)
 
   TRACK 2 (Direction 1 — Zero-Interference Multi-Expert Arbitrary-Slot Composition):
     - Constructs 3 compact (L=64) Zero-Post-RL specialists across disjoint domains:
@@ -119,7 +119,7 @@ def load_datasets_exp9():
     if_train96 = if_all[:96]
     ifeval_test96 = if_all[96:192]
 
-    # 2) Official allenai/IFBench: 64 stratified prompts (2x larger than IFBench32!)
+    # 2) IFBench: 64 stratified prompts (2x larger than IFBench32!)
     ifb_all = ifbench_eval.read_prompt_list("/content/IFBench/data/IFBench_test.jsonl")
     step = len(ifb_all) / 64.0
     ifbench64 = [ifb_all[int(i * step)] for i in range(64)]
@@ -1134,7 +1134,7 @@ def main():
     save()
 
     # Scaled Official IFBench64 (2x IFBench32!) on Seed-42 Champion Models
-    print("\n  --- Scaled Official allenai/IFBench64 (64 Stratified Prompts, 2x IFBench32!) ---", flush=True)
+    print("\n  --- Scaled IFBench64 (64 Stratified Prompts, 2x IFBench32!) ---", flush=True)
     e1_if_cscr = seed_models[42]["algb"]
     e1_if_naive = seed_models[42]["cold"]
     e1_if_s1 = seed_models[42]["s1"]

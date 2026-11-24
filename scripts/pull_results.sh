@@ -2,7 +2,8 @@
 set -euo pipefail
 export PATH="$HOME/.local/bin:$PATH"
 EXP_NAME="${1:-exp1}"
-OUT_LOCAL="/mnt/c/Users/singm/.gemini/antigravity/scratch/composable-soft-prompt-distillation/results"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+OUT_LOCAL="$ROOT/results"
 mkdir -p "$OUT_LOCAL"
 
 cat > /tmp/dump_res.py << EOF

@@ -2,7 +2,7 @@
 set -euo pipefail
 export PATH="$HOME/.local/bin:$PATH"
 
-bash /mnt/c/Users/singm/.gemini/antigravity/scratch/composable-soft-prompt-distillation/scripts/sync_src.sh
+bash "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/sync_src.sh"
 sleep 2
 
 cat > /tmp/launch_exp1b.py << 'EOF'
