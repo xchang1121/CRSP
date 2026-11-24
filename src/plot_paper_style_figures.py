@@ -1,6 +1,6 @@
 """
-Generate 13 clean, single-row, publication-grade figures strictly adhering to
-the minimalist visual grammar and color palette of the CSPD manuscript:
+Generate 15 clean, single-row, publication-grade figures strictly adhering to
+the minimalist visual grammar and color palette of the manuscript:
   - pfig01_unified_overview.png
   - pfig02_cspd_continual_and_loo.png
   - pfig03_cspd_progressive_vs_ties.png
@@ -14,6 +14,8 @@ the minimalist visual grammar and color palette of the CSPD manuscript:
   - pfig11_crsp_multiexpert_composition_and_duality.png
   - pfig12_long_context_single_expert_and_mechanism.png
   - pfig13_long_context_composition_and_doc_e2e.png
+  - pfig14_injection_order_and_slot_permutations.png
+  - pfig15_official_cspd_eos_and_pathway.png
 
 All values are loaded directly from verified JSON artifacts; zero code-like
 ablation tags appear on any axis, legend, or annotation.
@@ -28,16 +30,16 @@ import matplotlib.patches as mpatches
 from matplotlib.patches import FancyBboxPatch, FancyArrowPatch
 from matplotlib.gridspec import GridSpec
 
-ROOT = r"C:\Users\singm\.gemini\antigravity\scratch\composable-soft-prompt-distillation"
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RES = os.path.join(ROOT, "results")
-OUT = r"C:\Users\singm\.gemini\antigravity\brain\8aba4b5d-6a54-4e44-b641-a0c487b94d0d"
-SCRATCH = os.path.join(OUT, "scratch")
+OUT = os.environ.get("FIG_OUT_DIR", os.path.join(ROOT, "docs", "figures"))
+os.makedirs(OUT, exist_ok=True)
 
 def load_res(name):
     with open(os.path.join(RES, name), "r", encoding="utf-8") as f:
         return json.load(f)
 
-with open(os.path.join(SCRATCH, "orig_paper_curves.json"), "r", encoding="utf-8") as f:
+with open(os.path.join(RES, "reference_paper_curves.json"), "r", encoding="utf-8") as f:
     ORIG = json.load(f)
 
 # Exact minimalist scientific visual grammar matching CSPD manuscript
@@ -1497,6 +1499,146 @@ def make_pfig14():
     print("Saved:", path)
 
 
+# ==============================================================================
+# FIG 15: Reference Step-200 6-Slot Audit, 36-Layer Pathway & Complete-EOS Gain
+# ==============================================================================
+def make_pfig15():
+    d12 = load_res("exp12_results.json")
+    d10c = load_res("exp10c_results.json")
+    d10b = load_res("exp10b_results.json")
+
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(15.4, 4.45))
+    fig.subplots_adjust(wspace=0.29, left=0.05, right=0.985, top=0.86, bottom=0.17)
+
+    # ------------------------------------------------------------------
+    # (a) Reference Step-200 CSPD (I & M, RMS 0.37-0.40) Across P0-P5
+    # ------------------------------------------------------------------
+    style_boxed(ax1, grid="y")
+    slots = ["P0_Clean", "P0_FullCtx", "P1_SysEnd", "P2_MultiTurn", "P3_PostRAG", "P4_PostQuery", "P5_AllCombined"]
+    s_labels = ["P0\nClean", "P0\nFullCtx", "P1\nSysEnd", "P2\nTurn", "P3\nRAG", "P4\nPostQ", "P5\nAll"]
+    i_vals = [d12["partA1_official_6slots"]["official_I_on_IF"][s]["g_vs_slot"] for s in slots]
+    m_vals = [d12["partA1_official_6slots"]["official_M_on_Math"][s]["g_vs_slot"] for s in slots]
+
+    x1 = np.arange(len(slots))
+    w1 = 0.36
+    ax1.axvspan(4.5, 6.5, color="#FDECEC", alpha=0.55, zorder=0)
+    b1 = ax1.bar(x1 - w1/2, i_vals, w1, color=BLUE,   edgecolor=DARK, lw=0.5, label="Ref-CSPD IF (256 tok, RMS 0.37)", zorder=3)
+    b2 = ax1.bar(x1 + w1/2, m_vals, w1, color=ORANGE, edgecolor=DARK, lw=0.5, label="Ref-CSPD Math (256 tok, RMS 0.40)", zorder=3)
+    ax1.axhline(0, color=DARK, lw=0.85, zorder=2)
+
+    for b, v in zip(b1, i_vals):
+        off = 2.0 if v >= 0 else -2.5
+        va = "bottom" if v >= 0 else "top"
+        ax1.text(b.get_x() + b.get_width()/2, v + off, f"{v:+.0f}", ha="center", va=va, fontsize=6.4, color=DARK)
+    for b, v in zip(b2, m_vals):
+        off = 2.0 if v >= 0 else -2.5
+        va = "bottom" if v >= 0 else "top"
+        ax1.text(b.get_x() + b.get_width()/2, v + off, f"{v:+.0f}", ha="center", va=va, fontsize=6.4, color=DARK)
+
+    ax1.text(5.5, 69.5, "Post-query\ncollapse zone", ha="center", va="top", fontsize=6.8, fontweight="bold", color=RED,
+             bbox=dict(boxstyle="round,pad=0.18", fc="white", ec=RED, lw=0.6, alpha=0.92))
+    ax1.set_xticks(x1)
+    ax1.set_xticklabels(s_labels, fontsize=7.0)
+    ax1.set_ylabel("Slot-matched KL recovery G (%)")
+    ax1.set_ylim(-60, 82)
+    ax1.set_title("(a) Reference step-200 CSPD across slots P0-P5", pad=9)
+    ax1.legend(loc="lower left", frameon=True, facecolor="white", framealpha=0.94, edgecolor="#DDDDDD", fontsize=6.6, handlelength=1.4)
+
+    # ------------------------------------------------------------------
+    # (b) 36-Layer Cumulative Direct-Path Causal Ablation (open [0, l))
+    # ------------------------------------------------------------------
+    style_boxed(ax2, grid="both")
+    cuts = [0, 4, 8, 12, 16, 20, 24, 28, 32, 36]
+    pC = d12["partC_36layer_causal_pathway"]
+
+    ax2.axvspan(16, 24, color="#EEF4FA", alpha=0.75, zorder=0)
+    ax2.axhline(0, color=GRAY, lw=0.7, ls=":", zorder=1)
+    ax2.axhline(100, color=GRAY, lw=0.7, ls=":", zorder=1)
+
+    series = [
+        ("Official_CSPD_I@P0", BLUE,   "o", "Ref-CSPD @ P0"),
+        ("KVPD_IF_EOS@P0",     PURPLE, "s", "KV-PD-EOS @ P0"),
+        ("Alg1_CRSP_EOS@P4",   TEAL,   "^", "Alg. 1 CRSP-EOS @ P4"),
+    ]
+    for key, col, mk, lbl in series:
+        y0 = [pC["L0"][key]["open_first_0_to_l"][str(c)]["recovery_vs_base_pct"] for c in cuts]
+        y4 = [pC["L4096"][key]["open_first_0_to_l"][str(c)]["recovery_vs_base_pct"] for c in cuts]
+        ax2.plot(cuts, y0, color=col, marker=mk, ms=4.2, lw=1.7, ls="-",  label=f"{lbl} (L=0)", zorder=4)
+        ax2.plot(cuts, y4, color=col, marker=mk, ms=3.5, lw=1.2, ls="--", alpha=0.82, label=f"{lbl} (L=4096)", zorder=3)
+
+    ax2.text(20.0, -28.0, "Mid-layer surge\n(L16-24: +48-61 pp)", ha="center", va="bottom", fontsize=6.6, color=BLUE,
+             bbox=dict(boxstyle="round,pad=0.16", fc="white", ec=BLUE, lw=0.55, alpha=0.92))
+    ax2.annotate("P4 shallow shift\nat L=4096 (+21.9%)", xy=(8, 21.9), xytext=(2.5, 48.0),
+                 fontsize=6.4, color=TEAL, fontweight="bold",
+                 arrowprops=dict(arrowstyle="->", color=TEAL, lw=0.9, shrinkA=1, shrinkB=3))
+
+    ax2.set_xticks(cuts)
+    ax2.set_xlim(-1, 37)
+    ax2.set_ylim(-33, 114)
+    ax2.set_xlabel("Direct-path layers open [0, l) of 36")
+    ax2.set_ylabel("Cumulative gain recovery (%)")
+    ax2.set_title("(b) 36-layer direct-path ablation (L=0 vs L=4096)", pad=9)
+    ax2.legend(loc="upper left", ncol=1, frameon=True, facecolor="white", framealpha=0.92,
+               edgecolor="#DDDDDD", fontsize=5.8, handlelength=1.7, labelspacing=0.25)
+
+    # ------------------------------------------------------------------
+    # (c) Complete-EOS Upgrade on KV-PD @ P0 Across All 6 E2E Benchmarks
+    # ------------------------------------------------------------------
+    style_boxed(ax3, grid="y")
+    b_labels = ["MATH32\nL=0", "MATH32\nL=4096", "IFBench32\nL=0", "IFBench32\nL=4096", "IFEval48\nL=0", "IFEval48\nL=4096"]
+    trunc_vals = [
+        d10c["e2e_math32"]["0"]["KVPD_Math_P0"]["acc"],
+        d10c["e2e_math32"]["4096"]["KVPD_Math_P0"]["acc"],
+        d10c["e2e_ifbench32"]["0"]["KVPD_L16_at_P0"]["prompt_strict"],
+        d10c["e2e_ifbench32"]["4096"]["KVPD_L16_at_P0"]["prompt_strict"],
+        d10b["partD_e2e_ifeval48"]["0"]["KVPD_L16_at_P0"]["prompt_strict"],
+        d10c["e2e_ifeval48_4096"]["KVPD_L16_at_P0"]["prompt_strict"],
+    ]
+    eos_vals = [
+        d12["partE_e2e_benchmarks"]["math32"]["0"]["KVPD_Math_EOS@P0"]["acc"],
+        d12["partE_e2e_benchmarks"]["math32"]["4096"]["KVPD_Math_EOS@P0"]["acc"],
+        d12["partE_e2e_benchmarks"]["ifbench32"]["0"]["KVPD_IF_EOS@P0"]["prompt_strict"],
+        d12["partE_e2e_benchmarks"]["ifbench32"]["4096"]["KVPD_IF_EOS@P0"]["prompt_strict"],
+        d12["partE_e2e_benchmarks"]["ifeval48"]["0"]["KVPD_IF_EOS@P0"]["prompt_strict"],
+        d12["partE_e2e_benchmarks"]["ifeval48"]["4096"]["KVPD_IF_EOS@P0"]["prompt_strict"],
+    ]
+
+    x3 = np.arange(len(b_labels))
+    w3 = 0.36
+    c1 = ax3.bar(x3 - w3/2, trunc_vals, w3, color="#C9B3DC", edgecolor=DARK, lw=0.5, label="Truncated traces ([:512])", zorder=3)
+    c2 = ax3.bar(x3 + w3/2, eos_vals,   w3, color=PURPLE,    edgecolor=DARK, lw=0.5, label="Complete-EOS traces (</think>+EOS)", zorder=3)
+
+    for b, v in zip(c1, trunc_vals):
+        ax3.text(b.get_x() + b.get_width()/2, v + 1.1, f"{v:.1f}", ha="center", va="bottom", fontsize=6.2, color=GRAY)
+    for b, v in zip(c2, eos_vals):
+        ax3.text(b.get_x() + b.get_width()/2, v + 1.1, f"{v:.1f}", ha="center", va="bottom", fontsize=6.4, fontweight="bold", color=DARK)
+
+    for i, (t_v, e_v) in enumerate(zip(trunc_vals, eos_vals)):
+        dlt = e_v - t_v
+        hi = max(t_v, e_v)
+        txt = f"+{dlt:.1f}" if dlt > 0.05 else "0.0"
+        col = GREEN if dlt > 0.05 else GRAY
+        ax3.text(i, hi + 7.2, txt, ha="center", va="bottom", fontsize=6.4, fontweight="bold", color=col)
+
+    mean_t = float(np.mean(trunc_vals))
+    mean_e = float(np.mean(eos_vals))
+    ax3.text(0.02, 0.965, f"6-task mean: {mean_t:.1f}% → {mean_e:.1f}% (+{mean_e - mean_t:.1f} pp)\nClosed traces: 66.1% → 72.8% (+6.7 pp)",
+             transform=ax3.transAxes, ha="left", va="top", fontsize=5.8, fontweight="bold", color=PURPLE,
+             bbox=dict(boxstyle="round,pad=0.18", fc="#F7F2FA", ec=PURPLE, lw=0.6))
+
+    ax3.set_xticks(x3)
+    ax3.set_xticklabels(b_labels, fontsize=6.8)
+    ax3.set_ylabel("End-to-end strict accuracy (%)")
+    ax3.set_ylim(0, 122)
+    ax3.set_title("(c) Complete-EOS trajectory upgrade (KV-PD @ P0)", pad=9)
+    ax3.legend(loc="upper right", frameon=True, facecolor="white", framealpha=0.95, edgecolor="#DDDDDD", fontsize=5.7, handlelength=1.2)
+
+    path = os.path.join(OUT, "pfig15_official_cspd_eos_and_pathway.png")
+    fig.savefig(path)
+    plt.close(fig)
+    print("Saved:", path)
+
+
 if __name__ == "__main__":
     make_pfig01()
     make_pfig02()
@@ -1512,4 +1654,5 @@ if __name__ == "__main__":
     make_pfig12()
     make_pfig13()
     make_pfig14()
-    print("All 14 paper-style figures generated successfully.")
+    make_pfig15()
+    print("All 15 paper-style figures generated successfully.")
