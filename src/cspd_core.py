@@ -65,6 +65,7 @@ class MuonSoftPrompt(torch.optim.Optimizer):
         nesterov: bool = True,
         ns_steps: int = 5,
         rms_scale: float = 0.2,
+        scaling_mode: str = "rms",  # "rms" (exact RMS=0.2) or "moonlight_maxdim" (0.2*sqrt(max(L,d)))
     ):
         defaults = dict(
             lr=lr,
@@ -72,6 +73,7 @@ class MuonSoftPrompt(torch.optim.Optimizer):
             nesterov=nesterov,
             ns_steps=ns_steps,
             rms_scale=rms_scale,
+            scaling_mode=scaling_mode,
         )
         super().__init__(params, defaults)
 
@@ -87,6 +89,7 @@ class MuonSoftPrompt(torch.optim.Optimizer):
             nesterov = group["nesterov"]
             ns_steps = group["ns_steps"]
             rms_scale = group["rms_scale"]
+            scaling_mode = group.get("scaling_mode", "rms")
 
             for p in group["params"]:
                 if p.grad is None:
@@ -103,9 +106,12 @@ class MuonSoftPrompt(torch.optim.Optimizer):
                     g_eff = buf
 
                 orth = newton_schulz_5(g_eff, steps=ns_steps)
-                # Moonlight RMS rescaling: rescale orthogonalized update to RMS = 0.2
-                cur_rms = orth.pow(2).mean().sqrt().clamp_min(1e-8)
-                update = orth * (rms_scale / cur_rms)
+                if scaling_mode == "moonlight_maxdim":
+                    update = orth * (rms_scale * math.sqrt(max(p.shape)))
+                else:
+                    # Moonlight RMS rescaling: rescale orthogonalized update to RMS = 0.2
+                    cur_rms = orth.pow(2).mean().sqrt().clamp_min(1e-8)
+                    update = orth * (rms_scale / cur_rms)
                 p.add_(update.to(p.dtype), alpha=-lr)
         return loss
 
@@ -119,16 +125,27 @@ def init_soft_prompt_from_vocab(
     num_vectors: int = 256,
     seed: int = 42,
     vocab_limit: Optional[int] = None,
+    tokenizer=None,
 ) -> nn.Parameter:
     """
     Initialize soft prompt P in R^{L x d} (FP32) by sampling vocabulary embeddings.
+    When ``tokenizer`` is supplied, samples uniformly over all non-special token IDs
+    in ``[0, min(len(tokenizer), vocab_size))``.
     """
     gen = torch.Generator(device="cpu")
     gen.manual_seed(seed)
-    max_id = vocab_limit if vocab_limit is not None else min(embed_weight.size(0), 150000)
-    # Avoid special tokens at the very start/end if possible
-    low_id = min(100, max_id // 10)
-    indices = torch.randint(low=low_id, high=max_id, size=(num_vectors,), generator=gen)
+    if tokenizer is not None:
+        upper = min(len(tokenizer), embed_weight.size(0))
+        special_ids = {int(v) for v in getattr(tokenizer, "all_special_ids", [])}
+        allowed = [tid for tid in range(upper) if tid not in special_ids]
+        if not allowed:
+            raise ValueError("tokenizer has no non-special vocabulary rows to sample")
+        pos = torch.randint(0, len(allowed), size=(num_vectors,), generator=gen).tolist()
+        indices = torch.tensor([allowed[i] for i in pos], dtype=torch.long)
+    else:
+        max_id = vocab_limit if vocab_limit is not None else min(embed_weight.size(0), 150000)
+        low_id = min(100, max_id // 10)
+        indices = torch.randint(low=low_id, high=max_id, size=(num_vectors,), generator=gen)
     init_vecs = embed_weight[indices.to(embed_weight.device)].detach().float().clone()
     return nn.Parameter(init_vecs)
 
@@ -472,3 +489,198 @@ def mean_kl_divergence(teacher_logprobs: torch.Tensor, model_logprobs: torch.Ten
     a_lp = model_logprobs[:n].float()
     kl = (t_lp.exp() * (t_lp - a_lp)).sum(dim=-1).mean().item()
     return float(kl)
+
+
+# ---------------------------------------------------------------------------
+# 5. Core Distillation & Verification Utilities: Response-Only lm_head, EOS/Think Gates,
+#    Deterministic SHA-256 Prefix Sampling, Scaffold Audit & Safety Wrapper
+# ---------------------------------------------------------------------------
+
+QWEN_END_TOKENS: Tuple[int, ...] = (151645, 151643)  # <|im_end|>, <|endoftext|>
+
+
+def verify_qwen_system_scaffold(tokenizer) -> Tuple[List[int], List[int]]:
+    """
+    Verify exact Qwen3 empty-system scaffold invariance before training/evaluation:
+    adding an empty system turn must equal header + close + user_prompt token-for-token.
+    """
+    header = tokenizer.encode("<|im_start|>system\n", add_special_tokens=False)
+    close = tokenizer.encode("<|im_end|>\n", add_special_tokens=False)
+    example = [{"role": "user", "content": "scaffold-check"}]
+    kw = dict(tokenize=True, add_generation_prompt=True, enable_thinking=True, return_dict=False)
+    original = list(tokenizer.apply_chat_template(example, **kw))
+    empty = list(tokenizer.apply_chat_template([{"role": "system", "content": ""}, *example], **kw))
+    if empty != header + close + original:
+        raise ValueError("empty system scaffold does not match the tokenizer chat template")
+    return header, close
+
+
+def deterministic_prefix_slice(
+    input_ids: List[int],
+    prefix_pool: List[List[int]],
+    min_len: int = 128,
+    max_len: int = 256,
+) -> Optional[List[int]]:
+    """
+    Deterministic SHA-256 content-hash prefix selection:
+    selects 50% of examples, exact length in [min_len, max_len], and deterministic pool offset.
+    """
+    if not prefix_pool:
+        return None
+    raw = ",".join(str(int(x)) for x in input_ids).encode("ascii")
+    h = int(hashlib.sha256(raw).hexdigest(), 16)
+    if (h % 2) == 0:
+        return None
+    span = max(1, max_len - min_len + 1)
+    length = min_len + ((h // 2) % span)
+    ids: List[int] = []
+    j = (h // 512) % len(prefix_pool)
+    while len(ids) < length:
+        ids.extend(prefix_pool[j])
+        j = (j + 1) % len(prefix_pool)
+    return ids[:length]
+
+
+def final_answer_strict(text: str) -> str:
+    """
+    Extract text after a single well-formed ``</think>`` block.
+    Returns empty string if thinking tags are unclosed, duplicated, or out of order.
+    """
+    openings = text.count("<think>")
+    closings = text.count("</think>")
+    if closings == 1 and openings <= 1 and ("<think>" not in text or text.index("<think>") < text.index("</think>")):
+        return text.split("</think>", 1)[1].strip()
+    if openings or closings:
+        return ""
+    return text.strip()
+
+
+def verify_complete_eos_trace(
+    response_ids: List[int],
+    response_text: str,
+    require_think_close: bool = True,
+    end_tokens: Tuple[int, ...] = QWEN_END_TOKENS,
+) -> bool:
+    """
+    Gate training trajectories so every distilled trace terminates cleanly with EOS
+    (``<|im_end|>`` or ``<|endoftext|>``) and, when thinking is enabled, contains a
+    single properly closed ``</think>`` block followed by a non-empty final answer.
+    """
+    if not response_ids or int(response_ids[-1]) not in end_tokens:
+        return False
+    if require_think_close:
+        if "</think>" not in response_text:
+            return False
+        if not final_answer_strict(response_text):
+            return False
+    return True
+
+
+def compute_response_logits_fast(
+    model,
+    inputs_embeds: torch.Tensor,
+    labels: torch.Tensor,
+    attention_mask: Optional[torch.Tensor] = None,
+    past_key_values=None,
+) -> List[torch.Tensor]:
+    """
+    Memory-efficient response-only projection:
+    runs the frozen Transformer decoder backbone first and applies ``lm_head`` ONLY
+    at supervised response positions (``labels[:, 1:] != -100``), avoiding materializing
+    ``[B, T_ctx, V]`` logits over thousands of preceding context tokens.
+
+    Returns a list of ``[n_resp_i, V]`` FP32 logits (one tensor per batch row),
+    preserving full autograd graph back to ``inputs_embeds`` / ``past_key_values``.
+    """
+    decoder_name = getattr(model, "base_model_prefix", "model")
+    decoder = getattr(model, decoder_name, None)
+    output_head = model.get_output_embeddings()
+    if decoder is None or output_head is None:
+        # Fallback for non-standard architectures
+        out = model(
+            inputs_embeds=inputs_embeds,
+            attention_mask=attention_mask,
+            past_key_values=past_key_values,
+            use_cache=False,
+        )
+        shift_logits = out.logits[:, :-1, :]
+        shift_labels = labels[:, 1:]
+        return [shift_logits[i][shift_labels[i] != -100].float() for i in range(labels.size(0))]
+
+    hidden = decoder(
+        inputs_embeds=inputs_embeds,
+        attention_mask=attention_mask,
+        past_key_values=past_key_values,
+        use_cache=False,
+        return_dict=True,
+    ).last_hidden_state  # [B, T, d]
+
+    shifted_hidden = hidden[:, :-1, :]
+    shift_labels = labels[:, 1:]
+    out_list: List[torch.Tensor] = []
+    for i in range(labels.size(0)):
+        mask = shift_labels[i] != -100
+        if not bool(mask.any()):
+            out_list.append(shifted_hidden.new_empty((0, output_head.weight.size(0)), dtype=torch.float32))
+            continue
+        resp_h = shifted_hidden[i, mask]
+        resp_logits = output_head(resp_h).float()
+        out_list.append(resp_logits)
+    return out_list
+
+
+def cosine_lr_no_warmup(step_0based: int, lr_max: float, lr_min: float, total_updates: int) -> float:
+    """Cosine learning-rate schedule without warmup: update 0 -> lr_max, update (N-1) -> lr_min."""
+    if total_updates <= 1:
+        return lr_max
+    return lr_min + 0.5 * (lr_max - lr_min) * (1.0 + math.cos(math.pi * step_0based / (total_updates - 1)))
+
+
+def alignment_trace_multislot(
+    prompt_len: int,
+    response_ids: List[int],
+    insertions: List[Tuple[int, int, str]],  # sorted list of (insert_pos_in_orig_prompt, sp_len, slot_name)
+) -> Tuple[List[int], List[str]]:
+    """
+    Pure-CPU causal alignment verifier for single-slot and multi-slot soft-prompt insertion.
+    Returns (aligned_labels, region_tags) so unit tests can assert exact label shift invariants
+    before touching any GPU.
+    """
+    orig_labels = [-100] * prompt_len + list(response_ids)
+    orig_regions = ["prompt"] * prompt_len + ["response"] * len(response_ids)
+    ins_sorted = sorted(insertions, key=lambda x: x[0])
+    aligned_labels: List[int] = []
+    aligned_regions: List[str] = []
+    prev = 0
+    for pos, sp_len, name in ins_sorted:
+        if not (0 <= pos <= prompt_len) or pos < prev or sp_len <= 0:
+            raise ValueError(f"Invalid insertion ({pos}, {sp_len}, {name}) for prompt_len={prompt_len}")
+        aligned_labels.extend(orig_labels[prev:pos])
+        aligned_regions.extend(orig_regions[prev:pos])
+        aligned_labels.extend([-100] * sp_len)
+        aligned_regions.extend([f"sp:{name}"] * sp_len)
+        prev = pos
+    aligned_labels.extend(orig_labels[prev:])
+    aligned_regions.extend(orig_regions[prev:])
+    return aligned_labels, aligned_regions
+
+
+class FrozenBackboneSoftPromptWrapper:
+    """
+    Non-``nn.Module`` safety wrapper for frozen-backbone soft-prompt optimization:
+    callers cannot accidentally pass frozen backbone parameters to an optimizer via
+    ``.parameters()``; the sole trainable tensor is exposed as ``prompt_parameter``.
+    """
+
+    def __init__(self, base_model, prompt_embeddings: torch.Tensor):
+        if prompt_embeddings.ndim != 2 or prompt_embeddings.size(0) <= 0:
+            raise ValueError("prompt_embeddings must have shape [L, hidden]")
+        self.base_model = base_model
+        for p in self.base_model.parameters():
+            p.requires_grad_(False)
+        self.prompt_parameter = nn.Parameter(prompt_embeddings.detach().float().clone())
+
+    def assert_backbone_frozen(self) -> None:
+        if any(p.requires_grad for p in self.base_model.parameters()):
+            raise RuntimeError("Frozen backbone invariant violated: a base parameter has requires_grad=True")
+
