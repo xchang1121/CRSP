@@ -1,4 +1,5 @@
 """
+Paper Reference: Section 7.1–7.2, Tables 10 & 12, Fig. 12–13 (0->8192 Attenuation & 9-Layer Attention Mass).
 Suite 8 (exp10): Long-Context Capability Injection Attenuation & Multi-Expert Composition
 =======================================================================================
 Systematically investigates how capability injection and multi-expert composition behave
@@ -7,28 +8,28 @@ as realistic preceding context length scales from L_ctx = 0 up to L_ctx = 8192 t
 (36-layer Qwen3-4B, 32k native context window):
 
   Part A — Single-Expert Long-Context Attenuation Sweep (L_ctx in {0, 512, 1024, 2048, 4096, 8192}):
-    Compares fixed-P0 vs. sliding-slot modules on held-out IF (N=24) & Math (N=24) trajectories:
+    Compares start-fixed vs. sliding-slot modules on held-out IF (N=24) & Math (N=24) trajectories:
       * Pos-0 CSPD (L=256, fixed at index 0)
       * Prefix-Robust CSPD (PR-SP, L=256, fixed at index 0)
       * Layerwise KV-PD (L_kv=16, fixed at index 0 via past_key_values)
-      * Direct CRSP (L=256) pinned at P0 (control) vs. sliding at P2 (pre-query) & P4 (post-query)
-      * Direct CRSP (L=64) sliding at P2 & P4
-      * Algorithm 1 KV-Inv-CRSP (L=64, no teacher) sliding at P2 & P4
+      * Direct CRSP (L=256) pinned at Start (control) vs. sliding at PreQuery (pre-query) & PostQuery (post-query)
+      * Direct CRSP (L=64) sliding at PreQuery & PostQuery
+      * Algorithm 1 KV-Inv-CRSP (L=64, no teacher) sliding at PreQuery & PostQuery
     Measures G_vs_ctx(L_ctx), absolute KL, retention ratio G(L_ctx)/G(0), and Drift-KL(L_ctx, 0).
 
   Part B — Mechanistic Layerwise Attention-Mass Diagnostic (L_ctx in {0..8192}):
     Hooks F.scaled_dot_product_attention (exact post-QK-norm, post-RoPE, post-GQA weights)
     across 9 representative layers (shallow / mid / deep) to measure exact response-to-module
     attention mass alpha_mod(L_ctx) vs. context dilution alpha_ctx(L_ctx), separating RoPE
-    distance decay (fixed P0 vs. sliding P2/P4) from softmax denominator dilution!
+    distance decay (fixed Start vs. sliding pre_query/post_query) from softmax denominator dilution!
 
   Part C — Multi-Expert Composition Under Long Context (L_ctx in {0, 1024, 4096, 8192}):
     Compares dual-expert (Math + IF) composition & order gap |Delta_order| + cross-expert
     Top-32 KL interference across:
-      * PR-CSPD dual concat at P0 ([Math; IF] vs [IF; Math])
-      * Fixed-P0 KV-PD dual concat at P0 ([Z_Math; Z_IF] vs [Z_IF; Z_Math])
-      * Direct CRSP (L=64) sliding split-slot [Math@P2 + IF@P4] & adjacent [Math; IF]@P2 / [IF; Math]@P2
-      * Alg. 1 KV-Inv-CRSP (L=64) sliding split-slot [Math@P2 + IF@P4] & adjacent [Math; IF]@P2 / [IF; Math]@P2
+      * PR-CSPD dual concat at Start ([Math; IF] vs [IF; Math])
+      * Start-Fixed KV-PD dual concat at Start ([Z_Math; Z_IF] vs [Z_IF; Z_Math])
+      * Direct CRSP (L=64) sliding split-slot [Math@PreQuery + IF@PostQuery] & adjacent [Math; IF]@PreQuery / [IF; Math]@PreQuery
+      * Alg. 1 KV-Inv-CRSP (L=64) sliding split-slot [Math@PreQuery + IF@PostQuery] & adjacent [Math; IF]@PreQuery / [IF; Math]@PreQuery
 
   Part D — End-to-End Autoregressive Generative Evaluation Under Long Context:
     Real generation & strict programmatic verification at L_ctx in {0, 2048, 4096} on:
@@ -37,9 +38,9 @@ as realistic preceding context length scales from L_ctx = 0 up to L_ctx = 8192 t
       * Held-out MATH (N=32, 1536 tok, L_ctx in {0, 4096})
 
   Part E — Zero-Leakage Private Document KV-PD (HeliosPay v4.2, N=36) Under Long Context:
-    Tests whether Stage II fixed-P0 KV-PD (L_kv=16, with and without Micro-RAG) suffers
+    Tests whether Stage II start-fixed KV-PD (L_kv=16, with and without Micro-RAG) suffers
     attenuation when L_ctx in {0, 1024, 2048, 4096} tokens of unrelated conversation sit
-    between the P0 KV cache and the HeliosPay query.
+    between the Start KV cache and the HeliosPay query.
 """
 
 import gc
@@ -209,7 +210,7 @@ def build_long_context_bundles(
     """
     Build realistic multi-turn + retrieved reference document context bundles of EXACT
     preceding token length L_ctx in {0, 512, 1024, 2048, 4096, 8192}.
-    All bundles share the exact same structure for both KV-PD (at P0) and Input-SP / CRSP!
+    All bundles share the exact same structure for both KV-PD (at Start) and Input-SP / CRSP!
     """
     prose_stream = load_nonrepeating_prose_stream(tokenizer, min_tokens=14000)
     persona_ids = tokenizer.encode(EVAL_PERSONA, add_special_tokens=False)
@@ -266,7 +267,7 @@ def build_longctx_ids_for_kv(
 ) -> Tuple[List[int], Optional[List[int]], Dict[str, Tuple[int, int]]]:
     """
     Exact token-level twin of build_multislot_sp_inputs (with 0 soft prompts), returning
-    (ids, labels, spans) so KV-PD at P0 and Base(L_ctx) see the EXACT same token sequence!
+    (ids, labels, spans) so KV-PD at Start and Base(L_ctx) see the EXACT same token sequence!
     """
     ids: List[int] = []
     spans: Dict[str, Tuple[int, int]] = {}
@@ -480,7 +481,7 @@ def eval_config_on_val_cache(
     sp_sys_start: Optional[List[torch.Tensor]] = None,
     sp_pre_query: Optional[List[torch.Tensor]] = None,
     sp_post_query: Optional[List[torch.Tensor]] = None,
-    ref_p0_logits_list: Optional[List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]] = None,
+    ref_start_logits_list: Optional[List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]] = None,
     save_ref_top32: bool = False,
 ) -> Tuple[Dict[str, float], Optional[List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]]]:
     """
@@ -544,8 +545,8 @@ def eval_config_on_val_cache(
             rent = -(rp * rp.clamp_min(1e-9).log()).sum(dim=-1)
             saved_refs.append((ri_top.cpu(), rp.to(torch.float16).cpu(), rent.cpu()))
 
-        if ref_p0_logits_list is not None:
-            r_ti, r_tp, r_ent = ref_p0_logits_list[idx]
+        if ref_start_logits_list is not None:
+            r_ti, r_tp, r_ent = ref_start_logits_list[idx]
             r_ti = r_ti.to(device)
             r_tp = r_tp.float().to(device)
             r_ent = r_ent.float().to(device)
@@ -576,7 +577,7 @@ def eval_pair_interference_kl(
     res, _ = eval_config_on_val_cache(
         student, tmpl, val_cache, ctx_bundle, mode=mode, kv_list=kv_list,
         sp_sys_start=sp_sys_start, sp_pre_query=sp_pre_query, sp_post_query=sp_post_query,
-        ref_p0_logits_list=solo_refs,
+        ref_start_logits_list=solo_refs,
     )
     return res["drift_kl"]
 
@@ -882,14 +883,14 @@ def eval_ifbench_longctx(
             sp_sys_start=sp_sys_start, sp_pre_query=sp_pre_query, sp_post_query=sp_post_query,
             batch_size=bs, max_new_tokens=2048, temperature=0.6, seed=42,
         )
-    p2r, closed = {}, 0
+    pre_query_res, closed = {}, 0
     for inp, r in zip(inps, outs):
         closed += int("</think>" in r)
-        p2r[inp.prompt] = strip_thinking(r)
-    s_ok = sum(int(ifbench_eval.test_instruction_following_strict(inp, p2r).follow_all_instructions) for inp in inps)
+        pre_query_res[inp.prompt] = strip_thinking(r)
+    s_ok = sum(int(ifbench_eval.test_instruction_following_strict(inp, pre_query_res).follow_all_instructions) for inp in inps)
     inst_l = []
     for inp in inps:
-        inst_l.extend(ifbench_eval.test_instruction_following_strict(inp, p2r).follow_instruction_list)
+        inst_l.extend(ifbench_eval.test_instruction_following_strict(inp, pre_query_res).follow_instruction_list)
     n = len(inps)
     res = {
         "prompt_strict": round(100.0 * s_ok / n, 2),
@@ -1077,9 +1078,9 @@ def main():
     # Stage I: Input-Space CSPD (Pos-0 & Prefix-Robust, L=256, AdamW)
     sp_pos0_if, m = train_input_cspd_sp(
         student, tokenizer, tmpl, if_train_cache, train_pools["stream"], IF_TASK_INST,
-        num_vectors=256, prefix_robust=False, num_updates=45, batch_size=10, lr_max=0.005, max_rms=0.048, seed=42, tag="Pos0_CSPD_IF_L256",
+        num_vectors=256, prefix_robust=False, num_updates=45, batch_size=10, lr_max=0.005, max_rms=0.048, seed=42, tag="StartOnly_CSPD_IF_L256",
     )
-    results["training"]["Pos0_CSPD_IF_L256"] = m
+    results["training"]["StartOnly_CSPD_IF_L256"] = m
 
     sp_pr_if, m = train_input_cspd_sp(
         student, tokenizer, tmpl, if_train_cache, train_pools["stream"], IF_TASK_INST,
@@ -1163,26 +1164,26 @@ def main():
     # 1) Instruction Following (IF held-out N=24)
     if_single_configs = [
         ("Base_Frozen",            "base", {}),
-        ("Pos0_CSPD_L256_at_P0",   "sp",   {"sp_sys_start": [sp_pos0_if]}),
-        ("PR_CSPD_L256_at_P0",     "sp",   {"sp_sys_start": [sp_pr_if]}),
-        ("KVPD_L16_at_P0",         "kv",   {"kv_list": [kv_if]}),
-        ("Direct_CRSP_L256_at_P0", "sp",   {"sp_sys_start": [sp_crsp_if_256]}),
-        ("Direct_CRSP_L256_at_P2", "sp",   {"sp_pre_query": [sp_crsp_if_256]}),
-        ("Direct_CRSP_L256_at_P4", "sp",   {"sp_post_query": [sp_crsp_if_256]}),
-        ("Direct_CRSP_L64_at_P2",  "sp",   {"sp_pre_query": [sp_crsp_if_64]}),
-        ("Direct_CRSP_L64_at_P4",  "sp",   {"sp_post_query": [sp_crsp_if_64]}),
-        ("Alg1_KVInv_L64_at_P2",   "sp",   {"sp_pre_query": [sp_alg1_if_64]}),
-        ("Alg1_KVInv_L64_at_P4",   "sp",   {"sp_post_query": [sp_alg1_if_64]}),
+        ("StartOnly_CSPD_L256_at_Start",   "sp",   {"sp_sys_start": [sp_pos0_if]}),
+        ("PR_CSPD_L256_at_Start",     "sp",   {"sp_sys_start": [sp_pr_if]}),
+        ("KVPD_L16_at_Start",         "kv",   {"kv_list": [kv_if]}),
+        ("Direct_CRSP_L256_at_Start", "sp",   {"sp_sys_start": [sp_crsp_if_256]}),
+        ("Direct_CRSP_L256_at_PreQuery", "sp",   {"sp_pre_query": [sp_crsp_if_256]}),
+        ("Direct_CRSP_L256_at_PostQuery", "sp",   {"sp_post_query": [sp_crsp_if_256]}),
+        ("Direct_CRSP_L64_at_PreQuery",  "sp",   {"sp_pre_query": [sp_crsp_if_64]}),
+        ("Direct_CRSP_L64_at_PostQuery",  "sp",   {"sp_post_query": [sp_crsp_if_64]}),
+        ("Alg1_KVInv_L64_at_PreQuery",   "sp",   {"sp_pre_query": [sp_alg1_if_64]}),
+        ("Alg1_KVInv_L64_at_PostQuery",   "sp",   {"sp_post_query": [sp_alg1_if_64]}),
     ]
-    if_p0_refs: Dict[str, Any] = {}
+    if_start_refs: Dict[str, Any] = {}
     base_if_kls: Dict[int, float] = {}
     for L in LENGTHS_SWEEP:
         res_base, ref_b = eval_config_on_val_cache(
             student, tmpl, if_val_cache, ctx_bundles[L], mode="base",
-            ref_p0_logits_list=if_p0_refs.get("Base_Frozen"), save_ref_top32=(L == 0),
+            ref_start_logits_list=if_start_refs.get("Base_Frozen"), save_ref_top32=(L == 0),
         )
         if L == 0:
-            if_p0_refs["Base_Frozen"] = ref_b
+            if_start_refs["Base_Frozen"] = ref_b
         base_if_kls[L] = res_base["kl"]
         results["partA_single_sweep_if"].setdefault("Base_Frozen", {})[str(L)] = {**res_base, "g_vs_ctx": 0.0}
         print(f"  [IF Sweep L={L:4d}] Base_Frozen            | kl={res_base['kl']:.4f} | drift={res_base.get('drift_kl', 0.0):.4f}", flush=True)
@@ -1193,10 +1194,10 @@ def main():
         for L in LENGTHS_SWEEP:
             r, ref = eval_config_on_val_cache(
                 student, tmpl, if_val_cache, ctx_bundles[L], mode=mode,
-                ref_p0_logits_list=if_p0_refs.get(name), save_ref_top32=(L == 0), **kw,
+                ref_start_logits_list=if_start_refs.get(name), save_ref_top32=(L == 0), **kw,
             )
             if L == 0:
-                if_p0_refs[name] = ref
+                if_start_refs[name] = ref
             g = round(100.0 * (1.0 - r["kl"] / max(1e-8, base_if_kls[L])), 2)
             if L == 0:
                 g0 = g
@@ -1209,22 +1210,22 @@ def main():
     # 2) Mathematics (Math held-out N=24)
     math_single_configs = [
         ("Base_Frozen",            "base", {}),
-        ("PR_CSPD_Math_L256_at_P0","sp",   {"sp_sys_start": [sp_pr_math]}),
-        ("KVPD_Math_L16_at_P0",    "kv",   {"kv_list": [kv_math]}),
-        ("Direct_CRSP_Math_L64_P0","sp",   {"sp_sys_start": [sp_crsp_math_64]}),
-        ("Direct_CRSP_Math_L64_P2","sp",   {"sp_pre_query": [sp_crsp_math_64]}),
-        ("Direct_CRSP_Math_L64_P4","sp",   {"sp_post_query": [sp_crsp_math_64]}),
-        ("Alg1_KVInv_Math_L64_P2", "sp",   {"sp_pre_query": [sp_alg1_math_64]}),
+        ("PR_CSPD_Math_L256_at_Start","sp",   {"sp_sys_start": [sp_pr_math]}),
+        ("KVPD_Math_L16_at_Start",    "kv",   {"kv_list": [kv_math]}),
+        ("Direct_CRSP_Math_L64_Start","sp",   {"sp_sys_start": [sp_crsp_math_64]}),
+        ("Direct_CRSP_Math_L64_PreQuery","sp",   {"sp_pre_query": [sp_crsp_math_64]}),
+        ("Direct_CRSP_Math_L64_PostQuery","sp",   {"sp_post_query": [sp_crsp_math_64]}),
+        ("Alg1_KVInv_Math_L64_PreQuery", "sp",   {"sp_pre_query": [sp_alg1_math_64]}),
     ]
-    math_p0_refs: Dict[str, Any] = {}
+    math_start_refs: Dict[str, Any] = {}
     base_math_kls: Dict[int, float] = {}
     for L in LENGTHS_SWEEP:
         res_base, ref_b = eval_config_on_val_cache(
             student, tmpl, math_val_cache, ctx_bundles[L], mode="base",
-            ref_p0_logits_list=math_p0_refs.get("Base_Frozen"), save_ref_top32=(L == 0),
+            ref_start_logits_list=math_start_refs.get("Base_Frozen"), save_ref_top32=(L == 0),
         )
         if L == 0:
-            math_p0_refs["Base_Frozen"] = ref_b
+            math_start_refs["Base_Frozen"] = ref_b
         base_math_kls[L] = res_base["kl"]
         results["partA_single_sweep_math"].setdefault("Base_Frozen", {})[str(L)] = {**res_base, "g_vs_ctx": 0.0}
 
@@ -1234,10 +1235,10 @@ def main():
         for L in LENGTHS_SWEEP:
             r, ref = eval_config_on_val_cache(
                 student, tmpl, math_val_cache, ctx_bundles[L], mode=mode,
-                ref_p0_logits_list=math_p0_refs.get(name), save_ref_top32=(L == 0), **kw,
+                ref_start_logits_list=math_start_refs.get(name), save_ref_top32=(L == 0), **kw,
             )
             if L == 0:
-                math_p0_refs[name] = ref
+                math_start_refs[name] = ref
             g = round(100.0 * (1.0 - r["kl"] / max(1e-8, base_math_kls[L])), 2)
             if L == 0:
                 g0 = g
@@ -1255,12 +1256,12 @@ def main():
     print("\n--- PART B: Mechanistic Response-to-Module Attention Mass (L_ctx: 0 -> 8192) ---", flush=True)
     attn_items = if_val_cache[:6]
     attn_configs = [
-        ("PR_CSPD_L256_at_P0",     "sp", {"sp_sys_start": [sp_pr_if]}),
-        ("KVPD_L16_at_P0",         "kv", {"kv_list": [kv_if]}),
-        ("Direct_CRSP_L256_at_P0", "sp", {"sp_sys_start": [sp_crsp_if_256]}),
-        ("Direct_CRSP_L256_at_P2", "sp", {"sp_pre_query": [sp_crsp_if_256]}),
-        ("Direct_CRSP_L256_at_P4", "sp", {"sp_post_query": [sp_crsp_if_256]}),
-        ("Alg1_KVInv_L64_at_P4",   "sp", {"sp_post_query": [sp_alg1_if_64]}),
+        ("PR_CSPD_L256_at_Start",     "sp", {"sp_sys_start": [sp_pr_if]}),
+        ("KVPD_L16_at_Start",         "kv", {"kv_list": [kv_if]}),
+        ("Direct_CRSP_L256_at_Start", "sp", {"sp_sys_start": [sp_crsp_if_256]}),
+        ("Direct_CRSP_L256_at_PreQuery", "sp", {"sp_pre_query": [sp_crsp_if_256]}),
+        ("Direct_CRSP_L256_at_PostQuery", "sp", {"sp_post_query": [sp_crsp_if_256]}),
+        ("Alg1_KVInv_L64_at_PostQuery",   "sp", {"sp_post_query": [sp_alg1_if_64]}),
     ]
     for name, mode, kw in attn_configs:
         results["partB_attention_mass"][name] = {}
@@ -1279,16 +1280,16 @@ def main():
     # ------------------------------------------------------------------
     print("\n--- PART C: Dual-Expert Composition (Math + IF) & Interference Under Long Context ---", flush=True)
     comp_configs = [
-        ("PR_CSPD_P0_Math_IF",          "sp", {"sp_sys_start": [sp_pr_math, sp_pr_if]}),
-        ("PR_CSPD_P0_IF_Math",          "sp", {"sp_sys_start": [sp_pr_if, sp_pr_math]}),
-        ("KVPD_P0_Math_IF",             "kv", {"kv_list": [kv_math, kv_if]}),
-        ("KVPD_P0_IF_Math",             "kv", {"kv_list": [kv_if, kv_math]}),
-        ("Direct_CRSP_Split_M@P2_I@P4", "sp", {"sp_pre_query": [sp_crsp_math_64], "sp_post_query": [sp_crsp_if_64]}),
-        ("Direct_CRSP_Adj_M_I@P2",      "sp", {"sp_pre_query": [sp_crsp_math_64, sp_crsp_if_64]}),
-        ("Direct_CRSP_Adj_I_M@P2",      "sp", {"sp_pre_query": [sp_crsp_if_64, sp_crsp_math_64]}),
-        ("Alg1_CRSP_Split_M@P2_I@P4",   "sp", {"sp_pre_query": [sp_alg1_math_64], "sp_post_query": [sp_alg1_if_64]}),
-        ("Alg1_CRSP_Adj_M_I@P2",        "sp", {"sp_pre_query": [sp_alg1_math_64, sp_alg1_if_64]}),
-        ("Alg1_CRSP_Adj_I_M@P2",        "sp", {"sp_pre_query": [sp_alg1_if_64, sp_alg1_math_64]}),
+        ("PR_CSPD_Start_Math_IF",          "sp", {"sp_sys_start": [sp_pr_math, sp_pr_if]}),
+        ("PR_CSPD_Start_IF_Math",          "sp", {"sp_sys_start": [sp_pr_if, sp_pr_math]}),
+        ("KVPD_Start_Math_IF",             "kv", {"kv_list": [kv_math, kv_if]}),
+        ("KVPD_Start_IF_Math",             "kv", {"kv_list": [kv_if, kv_math]}),
+        ("Direct_CRSP_Split_Math_PreQuery_IF_PostQuery", "sp", {"sp_pre_query": [sp_crsp_math_64], "sp_post_query": [sp_crsp_if_64]}),
+        ("Direct_CRSP_Adj_M_I@PreQuery",      "sp", {"sp_pre_query": [sp_crsp_math_64, sp_crsp_if_64]}),
+        ("Direct_CRSP_Adj_I_M@PreQuery",      "sp", {"sp_pre_query": [sp_crsp_if_64, sp_crsp_math_64]}),
+        ("Alg1_CRSP_Split_Math_PreQuery_IF_PostQuery",   "sp", {"sp_pre_query": [sp_alg1_math_64], "sp_post_query": [sp_alg1_if_64]}),
+        ("Alg1_CRSP_Adj_M_I@PreQuery",        "sp", {"sp_pre_query": [sp_alg1_math_64, sp_alg1_if_64]}),
+        ("Alg1_CRSP_Adj_I_M@PreQuery",        "sp", {"sp_pre_query": [sp_alg1_if_64, sp_alg1_math_64]}),
     ]
 
     for name, mode, kw in comp_configs:
@@ -1309,8 +1310,8 @@ def main():
 
     # Cross-Expert Interference KL(Solo_IF || Pair) on IF val trajectories across L_ctx in LENGTHS_COMP
     solo_pair_map = [
-        ("PR_CSPD_P0",        ("sp", {"sp_sys_start": [sp_pr_if]}),        ("sp", {"sp_sys_start": [sp_pr_math, sp_pr_if]})),
-        ("KVPD_P0",           ("kv", {"kv_list": [kv_if]}),                ("kv", {"kv_list": [kv_math, kv_if]})),
+        ("PR_CSPD_Start",        ("sp", {"sp_sys_start": [sp_pr_if]}),        ("sp", {"sp_sys_start": [sp_pr_math, sp_pr_if]})),
+        ("KVPD_Start",           ("kv", {"kv_list": [kv_if]}),                ("kv", {"kv_list": [kv_math, kv_if]})),
         ("Direct_CRSP_Split", ("sp", {"sp_post_query": [sp_crsp_if_64]}),  ("sp", {"sp_pre_query": [sp_crsp_math_64], "sp_post_query": [sp_crsp_if_64]})),
         ("Alg1_CRSP_Split",   ("sp", {"sp_post_query": [sp_alg1_if_64]}),  ("sp", {"sp_pre_query": [sp_alg1_math_64], "sp_post_query": [sp_alg1_if_64]})),
     ]
@@ -1351,13 +1352,13 @@ def main():
     # D1: IFEval48 at L_ctx in {0, 2048, 4096}
     ifeval_configs = [
         ("Base_Frozen",                 "sp", {}),
-        ("PR_CSPD_L256_at_P0",          "sp", {"sp_sys_start": [sp_pr_if]}),
-        ("KVPD_L16_at_P0",              "kv", {"kv_list": [kv_if]}),
-        ("Direct_CRSP_L256_at_P4",      "sp", {"sp_post_query": [sp_crsp_if_256]}),
-        ("Alg1_KVInv_L64_at_P4",        "sp", {"sp_post_query": [sp_alg1_if_64]}),
-        ("PR_CSPD_Dual_P0",             "sp", {"sp_sys_start": [sp_pr_math, sp_pr_if]}),
-        ("KVPD_Dual_P0",                "kv", {"kv_list": [kv_math, kv_if]}),
-        ("Alg1_CRSP_Split_M@P2_I@P4",   "sp", {"sp_pre_query": [sp_alg1_math_64], "sp_post_query": [sp_alg1_if_64]}),
+        ("PR_CSPD_L256_at_Start",          "sp", {"sp_sys_start": [sp_pr_if]}),
+        ("KVPD_L16_at_Start",              "kv", {"kv_list": [kv_if]}),
+        ("Direct_CRSP_L256_at_PostQuery",      "sp", {"sp_post_query": [sp_crsp_if_256]}),
+        ("Alg1_KVInv_L64_at_PostQuery",        "sp", {"sp_post_query": [sp_alg1_if_64]}),
+        ("PR_CSPD_Dual_Start",             "sp", {"sp_sys_start": [sp_pr_math, sp_pr_if]}),
+        ("KVPD_Dual_Start",                "kv", {"kv_list": [kv_math, kv_if]}),
+        ("Alg1_CRSP_Split_Math_PreQuery_IF_PostQuery",   "sp", {"sp_pre_query": [sp_alg1_math_64], "sp_post_query": [sp_alg1_if_64]}),
     ]
     for L in [0, 2048, 4096]:
         results["partD_e2e_ifeval48"][str(L)] = {}
@@ -1370,12 +1371,12 @@ def main():
     # D2: Official IFBench32 at L_ctx in {0, 4096}
     ifbench_configs = [
         ("Base_Frozen",                 "sp", {}),
-        ("PR_CSPD_L256_at_P0",          "sp", {"sp_sys_start": [sp_pr_if]}),
-        ("KVPD_L16_at_P0",              "kv", {"kv_list": [kv_if]}),
-        ("Direct_CRSP_L256_at_P2",      "sp", {"sp_pre_query": [sp_crsp_if_256]}),
-        ("Alg1_KVInv_L64_at_P4",        "sp", {"sp_post_query": [sp_alg1_if_64]}),
-        ("KVPD_Dual_P0",                "kv", {"kv_list": [kv_math, kv_if]}),
-        ("Alg1_CRSP_Split_M@P2_I@P4",   "sp", {"sp_pre_query": [sp_alg1_math_64], "sp_post_query": [sp_alg1_if_64]}),
+        ("PR_CSPD_L256_at_Start",          "sp", {"sp_sys_start": [sp_pr_if]}),
+        ("KVPD_L16_at_Start",              "kv", {"kv_list": [kv_if]}),
+        ("Direct_CRSP_L256_at_PreQuery",      "sp", {"sp_pre_query": [sp_crsp_if_256]}),
+        ("Alg1_KVInv_L64_at_PostQuery",        "sp", {"sp_post_query": [sp_alg1_if_64]}),
+        ("KVPD_Dual_Start",                "kv", {"kv_list": [kv_math, kv_if]}),
+        ("Alg1_CRSP_Split_Math_PreQuery_IF_PostQuery",   "sp", {"sp_pre_query": [sp_alg1_math_64], "sp_post_query": [sp_alg1_if_64]}),
     ]
     for L in [0, 4096]:
         results["partD_e2e_ifbench32"][str(L)] = {}
@@ -1388,12 +1389,12 @@ def main():
     # D3: MATH32 at L_ctx in {0, 4096}
     math_e2e_configs = [
         ("Base_Frozen",                 "sp", {}),
-        ("PR_CSPD_Math_P0",             "sp", {"sp_sys_start": [sp_pr_math]}),
-        ("KVPD_Math_P0",                "kv", {"kv_list": [kv_math]}),
-        ("Alg1_Math_P2",                "sp", {"sp_pre_query": [sp_alg1_math_64]}),
-        ("PR_CSPD_Dual_P0",             "sp", {"sp_sys_start": [sp_pr_math, sp_pr_if]}),
-        ("KVPD_Dual_P0",                "kv", {"kv_list": [kv_math, kv_if]}),
-        ("Alg1_CRSP_Split_M@P2_I@P4",   "sp", {"sp_pre_query": [sp_alg1_math_64], "sp_post_query": [sp_alg1_if_64]}),
+        ("PR_CSPD_Math_Start",             "sp", {"sp_sys_start": [sp_pr_math]}),
+        ("KVPD_Math_Start",                "kv", {"kv_list": [kv_math]}),
+        ("Alg1_Math_PreQuery",                "sp", {"sp_pre_query": [sp_alg1_math_64]}),
+        ("PR_CSPD_Dual_Start",             "sp", {"sp_sys_start": [sp_pr_math, sp_pr_if]}),
+        ("KVPD_Dual_Start",                "kv", {"kv_list": [kv_math, kv_if]}),
+        ("Alg1_CRSP_Split_Math_PreQuery_IF_PostQuery",   "sp", {"sp_pre_query": [sp_alg1_math_64], "sp_post_query": [sp_alg1_if_64]}),
     ]
     for L in [0, 4096]:
         results["partD_e2e_math32"][str(L)] = {}

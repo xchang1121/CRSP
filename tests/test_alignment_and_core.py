@@ -1,13 +1,17 @@
 """
 CPU Unit Test Suite for CSPD / KV-PD / CRSP Core Alignment & Export Contracts
 =============================================================================
+Paper Reference: Section 2.2, Section 2.4, and Section 7.4 (Table 16).
+
 Runs purely on CPU without GPU or model weights.
 Verifies:
-  1. Exact multi-slot causal label alignment (P0, P1, P2, P4, dual-split, triple-slot).
-  2. Strict thinking-block extraction & complete EOS trajectory gating.
-  3. Deterministic SHA-256 prefix-robust slicing.
-  4. Byte-exact safetensors embedding-shard extension & SHA-256 read-back verification.
-  5. RadixAttention shared-prefix invariance for P2/P4 CRSP vs. P0 prefix divergence.
+  1. Canonical semantic slot definitions and paper-to-code index integrity.
+  2. Exact multi-slot causal label alignment (start, post_system, pre_query, post_query, split-slot).
+  3. Strict thinking-block extraction & complete-trajectory EOS filtering.
+  4. Deterministic SHA-256 prefix-robust slicing and cosine schedule endpoints.
+  5. Byte-exact safetensors embedding-shard extension & SHA-256 read-back verification.
+  6. RadixAttention shared-prefix invariance for sliding pre_query/post_query CRSP vs. start-fixed prompts.
+  7. Frozen-backbone wrapper non-Module isolation invariant (when PyTorch is installed).
 """
 
 import json
@@ -21,6 +25,16 @@ if (ROOT / "src").exists():
     sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT))
 
+from slot_positions import (
+    CANONICAL_SLOTS,
+    PAPER_SECTION_TO_MODULES,
+    SLOT_DISPLAY_EN,
+    SLOT_DISPLAY_ZH,
+    SLOT_POST_QUERY,
+    SLOT_PRE_QUERY,
+    SLOT_START,
+    validate_slot_name,
+)
 from virtual_tokens_export import (
     HARD_LOGIT_BIAS,
     build_hard_output_mask_ids,
@@ -41,7 +55,6 @@ try:
     HAS_TORCH = True
 except ImportError:
     HAS_TORCH = False
-    # Import pure-Python logic directly if torch is absent on CPU host
     import hashlib
     import math
 
@@ -95,16 +108,30 @@ except ImportError:
         return aligned_labels, aligned_regions
 
 
+def test_canonical_slots_and_code_index():
+    assert len(CANONICAL_SLOTS) == 6
+    for slot in CANONICAL_SLOTS:
+        assert validate_slot_name(slot) == slot
+        assert slot in SLOT_DISPLAY_EN and slot in SLOT_DISPLAY_ZH
+    for sec, paths in PAPER_SECTION_TO_MODULES.items():
+        for rel in paths:
+            assert (ROOT / rel).exists(), f"Missing indexed module for {sec}: {rel}"
+
+
 def test_multislot_causal_alignment_invariants():
     resp = [101, 102, 103, 151645]
-    # Split-slot [Math@P2 + IF@P4] inside prompt_len=20
-    lbls, regs = alignment_trace_multislot(20, resp, [(12, 64, "Math@P2"), (20, 64, "IF@P4")])
+    # Split-slot [Math @ pre_query + IF @ post_query] inside prompt_len=20
+    lbls, regs = alignment_trace_multislot(
+        20,
+        resp,
+        [(12, 64, f"Math@{SLOT_PRE_QUERY}"), (20, 64, f"IF@{SLOT_POST_QUERY}")],
+    )
     assert len(lbls) == 20 + 64 + 64 + len(resp)
-    # Exactly the response tokens carry supervision; zero SP or prompt tokens supervised
+    # Exactly the response tokens carry supervision; no soft-prompt or prompt tokens are supervised.
     supervised = [x for x in lbls if x != -100]
     assert supervised == resp
-    assert regs.count("sp:Math@P2") == 64
-    assert regs.count("sp:IF@P4") == 64
+    assert regs.count(f"sp:Math@{SLOT_PRE_QUERY}") == 64
+    assert regs.count(f"sp:IF@{SLOT_POST_QUERY}") == 64
     assert all(l == -100 for l, r in zip(lbls, regs) if r != "response")
 
 
@@ -116,15 +143,14 @@ def test_final_answer_strict_and_eos_gate():
 
     # Reject truncated trace lacking EOS (151645 / 151643)
     assert not verify_complete_eos_trace([10, 20, 30], "<think>ok</think>42")
-    # Reject unclosed think even if EOS present
+    # Reject unclosed thinking block even if EOS is present
     assert not verify_complete_eos_trace([10, 20, 151645], "<think>truncated")
-    # Accept complete closed-think EOS trace
+    # Accept complete thinking + EOS trace
     assert verify_complete_eos_trace([10, 20, 151645], "<think>ok</think>42")
 
 
 def test_deterministic_prefix_slice_and_cosine():
     pool = [[i + 100 for i in range(40)] for _ in range(16)]
-    # Same input_ids must yield bit-identical prefix decision & tokens
     hits = 0
     for k in range(100):
         seq = [1, 2, 3, k, k * 7]
@@ -134,13 +160,12 @@ def test_deterministic_prefix_slice_and_cosine():
         if a is not None:
             hits += 1
             assert 128 <= len(a) <= 256
-    assert 35 <= hits <= 65  # ~50% split
+    assert 35 <= hits <= 65
     assert abs(cosine_lr_no_warmup(0, 0.03, 0.003, 200) - 0.03) < 1e-12
     assert abs(cosine_lr_no_warmup(199, 0.03, 0.003, 200) - 0.003) < 1e-12
 
 
 def test_byte_exact_safetensors_virtual_token_extension():
-    # Create a tiny valid safetensors file with 2 tensors (embed + dummy weight)
     hidden = 8
     orig_vocab = 16
     emb_bytes = bytes(range(256))  # 16 * 8 * 2 = 256 bytes (BF16)
@@ -163,32 +188,31 @@ def test_byte_exact_safetensors_virtual_token_extension():
         assert proof["extended_vocab_size"] == orig_vocab + add_rows
         assert proof["added_bytes"] == len(appended)
 
-        # Verify hard mask covers all unused padded rows + virtual rows
         masked = build_hard_output_mask_ids(12, orig_vocab + add_rows)
         assert masked == list(range(12, 20))
         assert HARD_LOGIT_BIAS <= -1e9
 
 
-def test_radix_prefix_sharing_p2p4_vs_p0():
-    """Verify CRSP @ P2/P4 preserves 100% token-identical shared history/RAG prefix across tenants."""
+def test_radix_prefix_sharing_sliding_vs_start():
+    """Verify sliding pre_query/post_query CRSP preserves 100% token-identical prefix across tenants."""
     shared_sys = [10, 11, 12]
     shared_hist = [([20, 21], [30, 31])]
     shared_rag = [40, 41, 42, 43]
     q = [50, 51]
     common_kw = dict(sys_text_ids=shared_sys, history_turns_ids=shared_hist, rag_ids=shared_rag)
 
-    # Tenant A mounts expert 1 at P2; Tenant B mounts expert 2 at P2
-    seq_a_crsp = render_multislot_virtual_ids([1], [2], [3], [4], q, vids_p2_pre_query=[900, 901], **common_kw)
-    seq_b_crsp = render_multislot_virtual_ids([1], [2], [3], [4], q, vids_p2_pre_query=[910, 911], **common_kw)
-    # Entire [sys + history + rag] prefix BEFORE P2 must be 100% identical!
-    p2_idx = seq_a_crsp.index(900)
-    assert seq_a_crsp[:p2_idx] == seq_b_crsp[:p2_idx]
-    assert p2_idx == 1 + 3 + 1 + (1 + 2 + 1 + 1 + 2 + 1) + 1 + 4  # 18 shared prefix tokens!
+    # Tenant A and Tenant B mount different experts at pre_query
+    seq_a_sliding = render_multislot_virtual_ids([1], [2], [3], [4], q, vids_pre_query=[900, 901], **common_kw)
+    seq_b_sliding = render_multislot_virtual_ids([1], [2], [3], [4], q, vids_pre_query=[910, 911], **common_kw)
+    pre_query_idx = seq_a_sliding.index(900)
+    assert seq_a_sliding[:pre_query_idx] == seq_b_sliding[:pre_query_idx]
+    assert pre_query_idx == 1 + 3 + 1 + (1 + 2 + 1 + 1 + 2 + 1) + 1 + 4  # 18 shared prefix tokens
 
-    # Contrast: fixed-P0 diverges at token index 1 (0% shared history/RAG KV cache!)
-    seq_a_p0 = render_multislot_virtual_ids([1], [2], [3], [4], q, vids_p0_sys_start=[900, 901], **common_kw)
-    seq_b_p0 = render_multislot_virtual_ids([1], [2], [3], [4], q, vids_p0_sys_start=[910, 911], **common_kw)
-    assert seq_a_p0[1] != seq_b_p0[1]
+    # Contrast: start-fixed insertion diverges at token index 1 (0% shared history/RAG KV cache)
+    seq_a_start = render_multislot_virtual_ids([1], [2], [3], [4], q, vids_start=[900, 901], **common_kw)
+    seq_b_start = render_multislot_virtual_ids([1], [2], [3], [4], q, vids_start=[910, 911], **common_kw)
+    assert seq_a_start[1] != seq_b_start[1]
+    assert SLOT_START == "start"
 
 
 def test_non_module_wrapper_invariant():
@@ -203,10 +227,11 @@ def test_non_module_wrapper_invariant():
 
 
 if __name__ == "__main__":
+    test_canonical_slots_and_code_index()
     test_multislot_causal_alignment_invariants()
     test_final_answer_strict_and_eos_gate()
     test_deterministic_prefix_slice_and_cosine()
     test_byte_exact_safetensors_virtual_token_extension()
-    test_radix_prefix_sharing_p2p4_vs_p0()
+    test_radix_prefix_sharing_sliding_vs_start()
     test_non_module_wrapper_invariant()
-    print("ALL 6 CPU ALIGNMENT & EXPORT UNIT TESTS PASSED!")
+    print("ALL 7 CPU ALIGNMENT, SLOT-INDEX & EXPORT UNIT TESTS PASSED!")

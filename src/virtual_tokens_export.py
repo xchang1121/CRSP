@@ -1,16 +1,19 @@
 """
 Virtual-Token Embedding Export for Arbitrary-Slot CSPD & CRSP Serving (SGLang / vLLM)
 =====================================================================================
+Paper Reference: Section 2.4 (Virtual-Token Export & Tied-Embedding Masking),
+                 Section 7.4 (Table 16).
+
 Generalized virtual-token checkpoint exporter supporting arbitrary-slot CRSP insertion
-(P0, P1, P2, P3, P4) as well as multi-expert concatenation in standard token-ID inference
-engines (SGLang, vLLM, TensorRT-LLM).
+(``start``, ``post_system``, ``pre_query``, ``post_rag``, ``post_query``) as well as
+multi-expert concatenation in standard token-ID inference engines (SGLang, vLLM, TensorRT-LLM).
 
 Key Properties:
   1. Appends learned soft-prompt vectors [L_total, hidden] directly to
      ``model.embed_tokens.weight`` inside a derived safetensors shard while preserving
      every original tensor byte (verified by SHA-256) and symlinking unchanged shards.
-  2. Supports inserting named expert virtual-token spans at ANY slot in token-ID space
-     (e.g., P2 pre-query / P4 post-query after a shared long context, preserving 100%
+  2. Supports inserting named expert virtual-token spans at any semantic slot in token-ID space
+     (e.g., ``pre_query`` / ``post_query`` after a shared long context, preserving 100%
      RadixAttention shared-prefix KV caching across tenants).
   3. Provides mandatory hard tied-embedding output masks (``logit_bias = -1e9`` for
      SGLang or ``allowed_token_ids = range(vocab_len)`` for vLLM), preventing high-norm
@@ -239,24 +242,26 @@ def render_multislot_virtual_ids(
     sys_text_ids: Optional[Sequence[int]] = None,
     history_turns_ids: Optional[Sequence[Tuple[Sequence[int], Sequence[int]]]] = None,
     rag_ids: Optional[Sequence[int]] = None,
-    vids_p0_sys_start: Optional[Sequence[int]] = None,
-    vids_p1_sys_end: Optional[Sequence[int]] = None,
-    vids_p2_pre_query: Optional[Sequence[int]] = None,
-    vids_p4_post_query: Optional[Sequence[int]] = None,
+    vids_start: Optional[Sequence[int]] = None,
+    vids_post_system: Optional[Sequence[int]] = None,
+    vids_pre_query: Optional[Sequence[int]] = None,
+    vids_post_query: Optional[Sequence[int]] = None,
 ) -> List[int]:
     """
-    Render exact token-ID sequence inserting virtual expert IDs at ANY slot(s) (P0/P1/P2/P4).
-    Note: placing experts at P2/P4 leaves the entire [system + multi-turn history + RAG] prefix
-    token-identical across tenants, preserving 100% RadixAttention prefix-cache sharing.
+    Render an exact token-ID sequence inserting virtual expert IDs at any semantic slot(s)
+    (``start``, ``post_system``, ``pre_query``, ``post_query``).
+    Placing experts at ``pre_query`` or ``post_query`` keeps the entire
+    ``[system + multi-turn history + RAG]`` prefix token-identical across tenants,
+    preserving 100% RadixAttention prefix-cache sharing.
     """
     out: List[int] = []
     out.extend(sys_open)
-    if vids_p0_sys_start:
-        out.extend(vids_p0_sys_start)
+    if vids_start:
+        out.extend(vids_start)
     if sys_text_ids:
         out.extend(sys_text_ids)
-    if vids_p1_sys_end:
-        out.extend(vids_p1_sys_end)
+    if vids_post_system:
+        out.extend(vids_post_system)
     out.extend(im_end)
 
     if history_turns_ids:
@@ -271,11 +276,11 @@ def render_multislot_virtual_ids(
     out.extend(user_open)
     if rag_ids:
         out.extend(rag_ids)
-    if vids_p2_pre_query:
-        out.extend(vids_p2_pre_query)
+    if vids_pre_query:
+        out.extend(vids_pre_query)
     out.extend(question_ids)
-    if vids_p4_post_query:
-        out.extend(vids_p4_post_query)
+    if vids_post_query:
+        out.extend(vids_post_query)
     out.extend(im_end)
     out.extend(asst_open)
     return [int(x) for x in out]

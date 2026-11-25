@@ -1,24 +1,25 @@
 """
+Paper Reference: Section 4.2, Section 6.1, Section 7.1–7.4, Tables 6, 10–12, 14, 16, Fig. 15.
 Suite 10 (exp12): Reference Step-200 Soft-Prompt Audit, Complete-EOS Trajectory Upgrade,
                   36-Layer Causal Pathway Ablation & Virtual-Token/Fast-Head Verification
 =========================================================================================
 Evaluates 6 scientific & engineering extensions:
   Part A — Reference step-200 CSPD checkpoints (M, C, S, I; loaded via REF_PROMPT_MANIFEST):
-           (A1) Six-slot (P0-P5) positional drift & collapse audit on held-out IF & Math.
+           (A1) Six-slot (SixSlots) positional drift & collapse audit on held-out IF & Math.
            (A2) Long-context (0 -> 8192) single-expert attenuation & 9-layer attention mass.
            (A3) Long-context (0 -> 8192) dual ([M;I]/[I;M]) & 4-expert (MCSI/ISCM) composition & interference.
   Part B — Complete EOS-Terminated & Closed-Think Trajectory Upgrade (vs. [:512] truncated):
            Strict verify_complete_eos_trace gating (closed </think> + <|im_end|> EOS) with
            response-only lm_head projection for KV-PD-EOS, Direct-CRSP-EOS, and Alg1-CRSP-EOS.
   Part C — 36-Layer Cumulative Causal Attention Pathway Ablation (open [0, l) vs. open [l, 36)):
-           Direct head-to-head comparison of Reference CSPD I @ P0, KV-PD-EOS @ P0, and
-           Alg. 1 CRSP-EOS @ P4 at both L_ctx = 0 and L_ctx = 4096.
+           Direct head-to-head comparison of Reference CSPD I @ Start, KV-PD-EOS @ Start, and
+           Alg. 1 CRSP-EOS @ PostQuery at both L_ctx = 0 and L_ctx = 4096.
   Part D — Engineering Benchmarks:
            (D1) Response-only lm_head projection peak VRAM & wall-time vs. full logits (512..4096).
-           (D2) Byte-exact virtual-token derived checkpoint equivalence (P0 & P4) + tied-embedding
+           (D2) Byte-exact virtual-token derived checkpoint equivalence (Start & PostQuery) + tied-embedding
                 high-norm virtual row output-logit hazard verification (-100 vs. -1e9).
   Part E — End-to-End L=0 & L=4096 Generation Verification (MATH32, IFBench32, IFEval48):
-           Reference M / I / [M;I] / MCSI vs. Complete-EOS KV-PD & Alg. 1 Split [M@P2+I@P4].
+           Reference M / I / [M;I] / MCSI vs. Complete-EOS KV-PD & Alg. 1 Split [Math@PreQuery+IF@PostQuery].
 """
 
 from __future__ import annotations
@@ -170,7 +171,7 @@ def fetch_official_prompts(device: torch.device) -> Tuple[Dict[str, torch.Tensor
 
 
 # ---------------------------------------------------------------------------
-# 2. Part A1 Helper: Six-Slot (P0-P5) Positional Audit
+# 2. Part A1 Helper: Six-Slot (SixSlots) Positional Audit
 # ---------------------------------------------------------------------------
 
 @torch.no_grad()
@@ -188,17 +189,17 @@ def eval_official_6slots(student, tokenizer, tmpl, val_cache, sp: torch.Tensor, 
     eval_rag_ids = tokenizer.encode(EVAL_RAG_BLOCK, add_special_tokens=False)
 
     slot_specs = [
-        ("P0_Clean",       dict(sys_text_ids=None,             history_turns_ids=None,          rag_ids=None),         dict(sp_sys_start=[sp])),
-        ("P0_FullCtx",     dict(sys_text_ids=eval_persona_ids, history_turns_ids=eval_hist_ids, rag_ids=eval_rag_ids), dict(sp_sys_start=[sp])),
-        ("P1_SysEnd",      dict(sys_text_ids=eval_persona_ids, history_turns_ids=None,          rag_ids=None),         dict(sp_sys_end=[sp])),
-        ("P2_MultiTurn",   dict(sys_text_ids=eval_persona_ids, history_turns_ids=eval_hist_ids, rag_ids=None),         dict(sp_pre_query=[sp])),
-        ("P3_PostRAG",     dict(sys_text_ids=eval_persona_ids, history_turns_ids=None,          rag_ids=eval_rag_ids), dict(sp_pre_query=[sp])),
-        ("P4_PostQuery",   dict(sys_text_ids=eval_persona_ids, history_turns_ids=eval_hist_ids, rag_ids=None),         dict(sp_post_query=[sp])),
-        ("P5_AllCombined", dict(sys_text_ids=eval_persona_ids, history_turns_ids=eval_hist_ids, rag_ids=eval_rag_ids), dict(sp_post_query=[sp])),
+        ("Start_Clean",       dict(sys_text_ids=None,             history_turns_ids=None,          rag_ids=None),         dict(sp_sys_start=[sp])),
+        ("Start_FullCtx",     dict(sys_text_ids=eval_persona_ids, history_turns_ids=eval_hist_ids, rag_ids=eval_rag_ids), dict(sp_sys_start=[sp])),
+        ("PostSys",      dict(sys_text_ids=eval_persona_ids, history_turns_ids=None,          rag_ids=None),         dict(sp_sys_end=[sp])),
+        ("PreQuery_MultiTurn",   dict(sys_text_ids=eval_persona_ids, history_turns_ids=eval_hist_ids, rag_ids=None),         dict(sp_pre_query=[sp])),
+        ("PostRAG",     dict(sys_text_ids=eval_persona_ids, history_turns_ids=None,          rag_ids=eval_rag_ids), dict(sp_pre_query=[sp])),
+        ("PostQuery",   dict(sys_text_ids=eval_persona_ids, history_turns_ids=eval_hist_ids, rag_ids=None),         dict(sp_post_query=[sp])),
+        ("LongOffset_Combined", dict(sys_text_ids=eval_persona_ids, history_turns_ids=eval_hist_ids, rag_ids=eval_rag_ids), dict(sp_post_query=[sp])),
     ]
 
-    ref_p0: List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]] = []
-    base_p0_kl = 0.0
+    ref_start: List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]] = []
+    base_start_kl = 0.0
     out_res: Dict[str, Any] = {}
 
     for sname, ctx_kw, sp_kw in slot_specs:
@@ -222,14 +223,14 @@ def eval_official_6slots(student, tokenizer, tmpl, val_cache, sp: torch.Tensor, 
             lps = F.log_softmax(zs[:ns], dim=-1)
             sp_kls.append((-(tp[:ns] * lps.gather(-1, ti[:ns])).sum(dim=-1) - ent[:ns]).clamp_min(0.0).mean().item())
 
-            if sname == "P0_Clean":
+            if sname == "Start_Clean":
                 probs = lps.exp()
                 rp, ri_top = torch.topk(probs, 32, dim=-1)
                 rp = rp / rp.sum(dim=-1, keepdim=True)
                 rent = -(rp * rp.clamp_min(1e-9).log()).sum(dim=-1)
-                ref_p0.append((ri_top.cpu(), rp.to(torch.float16).cpu(), rent.cpu()))
+                ref_start.append((ri_top.cpu(), rp.to(torch.float16).cpu(), rent.cpu()))
             else:
-                r_ti, r_tp, r_ent = ref_p0[idx]
+                r_ti, r_tp, r_ent = ref_start[idx]
                 r_ti, r_tp, r_ent = r_ti.to(device), r_tp.float().to(device), r_ent.float().to(device)
                 nr = min(lps.size(0), r_ti.size(0))
                 d_ce = -(r_tp[:nr] * lps[:nr].gather(-1, r_ti[:nr])).sum(dim=-1)
@@ -238,16 +239,16 @@ def eval_official_6slots(student, tokenizer, tmpl, val_cache, sp: torch.Tensor, 
 
         bkl = sum(base_kls) / max(1, len(base_kls))
         skl = sum(sp_kls) / max(1, len(sp_kls))
-        if sname == "P0_Clean":
-            base_p0_kl = bkl
+        if sname == "Start_Clean":
+            base_start_kl = bkl
         g_vs_slot = round(100.0 * (1.0 - skl / bkl), 2)
-        g_vs_p0 = round(100.0 * (1.0 - skl / base_p0_kl), 2)
-        row = {"base_kl": round(bkl, 5), "sp_kl": round(skl, 5), "g_vs_slot": g_vs_slot, "g_vs_p0": g_vs_p0}
+        g_vs_start = round(100.0 * (1.0 - skl / base_start_kl), 2)
+        row = {"base_kl": round(bkl, 5), "sp_kl": round(skl, 5), "g_vs_slot": g_vs_slot, "g_vs_start": g_vs_start}
         if drifts:
-            row["drift_kl_vs_p0"] = round(sum(drifts) / len(drifts), 5)
+            row["drift_kl_vs_start"] = round(sum(drifts) / len(drifts), 5)
         out_res[sname] = row
-        d_str = f" | drift={row['drift_kl_vs_p0']:.4f}" if "drift_kl_vs_p0" in row else ""
-        print(f"  [6-Slot {tag:12s} | {sname:14s}] G_slot={g_vs_slot:+6.2f}% | G_p0={g_vs_p0:+6.2f}%{d_str}", flush=True)
+        d_str = f" | drift={row['drift_kl_vs_start']:.4f}" if "drift_kl_vs_start" in row else ""
+        print(f"  [6-Slot {tag:12s} | {sname:14s}] G_slot={g_vs_slot:+6.2f}% | G_start={g_vs_start:+6.2f}%{d_str}", flush=True)
     return out_res
 
 
@@ -734,7 +735,7 @@ def verify_virtual_token_export_and_tied_hazard(
 ) -> Dict[str, Any]:
     """
     1. Build derived safetensors checkpoint appending Official I.pt (rms=0.37) + Alg1 CRSP (rms=0.042).
-    2. Verify exact logit equivalence between inputs_embeds and virtual token IDs at P0 and P4.
+    2. Verify exact logit equivalence between inputs_embeds and virtual token IDs at Start and PostQuery.
     3. Measure tied-embedding output logit hazard (max logit on appended high-norm virtual rows vs.
        top real vocabulary token), empirically verifying why -100 fails and -1e9 is mandatory!
     """
@@ -757,39 +758,39 @@ def verify_virtual_token_export_and_tied_hazard(
         asst_open = tmpl.user_close_asst_open[len(tmpl.im_end) :]
         s_emb = student.get_input_embeddings()
 
-        # Check 1: P0 (Official I.pt)
-        e_p0, _, _ = build_multislot_sp_inputs(s_emb, tmpl, q_ids, None, sp_sys_start=[official_i], device=device, model_dtype=dtype)
-        z_emb_p0 = student(inputs_embeds=e_p0, use_cache=False).logits[0, -1, :].float()
-        vids_p0 = render_multislot_virtual_ids(
+        # Check 1: Start (Official I.pt)
+        e_start, _, _ = build_multislot_sp_inputs(s_emb, tmpl, q_ids, None, sp_sys_start=[official_i], device=device, model_dtype=dtype)
+        z_emb_start = student(inputs_embeds=e_start, use_cache=False).logits[0, -1, :].float()
+        vids_start = render_multislot_virtual_ids(
             tmpl.sys_open, tmpl.im_end, user_open, asst_open, q_ids,
-            vids_p0_sys_start=meta["expert_token_ids"]["official_I"],
+            vids_start=meta["expert_token_ids"]["official_I"],
         )
-        z_vt_p0 = derived(input_ids=torch.tensor([vids_p0], device=device), use_cache=False).logits[0, -1, :].float()
+        z_vt_start = derived(input_ids=torch.tensor([vids_start], device=device), use_cache=False).logits[0, -1, :].float()
         orig_v = meta["original_vocab_size"]
-        diff_p0 = float((z_emb_p0 - z_vt_p0[:orig_v]).abs().max().item())
+        diff_start = float((z_emb_start - z_vt_start[:orig_v]).abs().max().item())
 
         # Tied-embedding logit hazard check on Official I.pt virtual rows!
-        real_max_logit = float(z_vt_p0[: len(tokenizer)].max().item())
+        real_max_logit = float(z_vt_start[: len(tokenizer)].max().item())
         off_i_ids = meta["expert_token_ids"]["official_I"]
         crsp_ids = meta["expert_token_ids"]["alg1_crsp_IF"]
-        off_i_max_logit = float(z_vt_p0[off_i_ids[0] : off_i_ids[-1] + 1].max().item())
-        crsp_max_logit_at_p0 = float(z_vt_p0[crsp_ids[0] : crsp_ids[-1] + 1].max().item())
+        off_i_max_logit = float(z_vt_start[off_i_ids[0] : off_i_ids[-1] + 1].max().item())
+        crsp_max_logit_at_start = float(z_vt_start[crsp_ids[0] : crsp_ids[-1] + 1].max().item())
 
-        # Check 2: P4 (Alg1 CRSP after persona + history)
+        # Check 2: PostQuery (Alg1 CRSP after persona + history)
         p_ids = tokenizer.encode(EVAL_PERSONA, add_special_tokens=False)
-        e_p4, _, _ = build_multislot_sp_inputs(
+        e_post_query, _, _ = build_multislot_sp_inputs(
             s_emb, tmpl, q_ids, None, sys_text_ids=p_ids, sp_post_query=[crsp_if], device=device, model_dtype=dtype
         )
-        z_emb_p4 = student(inputs_embeds=e_p4, use_cache=False).logits[0, -1, :].float()
-        vids_p4 = render_multislot_virtual_ids(
+        z_emb_post_query = student(inputs_embeds=e_post_query, use_cache=False).logits[0, -1, :].float()
+        vids_post_query = render_multislot_virtual_ids(
             tmpl.sys_open, tmpl.im_end, user_open, asst_open, q_ids,
-            sys_text_ids=p_ids, vids_p4_post_query=crsp_ids,
+            sys_text_ids=p_ids, vids_post_query=crsp_ids,
         )
-        z_vt_p4 = derived(input_ids=torch.tensor([vids_p4], device=device), use_cache=False).logits[0, -1, :].float()
-        diff_p4 = float((z_emb_p4 - z_vt_p4[:orig_v]).abs().max().item())
-        crsp_max_logit_at_p4 = float(z_vt_p4[crsp_ids[0] : crsp_ids[-1] + 1].max().item())
-        real_max_p4 = float(z_vt_p4[: len(tokenizer)].max().item())
-        off_i_max_p4 = float(z_vt_p4[off_i_ids[0] : off_i_ids[-1] + 1].max().item())
+        z_vt_post_query = derived(input_ids=torch.tensor([vids_post_query], device=device), use_cache=False).logits[0, -1, :].float()
+        diff_post_query = float((z_emb_post_query - z_vt_post_query[:orig_v]).abs().max().item())
+        crsp_max_logit_at_post_query = float(z_vt_post_query[crsp_ids[0] : crsp_ids[-1] + 1].max().item())
+        real_max_post_query = float(z_vt_post_query[: len(tokenizer)].max().item())
+        off_i_max_post_query = float(z_vt_post_query[off_i_ids[0] : off_i_ids[-1] + 1].max().item())
 
         masked_ids = build_hard_output_mask_ids(len(tokenizer), meta["extended_vocab_size"])
         del derived
@@ -800,24 +801,24 @@ def verify_virtual_token_export_and_tied_hazard(
         "original_vocab_size": orig_v,
         "extended_vocab_size": meta["extended_vocab_size"],
         "hard_masked_token_count": len(masked_ids),
-        "p0_official_I_max_logit_diff": round(diff_p0, 6),
-        "p4_alg1_crsp_max_logit_diff": round(diff_p4, 6),
-        "tied_hazard_at_p0": {
+        "start_official_I_max_logit_diff": round(diff_start, 6),
+        "post_query_alg1_crsp_max_logit_diff": round(diff_post_query, 6),
+        "tied_hazard_at_start": {
             "top_real_vocab_logit": round(real_max_logit, 2),
             "max_official_I_virtual_logit": round(off_i_max_logit, 2),
-            "max_crsp_virtual_logit": round(crsp_max_logit_at_p0, 2),
+            "max_crsp_virtual_logit": round(crsp_max_logit_at_start, 2),
             "exceeds_minus100_guard": bool(off_i_max_logit - 100.0 > real_max_logit),
         },
-        "tied_hazard_at_p4": {
-            "top_real_vocab_logit": round(real_max_p4, 2),
-            "max_official_I_virtual_logit": round(off_i_max_p4, 2),
-            "max_crsp_virtual_logit": round(crsp_max_logit_at_p4, 2),
+        "tied_hazard_at_post_query": {
+            "top_real_vocab_logit": round(real_max_post_query, 2),
+            "max_official_I_virtual_logit": round(off_i_max_post_query, 2),
+            "max_crsp_virtual_logit": round(crsp_max_logit_at_post_query, 2),
         },
     }
     print(
-        f"  [VirtualToken Export] P0 diff={diff_p0:.6f} | P4 diff={diff_p4:.6f} | "
-        f"Tied logits @P0: real_max={real_max_logit:.1f}, Official_I_max={off_i_max_logit:.1f} "
-        f"(beats -100 guard={res['tied_hazard_at_p0']['exceeds_minus100_guard']}), CRSP_max={crsp_max_logit_at_p0:.1f}",
+        f"  [VirtualToken Export] Start diff={diff_start:.6f} | PostQuery diff={diff_post_query:.6f} | "
+        f"Tied logits @Start: real_max={real_max_logit:.1f}, Official_I_max={off_i_max_logit:.1f} "
+        f"(beats -100 guard={res['tied_hazard_at_start']['exceeds_minus100_guard']}), CRSP_max={crsp_max_logit_at_start:.1f}",
         flush=True,
     )
     return res
@@ -837,33 +838,33 @@ def run_parts_d_and_e(
     print("\n--- PART E1: MATH32 End-to-End (L=0 & L=4096) ---", flush=True)
     for L in [0, 4096]:
         results["partE_e2e_benchmarks"]["math32"][str(L)] = {
-            "Official_M@P0": run_math_fast(student, tokenizer, tmpl, ctx_bundles[L], math32, mode="sp", sp_sys_start=[off_p["M"]], tag="Official_M@P0"),
-            "Official_Dual_MI@P0": run_math_fast(student, tokenizer, tmpl, ctx_bundles[L], math32, mode="sp", sp_sys_start=[off_p["M"], off_p["I"]], tag="Official_Dual_MI@P0"),
-            "Official_MCSI@P0": run_math_fast(student, tokenizer, tmpl, ctx_bundles[L], math32, mode="sp", sp_sys_start=[off_p["M"], off_p["C"], off_p["S"], off_p["I"]], tag="Official_MCSI@P0"),
-            "KVPD_Math_EOS@P0": run_math_fast(student, tokenizer, tmpl, ctx_bundles[L], math32, mode="kv", kv_list=[kv_math_eos], tag="KVPD_Math_EOS@P0"),
-            "Alg1_Split_EOS_M@P2_I@P4": run_math_fast(student, tokenizer, tmpl, ctx_bundles[L], math32, mode="sp", sp_pre_query=[sp_alg1_math_eos], sp_post_query=[sp_alg1_if_eos], tag="Alg1_Split_EOS_M@P2_I@P4"),
+            "Official_M@Start": run_math_fast(student, tokenizer, tmpl, ctx_bundles[L], math32, mode="sp", sp_sys_start=[off_p["M"]], tag="Official_M@Start"),
+            "Official_Dual_MI@Start": run_math_fast(student, tokenizer, tmpl, ctx_bundles[L], math32, mode="sp", sp_sys_start=[off_p["M"], off_p["I"]], tag="Official_Dual_MI@Start"),
+            "Official_MCSI@Start": run_math_fast(student, tokenizer, tmpl, ctx_bundles[L], math32, mode="sp", sp_sys_start=[off_p["M"], off_p["C"], off_p["S"], off_p["I"]], tag="Official_MCSI@Start"),
+            "KVPD_Math_EOS@Start": run_math_fast(student, tokenizer, tmpl, ctx_bundles[L], math32, mode="kv", kv_list=[kv_math_eos], tag="KVPD_Math_EOS@Start"),
+            "Alg1_Split_EOS_Math_PreQuery_IF_PostQuery": run_math_fast(student, tokenizer, tmpl, ctx_bundles[L], math32, mode="sp", sp_pre_query=[sp_alg1_math_eos], sp_post_query=[sp_alg1_if_eos], tag="Alg1_Split_EOS_Math_PreQuery_IF_PostQuery"),
         }
         save_results(results)
 
     print("\n--- PART E2: IFBench32 End-to-End (L=0 & L=4096) ---", flush=True)
     for L in [0, 4096]:
         results["partE_e2e_benchmarks"]["ifbench32"][str(L)] = {
-            "Official_I@P0": run_ifbench_fast(student, tokenizer, tmpl, ctx_bundles[L], ifbench32, mode="sp", sp_sys_start=[off_p["I"]], tag="Official_I@P0"),
-            "Official_Dual_MI@P0": run_ifbench_fast(student, tokenizer, tmpl, ctx_bundles[L], ifbench32, mode="sp", sp_sys_start=[off_p["M"], off_p["I"]], tag="Official_Dual_MI@P0"),
-            "Official_MCSI@P0": run_ifbench_fast(student, tokenizer, tmpl, ctx_bundles[L], ifbench32, mode="sp", sp_sys_start=[off_p["M"], off_p["C"], off_p["S"], off_p["I"]], tag="Official_MCSI@P0"),
-            "KVPD_IF_EOS@P0": run_ifbench_fast(student, tokenizer, tmpl, ctx_bundles[L], ifbench32, mode="kv", kv_list=[kv_if_eos], tag="KVPD_IF_EOS@P0"),
-            "Alg1_Split_EOS_M@P2_I@P4": run_ifbench_fast(student, tokenizer, tmpl, ctx_bundles[L], ifbench32, mode="sp", sp_pre_query=[sp_alg1_math_eos], sp_post_query=[sp_alg1_if_eos], tag="Alg1_Split_EOS_M@P2_I@P4"),
+            "Official_I@Start": run_ifbench_fast(student, tokenizer, tmpl, ctx_bundles[L], ifbench32, mode="sp", sp_sys_start=[off_p["I"]], tag="Official_I@Start"),
+            "Official_Dual_MI@Start": run_ifbench_fast(student, tokenizer, tmpl, ctx_bundles[L], ifbench32, mode="sp", sp_sys_start=[off_p["M"], off_p["I"]], tag="Official_Dual_MI@Start"),
+            "Official_MCSI@Start": run_ifbench_fast(student, tokenizer, tmpl, ctx_bundles[L], ifbench32, mode="sp", sp_sys_start=[off_p["M"], off_p["C"], off_p["S"], off_p["I"]], tag="Official_MCSI@Start"),
+            "KVPD_IF_EOS@Start": run_ifbench_fast(student, tokenizer, tmpl, ctx_bundles[L], ifbench32, mode="kv", kv_list=[kv_if_eos], tag="KVPD_IF_EOS@Start"),
+            "Alg1_Split_EOS_Math_PreQuery_IF_PostQuery": run_ifbench_fast(student, tokenizer, tmpl, ctx_bundles[L], ifbench32, mode="sp", sp_pre_query=[sp_alg1_math_eos], sp_post_query=[sp_alg1_if_eos], tag="Alg1_Split_EOS_Math_PreQuery_IF_PostQuery"),
         }
         save_results(results)
 
     print("\n--- PART E3: IFEval48 End-to-End (L=0 & L=4096) ---", flush=True)
     for L in [0, 4096]:
         results["partE_e2e_benchmarks"]["ifeval48"][str(L)] = {
-            "Official_I@P0": run_ifeval_fast(student, tokenizer, tmpl, ctx_bundles[L], ifeval48, mode="sp", sp_sys_start=[off_p["I"]], tag="Official_I@P0"),
-            "Official_Dual_MI@P0": run_ifeval_fast(student, tokenizer, tmpl, ctx_bundles[L], ifeval48, mode="sp", sp_sys_start=[off_p["M"], off_p["I"]], tag="Official_Dual_MI@P0"),
-            "Official_MCSI@P0": run_ifeval_fast(student, tokenizer, tmpl, ctx_bundles[L], ifeval48, mode="sp", sp_sys_start=[off_p["M"], off_p["C"], off_p["S"], off_p["I"]], tag="Official_MCSI@P0"),
-            "KVPD_IF_EOS@P0": run_ifeval_fast(student, tokenizer, tmpl, ctx_bundles[L], ifeval48, mode="kv", kv_list=[kv_if_eos], tag="KVPD_IF_EOS@P0"),
-            "Alg1_Split_EOS_M@P2_I@P4": run_ifeval_fast(student, tokenizer, tmpl, ctx_bundles[L], ifeval48, mode="sp", sp_pre_query=[sp_alg1_math_eos], sp_post_query=[sp_alg1_if_eos], tag="Alg1_Split_EOS_M@P2_I@P4"),
+            "Official_I@Start": run_ifeval_fast(student, tokenizer, tmpl, ctx_bundles[L], ifeval48, mode="sp", sp_sys_start=[off_p["I"]], tag="Official_I@Start"),
+            "Official_Dual_MI@Start": run_ifeval_fast(student, tokenizer, tmpl, ctx_bundles[L], ifeval48, mode="sp", sp_sys_start=[off_p["M"], off_p["I"]], tag="Official_Dual_MI@Start"),
+            "Official_MCSI@Start": run_ifeval_fast(student, tokenizer, tmpl, ctx_bundles[L], ifeval48, mode="sp", sp_sys_start=[off_p["M"], off_p["C"], off_p["S"], off_p["I"]], tag="Official_MCSI@Start"),
+            "KVPD_IF_EOS@Start": run_ifeval_fast(student, tokenizer, tmpl, ctx_bundles[L], ifeval48, mode="kv", kv_list=[kv_if_eos], tag="KVPD_IF_EOS@Start"),
+            "Alg1_Split_EOS_Math_PreQuery_IF_PostQuery": run_ifeval_fast(student, tokenizer, tmpl, ctx_bundles[L], ifeval48, mode="sp", sp_pre_query=[sp_alg1_math_eos], sp_post_query=[sp_alg1_if_eos], tag="Alg1_Split_EOS_Math_PreQuery_IF_PostQuery"),
         }
         save_results(results)
 
@@ -986,9 +987,9 @@ def main():
     save_results(results)
 
     # ------------------------------------------------------------------
-    # PART A: Reference Step-200 CSPD Audit (P0-P5 & 0 -> 8192)
+    # PART A: Reference Step-200 CSPD Audit (SixSlots & 0 -> 8192)
     # ------------------------------------------------------------------
-    print("\n--- PART A1: Official I.pt & M.pt Across Six Deployment Slots (P0-P5) ---", flush=True)
+    print("\n--- PART A1: Official I.pt & M.pt Across Six Deployment Slots (SixSlots) ---", flush=True)
     results["partA1_official_6slots"]["official_I_on_IF"] = eval_official_6slots(student, tokenizer, tmpl, if_val_cache, off_p["I"], "Official_I")
     results["partA1_official_6slots"]["official_M_on_Math"] = eval_official_6slots(student, tokenizer, tmpl, math_val_cache, off_p["M"], "Official_M")
     save_results(results)
@@ -1001,15 +1002,15 @@ def main():
         base_if_kl[L], base_m_kl[L] = bi["kl"], bm["kl"]
 
     for dom, vcache, bmap, sp_t, name in [
-        ("if",   if_val_cache,   base_if_kl, off_p["I"], "Official_I_at_P0"),
-        ("math", math_val_cache, base_m_kl,  off_p["M"], "Official_M_at_P0"),
+        ("if",   if_val_cache,   base_if_kl, off_p["I"], "Official_I_at_Start"),
+        ("math", math_val_cache, base_m_kl,  off_p["M"], "Official_M_at_Start"),
     ]:
         ref0 = None
         results["partA2_official_longctx_single"][dom][name] = {}
         for L in LENGTHS_SWEEP:
             r, saved = eval_config_on_val_cache(
                 student, tmpl, vcache, ctx_bundles[L], mode="sp", sp_sys_start=[sp_t],
-                ref_p0_logits_list=ref0, save_ref_top32=(L == 0),
+                ref_start_logits_list=ref0, save_ref_top32=(L == 0),
             )
             if L == 0:
                 ref0 = saved
@@ -1020,12 +1021,12 @@ def main():
         d8k = results["partA2_official_longctx_single"][dom][name]["8192"]["drift_kl"]
         print(f"  [{name:22s}] {dom.upper()}=[{line}] | drift8k={d8k:.4f}", flush=True)
 
-    # Exact 9-layer attention mass for Official I.pt @ P0 across 0..8192
+    # Exact 9-layer attention mass for Official I.pt @ Start across 0..8192
     for L in LENGTHS_SWEEP:
         am = measure_response_attention_mass(student, tmpl, if_val_cache[:8], ctx_bundles[L], mode="sp", sp_sys_start=[off_p["I"]])
         results["partA2_official_longctx_single"]["attn_mass_if"][str(L)] = am
     am_line = " | ".join(f"{L}:{results['partA2_official_longctx_single']['attn_mass_if'][str(L)]['mean_mod_pct']:.2f}%" for L in LENGTHS_SWEEP)
-    print(f"  [Official_I_at_P0 Attn ] mean_mod_pct=[{am_line}]", flush=True)
+    print(f"  [Official_I_at_Start Attn ] mean_mod_pct=[{am_line}]", flush=True)
     save_results(results)
 
     print("\n--- PART A3: Official Dual ([M;I]/[I;M]) & 4-Expert (MCSI/ISCM) Composition (0 -> 8192) ---", flush=True)
@@ -1034,10 +1035,10 @@ def main():
         _, solo_off_i_refs[L] = eval_config_on_val_cache(student, tmpl, if_val_cache, ctx_bundles[L], mode="sp", sp_sys_start=[off_p["I"]], save_ref_top32=True)
 
     off_comp_specs = [
-        ("Official_Dual_MI@P0", [off_p["M"], off_p["I"]]),
-        ("Official_Dual_IM@P0", [off_p["I"], off_p["M"]]),
-        ("Official_MCSI@P0",    [off_p["M"], off_p["C"], off_p["S"], off_p["I"]]),
-        ("Official_ISCM@P0",    [off_p["I"], off_p["S"], off_p["C"], off_p["M"]]),
+        ("Official_Dual_MI@Start", [off_p["M"], off_p["I"]]),
+        ("Official_Dual_IM@Start", [off_p["I"], off_p["M"]]),
+        ("Official_MCSI@Start",    [off_p["M"], off_p["C"], off_p["S"], off_p["I"]]),
+        ("Official_ISCM@Start",    [off_p["I"], off_p["S"], off_p["C"], off_p["M"]]),
     ]
     for name, sps in off_comp_specs:
         results["partA3_official_longctx_comp"]["if"][name] = {}
@@ -1116,17 +1117,17 @@ def main():
     val_sub = if_val_cache[:12]
     for L, lkey in [(0, "L0"), (4096, "L4096")]:
         results["partC_36layer_causal_pathway"][lkey] = {
-            "Official_CSPD_I@P0": eval_layerwise_causal_pathway(
+            "Official_CSPD_I@Start": eval_layerwise_causal_pathway(
                 student, tmpl, val_sub, ctx_bundles[L], mode="sp", sp_sys_start=[off_p["I"]],
-                cutpoints=cutpoints, tag=f"Off_I@P0_{lkey}",
+                cutpoints=cutpoints, tag=f"Off_I@Start_{lkey}",
             ),
-            "KVPD_IF_EOS@P0": eval_layerwise_causal_pathway(
+            "KVPD_IF_EOS@Start": eval_layerwise_causal_pathway(
                 student, tmpl, val_sub, ctx_bundles[L], mode="kv", kv_list=[kv_if_eos],
-                cutpoints=cutpoints, tag=f"KVPD@P0_{lkey}",
+                cutpoints=cutpoints, tag=f"KVPD@Start_{lkey}",
             ),
-            "Alg1_CRSP_EOS@P4": eval_layerwise_causal_pathway(
+            "Alg1_CRSP_EOS@PostQuery": eval_layerwise_causal_pathway(
                 student, tmpl, val_sub, ctx_bundles[L], mode="sp", sp_post_query=[sp_alg1_if_eos],
-                cutpoints=cutpoints, tag=f"Alg1@P4_{lkey}",
+                cutpoints=cutpoints, tag=f"Alg1@PostQuery_{lkey}",
             ),
         }
         save_results(results)

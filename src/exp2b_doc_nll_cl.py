@@ -1,4 +1,5 @@
 """
+Paper Reference: Section 4.2, Fig. 7–8 (Private-Doc Length Scaling & Sequential LoRA Baseline).
 Stage B-v2: Vertical-Domain Document Continual Learning with Verified Sequence-Level NLL
 (CSPD Eq. 1) + Bidirectional Prefix/Suffix-Robust Training.
 

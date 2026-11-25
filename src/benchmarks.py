@@ -1,4 +1,5 @@
 """
+Paper Reference: Section 3.2 (MATH, IFEval, IFBench Evaluators & Thinking-Block Parsers).
 Verifiers & Batched Soft-Prompt Generation for CSPD Experiments:
 - Deterministic Math answer extraction & equivalence checking (nested \boxed{} + sympy)
 - Deterministic IFEval constraint verifiers (strips Qwen3 <think>...</think> before verifying)

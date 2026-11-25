@@ -1,4 +1,5 @@
 """
+Paper Reference: Section 5.1, Table 4, Fig. 6 (KV-PD 2.71x Training Acceleration & Dual Concat).
 Suite 1 (exp3): Accelerating & Upgrading Original CSPD (Efficiency, Convergence Speed & Architecture)
 Frozen Student: Jackwang111/M2RL-SFT (Qwen3-4B)
 RL Teachers:    Jackwang111/M2RL-RL_IF & Jackwang111/M2RL-RL_Math

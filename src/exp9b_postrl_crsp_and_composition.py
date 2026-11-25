@@ -1,6 +1,7 @@
 """
+Paper Reference: Section 6.2–6.3, Tables 7–9, Fig. 10–11 (Scaled IFBench N=64, Post-RAG Noise & 3-Expert Split).
 Suite 7B (exp9b): Post-RL Distilled & KV-Inverted (Alg A: Inv-2) CR-SPs —
-                  3-Seed Validation, Scaled IFBench64 (incl. P3 Post-RAG), &
+                  3-Seed Validation, Scaled IFBench64 (incl. PostRAG Post-RAG), &
                   3-Expert Simultaneous Split-Slot Composition (Head-to-Head vs Zero-Post-RL exp9)
 ===================================================================================================
 Runs on the EXACT SAME datasets, held-out splits, and multi-turn/RAG evaluation contexts as exp9:
@@ -11,8 +12,8 @@ Covers BOTH Post-RL CR-SP acquisition pathways with Co-Presence Distractor Aug +
   1) Direct Post-RL Distillation (M2RL-RL_IF & M2RL-RL_Math -> CS-CR L=64 & L=256, 3 seeds for IF L=64!)
   2) Algorithm A FuncCR-Inv (Inv-2, lambda_feat=0, NO intermediate-layer over-constraining!):
        Post-RL Teacher -> KV_L16 -> Discard Teacher -> Self-Gen Rollouts -> Inv-2 CS-CR (L=256 & L=64)!
-  3) Grand 3-Way Head-to-Head across Single, P3 Post-RAG, Permutation Invariance, AND
-     3-Expert Simultaneous Split-Slot Composition ([Doc@P1 + Math@P2 + IF@P4], 192 vecs total!):
+  3) Grand 3-Way Head-to-Head across Single, PostRAG Post-RAG, Permutation Invariance, AND
+     3-Expert Simultaneous Split-Slot Composition ([Doc@PostSys + Math@PreQuery + IF@PostQuery], 192 vecs total!):
        Zero-Post-RL Alg B (exp9)  vs  Post-RL KV-Inv2 Alg A (exp9b)  vs  Direct Post-RL CS-CR (exp9b)!
 """
 
@@ -473,26 +474,26 @@ def train_doc_cscr_muon_l128(
     return sp.detach().clone(), meta
 
 
-def eval_ifbench64_p3_rag(model, tokenizer, tmpl, eval_ctx, inps64, sp_pre_query=None, tag: str = "") -> Dict[str, Any]:
-    """Evaluate official IFBench64 under P3_PostRAG_Doc (Persona + 420-tok RAG + [SP] + Query)."""
+def eval_ifbench64_post_rag(model, tokenizer, tmpl, eval_ctx, inps64, sp_pre_query=None, tag: str = "") -> Dict[str, Any]:
+    """Evaluate official IFBench64 under PostRAG_Doc (Persona + 420-tok RAG + [SP] + Query)."""
     t0 = time.time()
     outs = batch_generate_slots(
         model, tokenizer, tmpl, [x.prompt for x in inps64],
         sys_text_ids=eval_ctx["persona_ids"], rag_ids=eval_ctx["rag_ids"],
         sp_pre_query=sp_pre_query, batch_size=32, max_new_tokens=2048, seed=42,
     )
-    p2r = {}
+    pre_query_res = {}
     closed = 0
     for inp, r in zip(inps64, outs):
         closed += int("</think>" in r)
-        p2r[inp.prompt] = strip_thinking(r)
-    s_ok = sum(int(ifbench_eval.test_instruction_following_strict(inp, p2r).follow_all_instructions) for inp in inps64)
+        pre_query_res[inp.prompt] = strip_thinking(r)
+    s_ok = sum(int(ifbench_eval.test_instruction_following_strict(inp, pre_query_res).follow_all_instructions) for inp in inps64)
     inst_l = []
     for inp in inps64:
-        inst_l.extend(ifbench_eval.test_instruction_following_strict(inp, p2r).follow_instruction_list)
+        inst_l.extend(ifbench_eval.test_instruction_following_strict(inp, pre_query_res).follow_instruction_list)
     n = len(inps64)
     res = {
-        "regime": "P3_PostRAG_Doc",
+        "regime": "PostRAG_Doc",
         "prompt_strict": round(100.0 * s_ok / n, 2),
         "inst_strict": round(100.0 * sum(inst_l) / max(1, len(inst_l)), 2),
         "n_strict": s_ok, "n_total": n,
@@ -500,12 +501,12 @@ def eval_ifbench64_p3_rag(model, tokenizer, tmpl, eval_ctx, inps64, sp_pre_query
         "closed_acc": round(100.0 * s_ok / max(1, closed), 2),
         "eval_sec": round(time.time() - t0, 1),
     }
-    print(f"  [IFBench64-P3 | {tag:33s}] strict={res['prompt_strict']:5.2f}% ({s_ok:2d}/{n}) | inst={res['inst_strict']:5.2f}% | closed={closed:2d}/{n} ({res['closed_acc']:5.1f}%) | t={res['eval_sec']}s", flush=True)
+    print(f"  [IFBench64-PostRAG | {tag:33s}] strict={res['prompt_strict']:5.2f}% ({s_ok:2d}/{n}) | inst={res['inst_strict']:5.2f}% | closed={closed:2d}/{n} ({res['closed_acc']:5.1f}%) | t={res['eval_sec']}s", flush=True)
     return res
 
 
-def eval_ifbench64_kv_p0(model, tokenizer, tmpl, kv_tensor, inps64, tag: str = "") -> Dict[str, Any]:
-    """Evaluate Post-RL KV_L16 directly at P0 on official IFBench64 to measure exact Alg A inversion retention."""
+def eval_ifbench64_kv_start(model, tokenizer, tmpl, kv_tensor, inps64, tag: str = "") -> Dict[str, Any]:
+    """Evaluate Post-RL KV_L16 directly at Start on official IFBench64 to measure exact Alg A inversion retention."""
     t0 = time.time()
     torch.manual_seed(42)
     outs = batch_generate_with_kv_prefixes(
@@ -513,18 +514,18 @@ def eval_ifbench64_kv_p0(model, tokenizer, tmpl, kv_tensor, inps64, tag: str = "
         system_texts=[""] * len(inps64), batch_size=32, max_new_tokens=2048,
         temperature=0.6, top_p=0.95, top_k=20, enable_thinking=True,
     )
-    p2r = {}
+    pre_query_res = {}
     closed = 0
     for inp, r in zip(inps64, outs):
         closed += int("</think>" in r)
-        p2r[inp.prompt] = strip_thinking(r)
-    s_ok = sum(int(ifbench_eval.test_instruction_following_strict(inp, p2r).follow_all_instructions) for inp in inps64)
+        pre_query_res[inp.prompt] = strip_thinking(r)
+    s_ok = sum(int(ifbench_eval.test_instruction_following_strict(inp, pre_query_res).follow_all_instructions) for inp in inps64)
     inst_l = []
     for inp in inps64:
-        inst_l.extend(ifbench_eval.test_instruction_following_strict(inp, p2r).follow_instruction_list)
+        inst_l.extend(ifbench_eval.test_instruction_following_strict(inp, pre_query_res).follow_instruction_list)
     n = len(inps64)
     res = {
-        "regime": "P0_KV_Prefix",
+        "regime": "Start_KV_Prefix",
         "prompt_strict": round(100.0 * s_ok / n, 2),
         "inst_strict": round(100.0 * sum(inst_l) / max(1, len(inst_l)), 2),
         "n_strict": s_ok, "n_total": n,
@@ -725,16 +726,16 @@ def main():
     save()
 
     # =========================================================================
-    # STEP 5: FULL SCALED EVALUATIONS (IFEval96 + IFBench64 incl. P3 + MATH48 + Doc36)
+    # STEP 5: FULL SCALED EVALUATIONS (IFEval96 + IFBench64 incl. PostRAG + MATH48 + Doc36)
     # =========================================================================
     print("\n=== Step 5A: 3-Seed Post-RL Direct L=64 & Algorithm A (Inv-2) on Held-Out IFEval96 ===", flush=True)
     for sd in seeds:
         r_sd = {}
-        r_sd["P2"] = eval_ifeval96_slots(student, tokenizer, tmpl, eval_ctx, ifeval_test96, sp_pre_query=[direct_if_l64_by_seed[sd]], tag=f"s{sd} P2 PostRL_Dir_L64")
-        r_sd["P4"] = eval_ifeval96_slots(student, tokenizer, tmpl, eval_ctx, ifeval_test96, sp_post_query=[direct_if_l64_by_seed[sd]], tag=f"s{sd} P4 PostRL_Dir_L64")
+        r_sd["PreQuery"] = eval_ifeval96_slots(student, tokenizer, tmpl, eval_ctx, ifeval_test96, sp_pre_query=[direct_if_l64_by_seed[sd]], tag=f"s{sd} PreQuery PostRL_Dir_L64")
+        r_sd["PostQuery"] = eval_ifeval96_slots(student, tokenizer, tmpl, eval_ctx, ifeval_test96, sp_post_query=[direct_if_l64_by_seed[sd]], tag=f"s{sd} PostQuery PostRL_Dir_L64")
         results["ifeval96_multiseed_direct_l64"][f"seed_{sd}"] = r_sd
         save()
-    for pos in ["P2", "P4"]:
+    for pos in ["PreQuery", "PostQuery"]:
         vals = [results["ifeval96_multiseed_direct_l64"][f"seed_{sd}"][pos]["prompt_strict"] for sd in seeds]
         cls = [results["ifeval96_multiseed_direct_l64"][f"seed_{sd}"][pos]["closed_acc"] for sd in seeds]
         results["ifeval96_multiseed_summary"][f"{pos}_PostRL_Direct_L64"] = {
@@ -747,60 +748,60 @@ def main():
         print(f"    {pos}_PostRL_Direct_L64: strict = {s['strict_mean']:5.2f} +/- {s['strict_std']:4.2f}% {vals} | closed_acc = {s['closed_acc_mean']:5.2f}%", flush=True)
 
     ie = results["ifeval96_evals"]
-    ie["P4_PostRL_Direct_L256"] = eval_ifeval96_slots(student, tokenizer, tmpl, eval_ctx, ifeval_test96, sp_post_query=[sp_direct_if_l256], tag="P4 PostRL_Direct_L256")
-    ie["P2_PostRL_KVInv2_L256"] = eval_ifeval96_slots(student, tokenizer, tmpl, eval_ctx, ifeval_test96, sp_pre_query=[sp_kvinv2_if_l256], tag="P2 PostRL_KVInv2_L256")
-    ie["P4_PostRL_KVInv2_L256"] = eval_ifeval96_slots(student, tokenizer, tmpl, eval_ctx, ifeval_test96, sp_post_query=[sp_kvinv2_if_l256], tag="P4 PostRL_KVInv2_L256")
-    ie["P4_PostRL_KVInv2_L64"] = eval_ifeval96_slots(student, tokenizer, tmpl, eval_ctx, ifeval_test96, sp_post_query=[sp_kvinv2_if_l64], tag="P4 PostRL_KVInv2_L64")
-    ie["Dual_PostRL_Adj_IF_Math_P2"] = eval_ifeval96_slots(student, tokenizer, tmpl, eval_ctx, ifeval_test96, sp_pre_query=[sp_direct_if_l64, sp_direct_math_l64], tag="Dual PostRL [IF;Math]@P2")
-    ie["Dual_PostRL_Adj_Math_IF_P2"] = eval_ifeval96_slots(student, tokenizer, tmpl, eval_ctx, ifeval_test96, sp_pre_query=[sp_direct_math_l64, sp_direct_if_l64], tag="Dual PostRL [Math;IF]@P2")
-    ie["Triple_PostRL_Direct_Split"] = eval_ifeval96_slots(student, tokenizer, tmpl, eval_ctx, ifeval_test96, sp_sys_end=[e3_doc_cscr], sp_pre_query=[sp_direct_math_l64], sp_post_query=[sp_direct_if_l64], tag="Triple PostRL_Direct [P1+P2+P4]")
-    ie["Triple_PostRL_KVInv2_Split"] = eval_ifeval96_slots(student, tokenizer, tmpl, eval_ctx, ifeval_test96, sp_sys_end=[e3_doc_cscr], sp_pre_query=[sp_kvinv2_math_l64], sp_post_query=[sp_kvinv2_if_l64], tag="Triple PostRL_KVInv2 [P1+P2+P4]")
+    ie["PostQuery_PostRL_Direct_L256"] = eval_ifeval96_slots(student, tokenizer, tmpl, eval_ctx, ifeval_test96, sp_post_query=[sp_direct_if_l256], tag="PostQuery PostRL_Direct_L256")
+    ie["PreQuery_PostRL_KVInv2_L256"] = eval_ifeval96_slots(student, tokenizer, tmpl, eval_ctx, ifeval_test96, sp_pre_query=[sp_kvinv2_if_l256], tag="PreQuery PostRL_KVInv2_L256")
+    ie["PostQuery_PostRL_KVInv2_L256"] = eval_ifeval96_slots(student, tokenizer, tmpl, eval_ctx, ifeval_test96, sp_post_query=[sp_kvinv2_if_l256], tag="PostQuery PostRL_KVInv2_L256")
+    ie["PostQuery_PostRL_KVInv2_L64"] = eval_ifeval96_slots(student, tokenizer, tmpl, eval_ctx, ifeval_test96, sp_post_query=[sp_kvinv2_if_l64], tag="PostQuery PostRL_KVInv2_L64")
+    ie["Dual_PostRL_Adj_IF_Math_PreQuery"] = eval_ifeval96_slots(student, tokenizer, tmpl, eval_ctx, ifeval_test96, sp_pre_query=[sp_direct_if_l64, sp_direct_math_l64], tag="Dual PostRL [IF;Math]@PreQuery")
+    ie["Dual_PostRL_Adj_Math_IF_PreQuery"] = eval_ifeval96_slots(student, tokenizer, tmpl, eval_ctx, ifeval_test96, sp_pre_query=[sp_direct_math_l64, sp_direct_if_l64], tag="Dual PostRL [Math;IF]@PreQuery")
+    ie["Triple_PostRL_Direct_Split"] = eval_ifeval96_slots(student, tokenizer, tmpl, eval_ctx, ifeval_test96, sp_sys_end=[e3_doc_cscr], sp_pre_query=[sp_direct_math_l64], sp_post_query=[sp_direct_if_l64], tag="Triple PostRL_Direct [PostSys+PreQuery+PostQuery]")
+    ie["Triple_PostRL_KVInv2_Split"] = eval_ifeval96_slots(student, tokenizer, tmpl, eval_ctx, ifeval_test96, sp_sys_end=[e3_doc_cscr], sp_pre_query=[sp_kvinv2_math_l64], sp_post_query=[sp_kvinv2_if_l64], tag="Triple PostRL_KVInv2 [PostSys+PreQuery+PostQuery]")
     save()
 
-    print("\n=== Step 5B: Scaled Official IFBench64 (Incl. P0 KV Ceiling, P3 Post-RAG & 3-Expert Composition!) ===", flush=True)
+    print("\n=== Step 5B: Scaled Official IFBench64 (Incl. Start KV Ceiling, PostRAG Post-RAG & 3-Expert Composition!) ===", flush=True)
     be = results["ifbench64_evals"]
-    be["P0_KV_PostRL_IF_L16"] = eval_ifbench64_kv_p0(student, tokenizer, tmpl, kv_if_l16, ifbench64, tag="P0 KV_PostRL_IF_L16 (Ceiling)")
-    be["P3_Bare_Student"] = eval_ifbench64_p3_rag(student, tokenizer, tmpl, eval_ctx, ifbench64, sp_pre_query=None, tag="P3-RAG Bare Student")
+    be["Start_KV_PostRL_IF_L16"] = eval_ifbench64_kv_start(student, tokenizer, tmpl, kv_if_l16, ifbench64, tag="Start KV_PostRL_IF_L16 (Ceiling)")
+    be["PostRAG_Bare_Student"] = eval_ifbench64_post_rag(student, tokenizer, tmpl, eval_ctx, ifbench64, sp_pre_query=None, tag="PostRAG Bare Student")
     exp9_algb_path = os.path.join(EXP9_DIR, "sp_if_algb_seed42.pt")
     if os.path.exists(exp9_algb_path):
         sp_exp9_algb = torch.load(exp9_algb_path, map_location="cuda").float()
-        be["P3_ZeroPostRL_AlgB_L64"] = eval_ifbench64_p3_rag(student, tokenizer, tmpl, eval_ctx, ifbench64, sp_pre_query=[sp_exp9_algb], tag="P3-RAG ZeroPostRL_AlgB_L64")
+        be["PostRAG_ZeroPostRL_AlgB_L64"] = eval_ifbench64_post_rag(student, tokenizer, tmpl, eval_ctx, ifbench64, sp_pre_query=[sp_exp9_algb], tag="PostRAG ZeroPostRL_AlgB_L64")
         del sp_exp9_algb
-    be["P2_PostRL_Direct_L64"] = eval_ifbench64_slots(student, tokenizer, tmpl, eval_ctx, ifbench64, sp_pre_query=[sp_direct_if_l64], tag="P2 PostRL_Direct_L64")
-    be["P4_PostRL_Direct_L64"] = eval_ifbench64_slots(student, tokenizer, tmpl, eval_ctx, ifbench64, sp_post_query=[sp_direct_if_l64], tag="P4 PostRL_Direct_L64")
-    be["P3_PostRL_Direct_L256"] = eval_ifbench64_p3_rag(student, tokenizer, tmpl, eval_ctx, ifbench64, sp_pre_query=[sp_direct_if_l256], tag="P3-RAG PostRL_Direct_L256")
-    be["P4_PostRL_Direct_L256"] = eval_ifbench64_slots(student, tokenizer, tmpl, eval_ctx, ifbench64, sp_post_query=[sp_direct_if_l256], tag="P4 PostRL_Direct_L256")
-    be["P2_PostRL_KVInv2_L256"] = eval_ifbench64_slots(student, tokenizer, tmpl, eval_ctx, ifbench64, sp_pre_query=[sp_kvinv2_if_l256], tag="P2 AlgA KVInv2_L256")
-    be["P3_PostRL_KVInv2_L256"] = eval_ifbench64_p3_rag(student, tokenizer, tmpl, eval_ctx, ifbench64, sp_pre_query=[sp_kvinv2_if_l256], tag="P3-RAG AlgA KVInv2_L256")
-    be["P4_PostRL_KVInv2_L256"] = eval_ifbench64_slots(student, tokenizer, tmpl, eval_ctx, ifbench64, sp_post_query=[sp_kvinv2_if_l256], tag="P4 AlgA KVInv2_L256")
-    be["P4_PostRL_KVInv2_L64"] = eval_ifbench64_slots(student, tokenizer, tmpl, eval_ctx, ifbench64, sp_post_query=[sp_kvinv2_if_l64], tag="P4 AlgA KVInv2_L64")
-    be["Triple_PostRL_Direct_Split"] = eval_ifbench64_slots(student, tokenizer, tmpl, eval_ctx, ifbench64, sp_sys_end=[e3_doc_cscr], sp_pre_query=[sp_direct_math_l64], sp_post_query=[sp_direct_if_l64], tag="Triple PostRL_Direct [P1+P2+P4]")
-    be["Triple_PostRL_KVInv2_Split"] = eval_ifbench64_slots(student, tokenizer, tmpl, eval_ctx, ifbench64, sp_sys_end=[e3_doc_cscr], sp_pre_query=[sp_kvinv2_math_l64], sp_post_query=[sp_kvinv2_if_l64], tag="Triple PostRL_KVInv2 [P1+P2+P4]")
+    be["PreQuery_PostRL_Direct_L64"] = eval_ifbench64_slots(student, tokenizer, tmpl, eval_ctx, ifbench64, sp_pre_query=[sp_direct_if_l64], tag="PreQuery PostRL_Direct_L64")
+    be["PostQuery_PostRL_Direct_L64"] = eval_ifbench64_slots(student, tokenizer, tmpl, eval_ctx, ifbench64, sp_post_query=[sp_direct_if_l64], tag="PostQuery PostRL_Direct_L64")
+    be["PostRAG_PostRL_Direct_L256"] = eval_ifbench64_post_rag(student, tokenizer, tmpl, eval_ctx, ifbench64, sp_pre_query=[sp_direct_if_l256], tag="PostRAG PostRL_Direct_L256")
+    be["PostQuery_PostRL_Direct_L256"] = eval_ifbench64_slots(student, tokenizer, tmpl, eval_ctx, ifbench64, sp_post_query=[sp_direct_if_l256], tag="PostQuery PostRL_Direct_L256")
+    be["PreQuery_PostRL_KVInv2_L256"] = eval_ifbench64_slots(student, tokenizer, tmpl, eval_ctx, ifbench64, sp_pre_query=[sp_kvinv2_if_l256], tag="PreQuery AlgA KVInv2_L256")
+    be["PostRAG_PostRL_KVInv2_L256"] = eval_ifbench64_post_rag(student, tokenizer, tmpl, eval_ctx, ifbench64, sp_pre_query=[sp_kvinv2_if_l256], tag="PostRAG AlgA KVInv2_L256")
+    be["PostQuery_PostRL_KVInv2_L256"] = eval_ifbench64_slots(student, tokenizer, tmpl, eval_ctx, ifbench64, sp_post_query=[sp_kvinv2_if_l256], tag="PostQuery AlgA KVInv2_L256")
+    be["PostQuery_PostRL_KVInv2_L64"] = eval_ifbench64_slots(student, tokenizer, tmpl, eval_ctx, ifbench64, sp_post_query=[sp_kvinv2_if_l64], tag="PostQuery AlgA KVInv2_L64")
+    be["Triple_PostRL_Direct_Split"] = eval_ifbench64_slots(student, tokenizer, tmpl, eval_ctx, ifbench64, sp_sys_end=[e3_doc_cscr], sp_pre_query=[sp_direct_math_l64], sp_post_query=[sp_direct_if_l64], tag="Triple PostRL_Direct [PostSys+PreQuery+PostQuery]")
+    be["Triple_PostRL_KVInv2_Split"] = eval_ifbench64_slots(student, tokenizer, tmpl, eval_ctx, ifbench64, sp_sys_end=[e3_doc_cscr], sp_pre_query=[sp_kvinv2_math_l64], sp_post_query=[sp_kvinv2_if_l64], tag="Triple PostRL_KVInv2 [PostSys+PreQuery+PostQuery]")
     save()
 
     print("\n=== Step 5C: MATH48 & HeliosPay Doc36 Post-RL Composition Evaluations ===", flush=True)
     me = results["math48_evals"]
-    me["P2_PostRL_Direct_Math_L64"] = eval_math48_slots(student, tokenizer, tmpl, eval_ctx, math_test48, sp_pre_query=[sp_direct_math_l64], tag="P2 PostRL_Direct_Math_L64")
-    me["P4_PostRL_Direct_Math_L64"] = eval_math48_slots(student, tokenizer, tmpl, eval_ctx, math_test48, sp_post_query=[sp_direct_math_l64], tag="P4 PostRL_Direct_Math_L64")
-    me["P2_PostRL_KVInv2_Math_L64"] = eval_math48_slots(student, tokenizer, tmpl, eval_ctx, math_test48, sp_pre_query=[sp_kvinv2_math_l64], tag="P2 AlgA KVInv2_Math_L64")
-    me["Dual_PostRL_Adj_IF_Math_P2"] = eval_math48_slots(student, tokenizer, tmpl, eval_ctx, math_test48, sp_pre_query=[sp_direct_if_l64, sp_direct_math_l64], tag="Dual PostRL [IF;Math]@P2")
-    me["Dual_PostRL_Adj_Math_IF_P2"] = eval_math48_slots(student, tokenizer, tmpl, eval_ctx, math_test48, sp_pre_query=[sp_direct_math_l64, sp_direct_if_l64], tag="Dual PostRL [Math;IF]@P2")
-    me["Triple_PostRL_Direct_Split"] = eval_math48_slots(student, tokenizer, tmpl, eval_ctx, math_test48, sp_sys_end=[e3_doc_cscr], sp_pre_query=[sp_direct_math_l64], sp_post_query=[sp_direct_if_l64], tag="Triple PostRL_Direct [P1+P2+P4]")
-    me["Triple_PostRL_KVInv2_Split"] = eval_math48_slots(student, tokenizer, tmpl, eval_ctx, math_test48, sp_sys_end=[e3_doc_cscr], sp_pre_query=[sp_kvinv2_math_l64], sp_post_query=[sp_kvinv2_if_l64], tag="Triple PostRL_KVInv2 [P1+P2+P4]")
+    me["PreQuery_PostRL_Direct_Math_L64"] = eval_math48_slots(student, tokenizer, tmpl, eval_ctx, math_test48, sp_pre_query=[sp_direct_math_l64], tag="PreQuery PostRL_Direct_Math_L64")
+    me["PostQuery_PostRL_Direct_Math_L64"] = eval_math48_slots(student, tokenizer, tmpl, eval_ctx, math_test48, sp_post_query=[sp_direct_math_l64], tag="PostQuery PostRL_Direct_Math_L64")
+    me["PreQuery_PostRL_KVInv2_Math_L64"] = eval_math48_slots(student, tokenizer, tmpl, eval_ctx, math_test48, sp_pre_query=[sp_kvinv2_math_l64], tag="PreQuery AlgA KVInv2_Math_L64")
+    me["Dual_PostRL_Adj_IF_Math_PreQuery"] = eval_math48_slots(student, tokenizer, tmpl, eval_ctx, math_test48, sp_pre_query=[sp_direct_if_l64, sp_direct_math_l64], tag="Dual PostRL [IF;Math]@PreQuery")
+    me["Dual_PostRL_Adj_Math_IF_PreQuery"] = eval_math48_slots(student, tokenizer, tmpl, eval_ctx, math_test48, sp_pre_query=[sp_direct_math_l64, sp_direct_if_l64], tag="Dual PostRL [Math;IF]@PreQuery")
+    me["Triple_PostRL_Direct_Split"] = eval_math48_slots(student, tokenizer, tmpl, eval_ctx, math_test48, sp_sys_end=[e3_doc_cscr], sp_pre_query=[sp_direct_math_l64], sp_post_query=[sp_direct_if_l64], tag="Triple PostRL_Direct [PostSys+PreQuery+PostQuery]")
+    me["Triple_PostRL_KVInv2_Split"] = eval_math48_slots(student, tokenizer, tmpl, eval_ctx, math_test48, sp_sys_end=[e3_doc_cscr], sp_pre_query=[sp_kvinv2_math_l64], sp_post_query=[sp_kvinv2_if_l64], tag="Triple PostRL_KVInv2 [PostSys+PreQuery+PostQuery]")
     save()
 
     de = results["doc36_evals"]
-    de["Single_Doc_CSCR_MuonL128_P1"] = eval_doc36_slots(student, tokenizer, tmpl, eval_ctx, doc_test_rules, doc_test_facts, sp_sys_end=[e3_doc_cscr], tag="Single Doc_MuonL128 @ P1")
-    de["Single_Doc_CSCR_MuonL128_P2"] = eval_doc36_slots(student, tokenizer, tmpl, eval_ctx, doc_test_rules, doc_test_facts, sp_pre_query=[e3_doc_cscr], tag="Single Doc_MuonL128 @ P2")
-    de["Single_Doc_CSCR_MuonL128_P4"] = eval_doc36_slots(student, tokenizer, tmpl, eval_ctx, doc_test_rules, doc_test_facts, sp_post_query=[e3_doc_cscr], tag="Single Doc_MuonL128 @ P4")
+    de["Single_Doc_CSCR_MuonL128_PostSys"] = eval_doc36_slots(student, tokenizer, tmpl, eval_ctx, doc_test_rules, doc_test_facts, sp_sys_end=[e3_doc_cscr], tag="Single Doc_MuonL128 @ PostSys")
+    de["Single_Doc_CSCR_MuonL128_PreQuery"] = eval_doc36_slots(student, tokenizer, tmpl, eval_ctx, doc_test_rules, doc_test_facts, sp_pre_query=[e3_doc_cscr], tag="Single Doc_MuonL128 @ PreQuery")
+    de["Single_Doc_CSCR_MuonL128_PostQuery"] = eval_doc36_slots(student, tokenizer, tmpl, eval_ctx, doc_test_rules, doc_test_facts, sp_post_query=[e3_doc_cscr], tag="Single Doc_MuonL128 @ PostQuery")
     exp9_m_path = os.path.join(EXP9_DIR, "sp_math_cscr.pt")
     if os.path.exists(exp9_algb_path) and os.path.exists(exp9_m_path):
         sp_e9_if = torch.load(exp9_algb_path, map_location="cuda").float()
         sp_e9_ma = torch.load(exp9_m_path, map_location="cuda").float()
-        de["Triple_ZeroPostRL_FixedDoc_Split"] = eval_doc36_slots(student, tokenizer, tmpl, eval_ctx, doc_test_rules, doc_test_facts, sp_sys_end=[e3_doc_cscr], sp_pre_query=[sp_e9_ma], sp_post_query=[sp_e9_if], tag="Triple ZeroPostRL+Doc128 [P1+P2+P4]")
+        de["Triple_ZeroPostRL_FixedDoc_Split"] = eval_doc36_slots(student, tokenizer, tmpl, eval_ctx, doc_test_rules, doc_test_facts, sp_sys_end=[e3_doc_cscr], sp_pre_query=[sp_e9_ma], sp_post_query=[sp_e9_if], tag="Triple ZeroPostRL+Doc128 [PostSys+PreQuery+PostQuery]")
         del sp_e9_if, sp_e9_ma
-    de["Triple_PostRL_Direct_Split"] = eval_doc36_slots(student, tokenizer, tmpl, eval_ctx, doc_test_rules, doc_test_facts, sp_sys_end=[e3_doc_cscr], sp_pre_query=[sp_direct_math_l64], sp_post_query=[sp_direct_if_l64], tag="Triple PostRL_Direct [P1+P2+P4]")
-    de["Triple_PostRL_KVInv2_Split"] = eval_doc36_slots(student, tokenizer, tmpl, eval_ctx, doc_test_rules, doc_test_facts, sp_sys_end=[e3_doc_cscr], sp_pre_query=[sp_kvinv2_math_l64], sp_post_query=[sp_kvinv2_if_l64], tag="Triple PostRL_KVInv2 [P1+P2+P4]")
+    de["Triple_PostRL_Direct_Split"] = eval_doc36_slots(student, tokenizer, tmpl, eval_ctx, doc_test_rules, doc_test_facts, sp_sys_end=[e3_doc_cscr], sp_pre_query=[sp_direct_math_l64], sp_post_query=[sp_direct_if_l64], tag="Triple PostRL_Direct [PostSys+PreQuery+PostQuery]")
+    de["Triple_PostRL_KVInv2_Split"] = eval_doc36_slots(student, tokenizer, tmpl, eval_ctx, doc_test_rules, doc_test_facts, sp_sys_end=[e3_doc_cscr], sp_pre_query=[sp_kvinv2_math_l64], sp_post_query=[sp_kvinv2_if_l64], tag="Triple PostRL_KVInv2 [PostSys+PreQuery+PostQuery]")
     save()
 
     results["total_elapsed_sec"] = round(time.time() - t_start, 1)

@@ -1,21 +1,22 @@
 """
+Paper Reference: Section 7.2, Tables 12–14, Fig. 14 (Dual Slot-Swap & 3-Expert All-6-Permutations).
 Suite 9 (exp11): Comprehensive Injection-Order & Slot-Permutation Study (Short & Long Context)
 ==============================================================================================
 Systematically completes all injection-order dimensions across CSPD, KV-PD, and CRSP:
-  1) Part A — Dual-Expert Split-Slot Swap ([Math@P2 + IF@P4] vs. [IF@P2 + Math@P4]) &
-              Same-Slot Adjacent Swap ([Math; IF] vs. [IF; Math] at P2 & P4) across L_ctx in {0, 1024, 4096, 8192}
+  1) Part A — Dual-Expert Split-Slot Swap ([Math@PreQuery + IF@PostQuery] vs. [IF@PreQuery + Math@PostQuery]) &
+              Same-Slot Adjacent Swap ([Math; IF] vs. [IF; Math] at PreQuery & PostQuery) across L_ctx in {0, 1024, 4096, 8192}
               for both Direct CRSP (L=64) and Algorithm 1 KV-Inv-CRSP (L=64).
   2) Part B — Three-Expert All-6-Permutations Study ({Doc, Math, IF}, all 3! = 6 orders) at L_ctx in {0, 4096}:
-              (i)   PR-CSPD fixed-P0 3-expert concatenation (6 permutations)
-              (ii)  KV-PD fixed-P0 3-expert concatenation (6 permutations)
-              (iii) Alg. 1 CRSP 3-expert split-slot assignment across (P1, P2, P4) (6 permutations)
+              (i)   PR-CSPD start-fixed 3-expert concatenation (6 permutations)
+              (ii)  KV-PD start-fixed 3-expert concatenation (6 permutations)
+              (iii) Alg. 1 CRSP 3-expert split-slot assignment across (PostSys, PreQuery, PostQuery) (6 permutations)
               Reports per-permutation gains, mean +- std, min-max spread, and optimal slot ordering.
   3) Part C — End-to-End Generative Order-Swap Verification at L_ctx in {0, 4096}:
-              - MATH32    (N=32, 1536 tok): Alg. 1 Split [Math@P2 + IF@P4] vs. [IF@P2 + Math@P4] (L=0 & 4096)
-              - IFBench32 (N=32, 2048 tok): Alg. 1 Split [Math@P2 + IF@P4] vs. [IF@P2 + Math@P4] (L=0 & 4096)
-                                            + PR-CSPD [Math; IF] vs. [IF; Math] @ P0 (L=4096)
-                                            + KV-PD   [Math; IF] vs. [IF; Math] @ P0 (L=4096)
-              - IFEval48  (N=48, 1536 tok): Alg. 1 Split [Math@P2 + IF@P4] vs. [IF@P2 + Math@P4] (L=0 & 4096)
+              - MATH32    (N=32, 1536 tok): Alg. 1 Split [Math@PreQuery + IF@PostQuery] vs. [IF@PreQuery + Math@PostQuery] (L=0 & 4096)
+              - IFBench32 (N=32, 2048 tok): Alg. 1 Split [Math@PreQuery + IF@PostQuery] vs. [IF@PreQuery + Math@PostQuery] (L=0 & 4096)
+                                            + PR-CSPD [Math; IF] vs. [IF; Math] @ Start (L=4096)
+                                            + KV-PD   [Math; IF] vs. [IF; Math] @ Start (L=4096)
+              - IFEval48  (N=48, 1536 tok): Alg. 1 Split [Math@PreQuery + IF@PostQuery] vs. [IF@PreQuery + Math@PostQuery] (L=0 & 4096)
 """
 
 import itertools
@@ -99,9 +100,9 @@ def mean_std(vals: List[float]) -> Dict[str, float]:
 @torch.no_grad()
 def eval_3slot_sp_on_val_cache(
     student, tmpl, val_cache, ctx_bundle,
-    sp_p1: List[torch.Tensor], sp_p2: List[torch.Tensor], sp_p4: List[torch.Tensor],
+    sp_post_sys: List[torch.Tensor], sp_pre_query: List[torch.Tensor], sp_post_query: List[torch.Tensor],
 ) -> Dict[str, float]:
-    """Evaluate 3-slot [A@P1 + B@P2 + C@P4] where P1 sits mid-system (after sys_text, before history)."""
+    """Evaluate 3-slot [A@PostSys + B@PreQuery + C@PostQuery] where PostSys sits mid-system (after sys_text, before history)."""
     device = next(student.parameters()).device
     dtype = next(student.parameters()).dtype
     s_emb = student.get_input_embeddings()
@@ -119,9 +120,9 @@ def eval_3slot_sp_on_val_cache(
             sys_text_ids=ctx_bundle["sys_text_ids"],
             history_turns_ids=ctx_bundle["history_turns_ids"],
             rag_ids=ctx_bundle["rag_ids"],
-            sp_sys_end=sp_p1,
-            sp_pre_query=sp_p2,
-            sp_post_query=sp_p4,
+            sp_sys_end=sp_post_sys,
+            sp_pre_query=sp_pre_query,
+            sp_post_query=sp_post_query,
             device=device, model_dtype=dtype,
         )
         out = student(inputs_embeds=e, use_cache=False)
@@ -295,33 +296,33 @@ def main():
     )
 
     # ------------------------------------------------------------------
-    # PART A: Dual-Expert Split-Slot Swap & Adjacent P2/P4 Order Sweep (0..8192)
+    # PART A: Dual-Expert Split-Slot Swap & Adjacent pre_query/post_query Order Sweep (0..8192)
     # ------------------------------------------------------------------
-    print("\n--- PART A: Split-Slot Swap ([M@P2+I@P4] vs [I@P2+M@P4]) & Adj P2/P4 Swap (0..8192) ---", flush=True)
+    print("\n--- PART A: Split-Slot Swap ([Math@PreQuery+IF@PostQuery] vs [IF@PreQuery+Math@PostQuery]) & Adj pre_query/post_query Swap (0..8192) ---", flush=True)
     base_if_kl, base_m_kl = {}, {}
-    solo_dir_if_p4, solo_dir_if_p2, solo_alg1_if_p4, solo_alg1_if_p2 = {}, {}, {}, {}
+    solo_dir_if_post_query, solo_dir_if_pre_query, solo_alg1_if_post_query, solo_alg1_if_pre_query = {}, {}, {}, {}
     for L in LENGTHS_COMP:
         bi, _ = eval_config_on_val_cache(student, tmpl, if_val_cache, ctx_bundles[L], mode="base")
         bm, _ = eval_config_on_val_cache(student, tmpl, math_val_cache, ctx_bundles[L], mode="base")
         base_if_kl[L], base_m_kl[L] = bi["kl"], bm["kl"]
-        _, solo_dir_if_p4[L]  = eval_config_on_val_cache(student, tmpl, if_val_cache, ctx_bundles[L], mode="sp", sp_post_query=[sp_dir_if], save_ref_top32=True)
-        _, solo_dir_if_p2[L]  = eval_config_on_val_cache(student, tmpl, if_val_cache, ctx_bundles[L], mode="sp", sp_pre_query=[sp_dir_if], save_ref_top32=True)
-        _, solo_alg1_if_p4[L] = eval_config_on_val_cache(student, tmpl, if_val_cache, ctx_bundles[L], mode="sp", sp_post_query=[sp_alg1_if], save_ref_top32=True)
-        _, solo_alg1_if_p2[L] = eval_config_on_val_cache(student, tmpl, if_val_cache, ctx_bundles[L], mode="sp", sp_pre_query=[sp_alg1_if], save_ref_top32=True)
+        _, solo_dir_if_post_query[L]  = eval_config_on_val_cache(student, tmpl, if_val_cache, ctx_bundles[L], mode="sp", sp_post_query=[sp_dir_if], save_ref_top32=True)
+        _, solo_dir_if_pre_query[L]  = eval_config_on_val_cache(student, tmpl, if_val_cache, ctx_bundles[L], mode="sp", sp_pre_query=[sp_dir_if], save_ref_top32=True)
+        _, solo_alg1_if_post_query[L] = eval_config_on_val_cache(student, tmpl, if_val_cache, ctx_bundles[L], mode="sp", sp_post_query=[sp_alg1_if], save_ref_top32=True)
+        _, solo_alg1_if_pre_query[L] = eval_config_on_val_cache(student, tmpl, if_val_cache, ctx_bundles[L], mode="sp", sp_pre_query=[sp_alg1_if], save_ref_top32=True)
 
     dual_specs = [
-        ("Direct_Split_M@P2_I@P4", {"sp_pre_query": [sp_dir_math],  "sp_post_query": [sp_dir_if]},   solo_dir_if_p4),
-        ("Direct_Split_I@P2_M@P4", {"sp_pre_query": [sp_dir_if],    "sp_post_query": [sp_dir_math]}, solo_dir_if_p2),
-        ("Direct_Adj_M_I@P2",      {"sp_pre_query": [sp_dir_math, sp_dir_if]},                        solo_dir_if_p2),
-        ("Direct_Adj_I_M@P2",      {"sp_pre_query": [sp_dir_if, sp_dir_math]},                        solo_dir_if_p2),
-        ("Direct_Adj_M_I@P4",      {"sp_post_query": [sp_dir_math, sp_dir_if]},                       solo_dir_if_p4),
-        ("Direct_Adj_I_M@P4",      {"sp_post_query": [sp_dir_if, sp_dir_math]},                       solo_dir_if_p4),
-        ("Alg1_Split_M@P2_I@P4",   {"sp_pre_query": [sp_alg1_math], "sp_post_query": [sp_alg1_if]},  solo_alg1_if_p4),
-        ("Alg1_Split_I@P2_M@P4",   {"sp_pre_query": [sp_alg1_if],   "sp_post_query": [sp_alg1_math]}, solo_alg1_if_p2),
-        ("Alg1_Adj_M_I@P2",        {"sp_pre_query": [sp_alg1_math, sp_alg1_if]},                      solo_alg1_if_p2),
-        ("Alg1_Adj_I_M@P2",        {"sp_pre_query": [sp_alg1_if, sp_alg1_math]},                      solo_alg1_if_p2),
-        ("Alg1_Adj_M_I@P4",        {"sp_post_query": [sp_alg1_math, sp_alg1_if]},                     solo_alg1_if_p4),
-        ("Alg1_Adj_I_M@P4",        {"sp_post_query": [sp_alg1_if, sp_alg1_math]},                     solo_alg1_if_p4),
+        ("Direct_Split_Math_PreQuery_IF_PostQuery", {"sp_pre_query": [sp_dir_math],  "sp_post_query": [sp_dir_if]},   solo_dir_if_post_query),
+        ("Direct_Split_IF_PreQuery_Math_PostQuery", {"sp_pre_query": [sp_dir_if],    "sp_post_query": [sp_dir_math]}, solo_dir_if_pre_query),
+        ("Direct_Adj_M_I@PreQuery",      {"sp_pre_query": [sp_dir_math, sp_dir_if]},                        solo_dir_if_pre_query),
+        ("Direct_Adj_I_M@PreQuery",      {"sp_pre_query": [sp_dir_if, sp_dir_math]},                        solo_dir_if_pre_query),
+        ("Direct_Adj_M_I@PostQuery",      {"sp_post_query": [sp_dir_math, sp_dir_if]},                       solo_dir_if_post_query),
+        ("Direct_Adj_I_M@PostQuery",      {"sp_post_query": [sp_dir_if, sp_dir_math]},                       solo_dir_if_post_query),
+        ("Alg1_Split_Math_PreQuery_IF_PostQuery",   {"sp_pre_query": [sp_alg1_math], "sp_post_query": [sp_alg1_if]},  solo_alg1_if_post_query),
+        ("Alg1_Split_IF_PreQuery_Math_PostQuery",   {"sp_pre_query": [sp_alg1_if],   "sp_post_query": [sp_alg1_math]}, solo_alg1_if_pre_query),
+        ("Alg1_Adj_M_I@PreQuery",        {"sp_pre_query": [sp_alg1_math, sp_alg1_if]},                      solo_alg1_if_pre_query),
+        ("Alg1_Adj_I_M@PreQuery",        {"sp_pre_query": [sp_alg1_if, sp_alg1_math]},                      solo_alg1_if_pre_query),
+        ("Alg1_Adj_M_I@PostQuery",        {"sp_post_query": [sp_alg1_math, sp_alg1_if]},                     solo_alg1_if_post_query),
+        ("Alg1_Adj_I_M@PostQuery",        {"sp_post_query": [sp_alg1_if, sp_alg1_math]},                     solo_alg1_if_post_query),
     ]
     for name, kw, ref_map in dual_specs:
         results["partA_split_and_adj_order"]["if"][name] = {}
@@ -359,15 +360,15 @@ def main():
         # Solo single-expert reference gains at this L_ctx
         solo_ref = {}
         for tag_s, m_s, kw_s in [
-            ("PR_Doc@P0",   "sp", {"sp_sys_start": [sp_pr_doc]}),
-            ("PR_Math@P0",  "sp", {"sp_sys_start": [sp_pr_math]}),
-            ("PR_IF@P0",    "sp", {"sp_sys_start": [sp_pr_if]}),
-            ("KV_Doc@P0",   "kv", {"kv_list": [kv_doc]}),
-            ("KV_Math@P0",  "kv", {"kv_list": [kv_math]}),
-            ("KV_IF@P0",    "kv", {"kv_list": [kv_if]}),
-            ("Alg1_Doc@P2", "sp", {"sp_pre_query": [sp_cscr_doc]}),
-            ("Alg1_Math@P2","sp", {"sp_pre_query": [sp_alg1_math]}),
-            ("Alg1_IF@P4",  "sp", {"sp_post_query": [sp_alg1_if]}),
+            ("PR_Doc@Start",   "sp", {"sp_sys_start": [sp_pr_doc]}),
+            ("PR_Math@Start",  "sp", {"sp_sys_start": [sp_pr_math]}),
+            ("PR_IF@Start",    "sp", {"sp_sys_start": [sp_pr_if]}),
+            ("KV_Doc@Start",   "kv", {"kv_list": [kv_doc]}),
+            ("KV_Math@Start",  "kv", {"kv_list": [kv_math]}),
+            ("KV_IF@Start",    "kv", {"kv_list": [kv_if]}),
+            ("Alg1_Doc@PreQuery", "sp", {"sp_pre_query": [sp_cscr_doc]}),
+            ("Alg1_Math@PreQuery","sp", {"sp_pre_query": [sp_alg1_math]}),
+            ("Alg1_IF@PostQuery",  "sp", {"sp_post_query": [sp_alg1_if]}),
         ]:
             vcache_s = doc_val_cache if "Doc" in tag_s else (math_val_cache if "Math" in tag_s else if_val_cache)
             bkl_s = base_d_kl[L] if "Doc" in tag_s else (base_m_kl[L] if "Math" in tag_s else base_if_kl[L])
@@ -377,10 +378,10 @@ def main():
         print(f"  [3-Exp {lkey:5s} Solo Ref] " + " | ".join(f"{k}={v:+.1f}%" for k, v in solo_ref.items()), flush=True)
 
         fams = [
-            ("PR_CSPD_P0_3Exp",        "pr"),
-            ("KVPD_P0_3Exp",           "kv"),
-            ("Alg1_Adj_P2_3Exp",       "a1_adj"),
-            ("Alg1_Split_P1P2P4_3Exp", "a1_split"),
+            ("PR_CSPD_Start_3Exp",        "pr"),
+            ("KVPD_Start_3Exp",           "kv"),
+            ("Alg1_Adj_PreQuery_3Exp",       "a1_adj"),
+            ("Alg1_Split_PostSys_PreQuery_PostQuery_3Exp", "a1_split"),
         ]
         for fam, mode in fams:
             per_perm = {}
@@ -441,13 +442,13 @@ def main():
     print("\n--- PART C1: MATH32 Split-Slot Swap (L=0 & L=4096) ---", flush=True)
     for L in [0, 4096]:
         results["partC_e2e_order_swap"]["math32"][str(L)] = {
-            "Alg1_Split_M@P2_I@P4": run_math_fast(
+            "Alg1_Split_Math_PreQuery_IF_PostQuery": run_math_fast(
                 student, tokenizer, tmpl, ctx_bundles[L], math32, mode="sp",
-                sp_pre_query=[sp_alg1_math], sp_post_query=[sp_alg1_if], tag="Alg1_Split_M@P2_I@P4",
+                sp_pre_query=[sp_alg1_math], sp_post_query=[sp_alg1_if], tag="Alg1_Split_Math_PreQuery_IF_PostQuery",
             ),
-            "Alg1_Split_I@P2_M@P4": run_math_fast(
+            "Alg1_Split_IF_PreQuery_Math_PostQuery": run_math_fast(
                 student, tokenizer, tmpl, ctx_bundles[L], math32, mode="sp",
-                sp_pre_query=[sp_alg1_if], sp_post_query=[sp_alg1_math], tag="Alg1_Split_I@P2_M@P4",
+                sp_pre_query=[sp_alg1_if], sp_post_query=[sp_alg1_math], tag="Alg1_Split_IF_PreQuery_Math_PostQuery",
             ),
         }
         save_results(results)
@@ -455,31 +456,31 @@ def main():
     print("\n--- PART C2: IFBench32 Order-Swap Across Split CRSP, PR-CSPD & KV-PD (L=0 & L=4096) ---", flush=True)
     for L in [0, 4096]:
         blk = {
-            "Alg1_Split_M@P2_I@P4": run_ifbench_fast(
+            "Alg1_Split_Math_PreQuery_IF_PostQuery": run_ifbench_fast(
                 student, tokenizer, tmpl, ctx_bundles[L], ifbench32, mode="sp",
-                sp_pre_query=[sp_alg1_math], sp_post_query=[sp_alg1_if], tag="Alg1_Split_M@P2_I@P4",
+                sp_pre_query=[sp_alg1_math], sp_post_query=[sp_alg1_if], tag="Alg1_Split_Math_PreQuery_IF_PostQuery",
             ),
-            "Alg1_Split_I@P2_M@P4": run_ifbench_fast(
+            "Alg1_Split_IF_PreQuery_Math_PostQuery": run_ifbench_fast(
                 student, tokenizer, tmpl, ctx_bundles[L], ifbench32, mode="sp",
-                sp_pre_query=[sp_alg1_if], sp_post_query=[sp_alg1_math], tag="Alg1_Split_I@P2_M@P4",
+                sp_pre_query=[sp_alg1_if], sp_post_query=[sp_alg1_math], tag="Alg1_Split_IF_PreQuery_Math_PostQuery",
             ),
         }
         if L == 4096:
-            blk["PR_CSPD_P0_Math_IF"] = run_ifbench_fast(
+            blk["PR_CSPD_Start_Math_IF"] = run_ifbench_fast(
                 student, tokenizer, tmpl, ctx_bundles[L], ifbench32, mode="sp",
-                sp_sys_start=[sp_pr_math, sp_pr_if], tag="PR_CSPD_P0_Math_IF",
+                sp_sys_start=[sp_pr_math, sp_pr_if], tag="PR_CSPD_Start_Math_IF",
             )
-            blk["PR_CSPD_P0_IF_Math"] = run_ifbench_fast(
+            blk["PR_CSPD_Start_IF_Math"] = run_ifbench_fast(
                 student, tokenizer, tmpl, ctx_bundles[L], ifbench32, mode="sp",
-                sp_sys_start=[sp_pr_if, sp_pr_math], tag="PR_CSPD_P0_IF_Math",
+                sp_sys_start=[sp_pr_if, sp_pr_math], tag="PR_CSPD_Start_IF_Math",
             )
-            blk["KVPD_P0_Math_IF"] = run_ifbench_fast(
+            blk["KVPD_Start_Math_IF"] = run_ifbench_fast(
                 student, tokenizer, tmpl, ctx_bundles[L], ifbench32, mode="kv",
-                kv_list=[kv_math, kv_if], tag="KVPD_P0_Math_IF",
+                kv_list=[kv_math, kv_if], tag="KVPD_Start_Math_IF",
             )
-            blk["KVPD_P0_IF_Math"] = run_ifbench_fast(
+            blk["KVPD_Start_IF_Math"] = run_ifbench_fast(
                 student, tokenizer, tmpl, ctx_bundles[L], ifbench32, mode="kv",
-                kv_list=[kv_if, kv_math], tag="KVPD_P0_IF_Math",
+                kv_list=[kv_if, kv_math], tag="KVPD_Start_IF_Math",
             )
         results["partC_e2e_order_swap"]["ifbench32"][str(L)] = blk
         save_results(results)
@@ -487,13 +488,13 @@ def main():
     print("\n--- PART C3: IFEval48 Split-Slot Swap (L=0 & L=4096) ---", flush=True)
     for L in [0, 4096]:
         results["partC_e2e_order_swap"]["ifeval48"][str(L)] = {
-            "Alg1_Split_M@P2_I@P4": run_ifeval_fast(
+            "Alg1_Split_Math_PreQuery_IF_PostQuery": run_ifeval_fast(
                 student, tokenizer, tmpl, ctx_bundles[L], ifeval48, mode="sp",
-                sp_pre_query=[sp_alg1_math], sp_post_query=[sp_alg1_if], tag="Alg1_Split_M@P2_I@P4",
+                sp_pre_query=[sp_alg1_math], sp_post_query=[sp_alg1_if], tag="Alg1_Split_Math_PreQuery_IF_PostQuery",
             ),
-            "Alg1_Split_I@P2_M@P4": run_ifeval_fast(
+            "Alg1_Split_IF_PreQuery_Math_PostQuery": run_ifeval_fast(
                 student, tokenizer, tmpl, ctx_bundles[L], ifeval48, mode="sp",
-                sp_pre_query=[sp_alg1_if], sp_post_query=[sp_alg1_math], tag="Alg1_Split_I@P2_M@P4",
+                sp_pre_query=[sp_alg1_if], sp_post_query=[sp_alg1_math], tag="Alg1_Split_IF_PreQuery_Math_PostQuery",
             ),
         }
         save_results(results)

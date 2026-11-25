@@ -1,4 +1,5 @@
 """
+Paper Reference: Section 2.3 (Eqs. 7–10), Section 5 (Layerwise KV-PD & Delta Patch).
 Direct Layerwise KV-Cache Prefix Distillation (KV-CSPD / Cartridge-Style Prefix)
 for Frozen Qwen3 (and compatible HuggingFace Transformers 5.x CausalLMs).
 

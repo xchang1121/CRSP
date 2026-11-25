@@ -1,4 +1,5 @@
 """
+Paper Reference: Section 4.2, Fig. 5 (CSPD Mechanistic Analysis, Attention Pathways & PR Ablation).
 Stage A (v2 Clean Reproduction): Faithful Reproduction of Composable Soft-Prompt Distillation (CSPD)
 Paper: "Composable Soft-Prompt Distillation of RL Experts: Toward Continual Post-Training" (2026)
 

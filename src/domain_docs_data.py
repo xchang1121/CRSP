@@ -1,4 +1,5 @@
 """
+Paper Reference: Section 3.2, Section 4.2, Section 5.2 (3-Domain Unseen Synthetic Private Docs).
 Zero-Leakage Synthetic Vertical-Domain Document Continual Learning Benchmark.
 
 Three completely novel enterprise vertical-domain documents (unseen during pretraining):

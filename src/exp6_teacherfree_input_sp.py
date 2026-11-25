@@ -1,4 +1,5 @@
 """
+Paper Reference: Section 6.1 (Single-Slot Teacher-Free Baselines: RFT, iRFT, DPO, GRPO, KV2SP).
 Suite 4 (exp6): Teacher-Free Input-Space Soft Prompt Acquisition & Arbitrary-Context Assembly
 ===========================================================================================
 ZERO Post-RL teacher models are ever loaded or used during training!

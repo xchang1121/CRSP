@@ -1,23 +1,24 @@
 """
+Paper Reference: Section 2.4 (Eqs. 1, 11), Section 6.1, Table 6, Fig. 9 (6-Slot CRSP & L_inv).
 Suite 5 (exp7): Arbitrary-Position Insertion & Context-Robust Soft Prompt Distillation (CR-SP)
 ==============================================================================================
 Investigates:
   1. How Input-Space Soft Prompts behave when inserted NOT ONLY at Position 0, but dynamically
      across realistic arbitrary-context positions:
-       - P0_Clean_Start      : <|im_start|>system\n [P] <|im_end|>\n <|im_start|>user\n [Q]
-       - P1_MidSys_Persona   : <|im_start|>system\n [120-tok Enterprise Persona] [P] <|im_end|>
-       - P2_MultiTurn_Mid    : [Persona] + [2-Turn Dialog History ~360 tok] + user([P] [Q])
-       - P3_PostRAG_Doc      : [Persona] + user([420-tok RAG/Tool Context] [P] [Q])
-       - P4_PostQuery_Suffix : [Persona] + [2-Turn Dialog History] + user([Q] [P])  (Late Injection! 0 prefix KV recompute!)
-       - P5_LongDrift_1000   : [Persona] + [2-Turn History] + [420-tok RAG] + user([P] [Q]) (~950 tok pre-context!)
+       - Start_Clean      : <|im_start|>system\n [P] <|im_end|>\n <|im_start|>user\n [Q]
+       - PostSys_Persona   : <|im_start|>system\n [120-tok Enterprise Persona] [P] <|im_end|>
+       - PreQuery_MultiTurn    : [Persona] + [2-Turn Dialog History ~360 tok] + user([P] [Q])
+       - PostRAG_Doc      : [Persona] + user([420-tok RAG/Tool Context] [P] [Q])
+       - PostQuery_Suffix : [Persona] + [2-Turn Dialog History] + user([Q] [P])  (Late Injection! 0 prefix KV recompute!)
+       - LongOffset_1000   : [Persona] + [2-Turn History] + [420-tok RAG] + user([P] [Q]) (~950 tok pre-context!)
 
   2. How to distill genuinely CONTEXT-ROBUST Input-Space Soft Prompts (CR-SP):
      Track A (Teacher-Distilled from M2RL-RL_IF dense Top-64 logits, identical step budget):
-       - A1_Pos0_Only_SP     : Vanilla position-0 distillation (no context augmentation)
+       - A1_StartOnly_Only_SP     : Vanilla position-0 distillation (no context augmentation)
        - A2_Paper_PR_SP      : Original CSPD random-token prefix inside system turn (Zhang et al., 2026)
-       - A3_MultiSlot_CR_SP  : Multi-Slot Structural Context-Robust Distillation (P0/P1/P2/P3/P4 sampling)
+       - A3_MultiSlot_CR_SP  : Multi-Slot Structural Context-Robust Distillation (start/post_system/pre_query/post_rag/post_query sampling)
        - A4_Full_CR_SP_Inv   : Full CR-SP = Multi-Slot + Boundary Anchor Framing + Dual-View Cross-Context
-                               Logit-Invariance Consistency Loss (L_inv: JS/KL(sg(p_P0) || p_s))!
+                               Logit-Invariance Consistency Loss (L_inv: JS/KL(sg(p_Start) || p_s))!
        - A5_CR_SP_Compact_L64: Compact 4x shorter (L=64) Full CR-SP ablation
      Track B (Teacher-Free, ZERO Post-RL Teacher! Reuses exp6 TF-KV L16 scaffold):
        - B0_exp6_TF_KV2SP    : Baseline TF-KV2SP from exp6 (trained inside system turn only)
@@ -26,12 +27,12 @@ Investigates:
        - KV_Fixed_L16        : Fixed Layerwise KV-Prefix (locked at absolute position 0)
 
   3. Comprehensive Evaluation:
-     - Full 8-Method x 6-Position (P0..P5) Distributional Matrix:
+     - Full 8-Method x 6-Position (start..long_offset) Distributional Matrix:
          * Exact KL Gap Closed G(P, s) vs Teacher
-         * Positional Behavioral Drift KL(p_P0 || p_s) (measures invariance across insertion positions!)
+         * Positional Behavioral Drift KL(p_Start || p_s) (measures invariance across insertion positions!)
          * Layerwise Hidden-State Cosine Invariance cos(H_l(P | C_s), H_l(P | Clean)) at layers [0, 9, 18, 27, 35]
-     - IFBench32 Real End-to-End Generation across P0, P2 (Multi-Turn), P3 (Post-RAG),
-       P4 (Post-Query Late Injection), AND Split-Position Multi-Expert Assembly ([Sys: Math] + [History] + [Q + CR-IF])!
+     - IFBench32 Real End-to-End Generation across Start, PreQuery (Multi-Turn), PostRAG (Post-RAG),
+       PostQuery (Post-Query Late Injection), AND Split-Position Multi-Expert Assembly ([Sys: Math] + [History] + [Q + CR-IF])!
 """
 
 import json
@@ -330,19 +331,19 @@ def build_regime_inputs(
     device: torch.device, model_dtype: torch.dtype,
     split_early_sp: Optional[List[torch.Tensor]] = None,
 ):
-    """Map named evaluation regime (P0..P5 or P_split) cleanly onto build_multislot_sp_inputs."""
-    if regime == "P0_Clean_Start":
+    """Map named evaluation regime (start..long_offset or P_split) cleanly onto build_multislot_sp_inputs."""
+    if regime == "Start_Clean":
         return build_multislot_sp_inputs(
             embed_layer, tmpl, question_ids, response_ids,
             sp_sys_start=soft_prompts, device=device, model_dtype=model_dtype,
         )
-    elif regime == "P1_MidSys_Persona":
+    elif regime == "PostSys_Persona":
         return build_multislot_sp_inputs(
             embed_layer, tmpl, question_ids, response_ids,
             sys_text_ids=eval_ctx["persona_ids"], sp_sys_end=soft_prompts,
             device=device, model_dtype=model_dtype,
         )
-    elif regime == "P2_MultiTurn_Mid":
+    elif regime == "PreQuery_MultiTurn":
         return build_multislot_sp_inputs(
             embed_layer, tmpl, question_ids, response_ids,
             sys_text_ids=eval_ctx["persona_ids"],
@@ -350,7 +351,7 @@ def build_regime_inputs(
             sp_pre_query=soft_prompts,
             device=device, model_dtype=model_dtype,
         )
-    elif regime == "P3_PostRAG_Doc":
+    elif regime == "PostRAG_Doc":
         return build_multislot_sp_inputs(
             embed_layer, tmpl, question_ids, response_ids,
             sys_text_ids=eval_ctx["persona_ids"],
@@ -358,7 +359,7 @@ def build_regime_inputs(
             sp_pre_query=soft_prompts,
             device=device, model_dtype=model_dtype,
         )
-    elif regime == "P4_PostQuery_Suffix":
+    elif regime == "PostQuery_Suffix":
         return build_multislot_sp_inputs(
             embed_layer, tmpl, question_ids, response_ids,
             sys_text_ids=eval_ctx["persona_ids"],
@@ -366,7 +367,7 @@ def build_regime_inputs(
             sp_post_query=soft_prompts,
             device=device, model_dtype=model_dtype,
         )
-    elif regime == "P5_LongDrift_1000":
+    elif regime == "LongOffset_1000":
         return build_multislot_sp_inputs(
             embed_layer, tmpl, question_ids, response_ids,
             sys_text_ids=eval_ctx["persona_ids"],
@@ -444,15 +445,15 @@ def eval_ifbench32_regime(
         model, tokenizer, tmpl, eval_ctx, regime, prompts, soft_prompts,
         split_early_sp=split_early_sp, batch_size=32, max_new_tokens=2048,
     )
-    p2r = {}
+    pre_query_res = {}
     closed = 0
     for inp, r in zip(inps32, outs):
         closed += int("</think>" in r)
-        p2r[inp.prompt] = strip_thinking(r)
-    s_ok = sum(int(ifbench_eval.test_instruction_following_strict(inp, p2r).follow_all_instructions) for inp in inps32)
+        pre_query_res[inp.prompt] = strip_thinking(r)
+    s_ok = sum(int(ifbench_eval.test_instruction_following_strict(inp, pre_query_res).follow_all_instructions) for inp in inps32)
     inst_l = []
     for inp in inps32:
-        inst_l.extend(ifbench_eval.test_instruction_following_strict(inp, p2r).follow_instruction_list)
+        inst_l.extend(ifbench_eval.test_instruction_following_strict(inp, pre_query_res).follow_instruction_list)
     n = len(inps32)
     res = {
         "regime": regime,
@@ -631,16 +632,16 @@ def cross_context_invariance_kl(z_clean: torch.Tensor, z_ctx: torch.Tensor, topk
     """
     Behavioral Invariance Regularizer L_inv:
     Pulls arbitrary-context response distribution p(y | Insert_s(C, P, x)) toward
-    stop-gradient clean distribution sg(p(y | P0(P, x))) over the Top-32 support of z_clean.
+    stop-gradient clean distribution sg(p(y | Start(P, x))) over the Top-32 support of z_clean.
     """
     n = min(z_clean.size(0), z_ctx.size(0))
     with torch.no_grad():
-        p0_full = F.softmax(z_clean[:n].float(), dim=-1)
-        p0_top, idx = torch.topk(p0_full, topk, dim=-1)
-        p0_top = p0_top / p0_top.sum(dim=-1, keepdim=True)
-        ent0 = -(p0_top * p0_top.clamp_min(1e-8).log()).sum(dim=-1)
+        start_full = F.softmax(z_clean[:n].float(), dim=-1)
+        start_top, idx = torch.topk(start_full, topk, dim=-1)
+        start_top = start_top / start_top.sum(dim=-1, keepdim=True)
+        ent0 = -(start_top * start_top.clamp_min(1e-8).log()).sum(dim=-1)
     ctx_lp = F.log_softmax(z_ctx[:n].float(), dim=-1).gather(-1, idx)
-    ce = -(p0_top * ctx_lp).sum(dim=-1)
+    ce = -(start_top * ctx_lp).sum(dim=-1)
     return (ce - ent0).clamp_min(0.0).mean()
 
 
@@ -660,26 +661,26 @@ def sample_train_slot_view(
         u = rng.random()
         persona = rng.choice(train_pools["personas"])
         if u < 0.14:
-            # P0: Clean Start
+            # Start: Clean Start
             return {"sp_sys_start": [sp]}
         elif u < 0.30:
-            # P1: After Dynamic System Persona (optionally extended with random tokens)
+            # PostSys: After Dynamic System Persona (optionally extended with random tokens)
             sys_ids = persona
             if rng.random() < 0.4:
                 sys_ids = sys_ids + sample_random_prefix(train_pools["stream"], rng, 48, 160)
             return {"sys_text_ids": sys_ids, "sp_sys_end": [sp]}
         elif u < 0.56:
-            # P2: Mid-Turn after 1-3 realistic user/assistant dialogue turns!
+            # PreQuery: Mid-Turn after 1-3 realistic user/assistant dialogue turns!
             k_turns = rng.randint(1, 3)
             hist = rng.sample(train_pools["turns"], k_turns)
             return {"sys_text_ids": persona, "history_turns_ids": hist, "sp_pre_query": [sp]}
         elif u < 0.76:
-            # P3: Post-RAG chunk (optionally with 1 prior turn too!)
+            # PostRAG: Post-RAG chunk (optionally with 1 prior turn too!)
             rag = rng.choice(train_pools["rags"])
             hist = rng.sample(train_pools["turns"], 1) if rng.random() < 0.4 else None
             return {"sys_text_ids": persona, "history_turns_ids": hist, "rag_ids": rag, "sp_pre_query": [sp]}
         else:
-            # P4: Post-Query Suffix (Late Injection AFTER user query!)
+            # PostQuery: Post-Query Suffix (Late Injection AFTER user query!)
             k_turns = rng.randint(0, 2)
             hist = rng.sample(train_pools["turns"], k_turns) if k_turns > 0 else None
             rag = rng.choice(train_pools["rags"]) if rng.random() < 0.25 else None
@@ -722,17 +723,17 @@ def train_sp_variant(
         tot_dist, tot_inv = 0.0, 0.0
 
         if mode == "full_cr_inv":
-            # Dual-View Cross-Context Consistency: pair clean P0 view with arbitrary-slot view per sample!
+            # Dual-View Cross-Context Consistency: pair clean Start view with arbitrary-slot view per sample!
             for item in batch:
                 qi, ri = item["q_ids"], item["r_ids"]
                 ti = item["ti"].to(device)
                 tp = item["tp"].float().to(device)
 
-                # View 1: Clean P0
+                # View 1: Clean Start
                 e0, l0, _ = build_multislot_sp_inputs(
                     s_emb, tmpl, qi, ri, sp_sys_start=[sp], device=device, model_dtype=dtype
                 )
-                # View 2: Random Arbitrary Context Slot (P1..P4)
+                # View 2: Random Arbitrary Context Slot (PostSys..PostQuery)
                 slot_kw = sample_train_slot_view("full_cr_inv", rng, train_pools, sp)
                 ec, lc, _ = build_multislot_sp_inputs(
                     s_emb, tmpl, qi, ri, device=device, model_dtype=dtype, **slot_kw
@@ -862,12 +863,12 @@ def train_kv_distilled_l16(
 # ---------------------------------------------------------------------------
 
 REGIMES_ALL = [
-    "P0_Clean_Start",
-    "P1_MidSys_Persona",
-    "P2_MultiTurn_Mid",
-    "P3_PostRAG_Doc",
-    "P4_PostQuery_Suffix",
-    "P5_LongDrift_1000",
+    "Start_Clean",
+    "PostSys_Persona",
+    "PreQuery_MultiTurn",
+    "PostRAG_Doc",
+    "PostQuery_Suffix",
+    "LongOffset_1000",
 ]
 
 
@@ -878,13 +879,13 @@ def evaluate_position_matrix(
     kv_models: Optional[Dict[str, torch.Tensor]] = None,
 ) -> Dict[str, Any]:
     """
-    Computes across ALL 6 context/insertion regimes (P0..P5):
+    Computes across ALL 6 context/insertion regimes (start..long_offset):
       1. Exact Student baseline KL to clean RL Teacher under each context regime C_s
       2. Exact KL Gap Closed G(P, s) = 1 - KL(T || S(C_s, P)) / KL(T || S(C_s))
-      3. Exact Positional Behavioral Drift KL(p(y|P0(P)) || p(y|Insert_s(C_s, P)))
-      4. Layerwise Hidden-State Representation Invariance cos(H_l(P | C_s), H_l(P | P0)) at layers [0, 9, 18, 27, 35]
+      3. Exact Positional Behavioral Drift KL(p(y|Start(P)) || p(y|Insert_s(C_s, P)))
+      4. Layerwise Hidden-State Representation Invariance cos(H_l(P | C_s), H_l(P | Start)) at layers [0, 9, 18, 27, 35]
     """
-    print("\n=== Step 3: Full 8-Method x 6-Position (P0..P5) Distributional & Hidden-Drift Matrix ===", flush=True)
+    print("\n=== Step 3: Full 8-Method x 6-Position (start..long_offset) Distributional & Hidden-Drift Matrix ===", flush=True)
     t0 = time.time()
     device = next(student.parameters()).device
     dtype = next(student.parameters()).dtype
@@ -914,24 +915,24 @@ def evaluate_position_matrix(
     # 2. Evaluate each Input-SP model across all 6 regimes
     for name, sp in sp_models.items():
         m_res: Dict[str, Any] = {}
-        # Cache P0 logits (Top-32) & P0 hidden states of P on first 6 eval samples for drift/cosine
-        p0_top_cache = []
-        p0_h_cache = []
+        # Cache Start logits (Top-32) & Start hidden states of P on first 6 eval samples for drift/cosine
+        start_top_cache = []
+        start_h_cache = []
         for idx_i, item in enumerate(eval_cache):
             want_h = idx_i < 6
-            e, l, spans = build_regime_inputs(s_emb, tmpl, tokenizer, "P0_Clean_Start", [sp], item["q_ids"], item["r_ids"], eval_ctx, device, dtype)
+            e, l, spans = build_regime_inputs(s_emb, tmpl, tokenizer, "Start_Clean", [sp], item["q_ids"], item["r_ids"], eval_ctx, device, dtype)
             out = student(inputs_embeds=e, output_hidden_states=want_h)
             sl = out.logits[0, :-1, :].float()
             m = l[0, 1:] != -100
             z = sl[m]
-            p0_full = F.softmax(z, dim=-1)
-            p0_tp, p0_ti = torch.topk(p0_full, 32, dim=-1)
-            p0_tp = p0_tp / p0_tp.sum(dim=-1, keepdim=True)
-            p0_ent = -(p0_tp * p0_tp.clamp_min(1e-8).log()).sum(dim=-1)
-            p0_top_cache.append((p0_ti.cpu(), p0_tp.to(torch.float16).cpu(), p0_ent.cpu()))
+            start_full = F.softmax(z, dim=-1)
+            start_tp, start_ti = torch.topk(start_full, 32, dim=-1)
+            start_tp = start_tp / start_tp.sum(dim=-1, keepdim=True)
+            start_ent = -(start_tp * start_tp.clamp_min(1e-8).log()).sum(dim=-1)
+            start_top_cache.append((start_ti.cpu(), start_tp.to(torch.float16).cpu(), start_ent.cpu()))
             if want_h:
                 s0, s1 = spans["sp_primary"]
-                p0_h_cache.append({str(ly): out.hidden_states[ly][0, s0:s1, :].float().cpu() for ly in probe_layers})
+                start_h_cache.append({str(ly): out.hidden_states[ly][0, s0:s1, :].float().cpu() for ly in probe_layers})
             del e, l, out
 
         row_str = []
@@ -951,48 +952,48 @@ def evaluate_position_matrix(
                 z_lp = F.log_softmax(z[:n], dim=-1)
                 ce = -(tp[:n] * z_lp.gather(-1, ti[:n])).sum(dim=-1)
                 kls.append(float((ce - ent[:n]).clamp_min(0.0).mean().item()))
-                # Drift KL(p_P0 || p_s)
-                p0_ti, p0_tp, p0_ent = p0_top_cache[idx_i]
-                p0_ti, p0_tp, p0_ent = p0_ti.to(device), p0_tp.float().to(device), p0_ent.to(device)
-                n2 = min(z.size(0), p0_ti.size(0))
-                ce_d = -(p0_tp[:n2] * F.log_softmax(z[:n2], dim=-1).gather(-1, p0_ti[:n2])).sum(dim=-1)
-                drifts.append(float((ce_d - p0_ent[:n2]).clamp_min(0.0).mean().item()))
+                # Drift KL(p_Start || p_s)
+                start_ti, start_tp, start_ent = start_top_cache[idx_i]
+                start_ti, start_tp, start_ent = start_ti.to(device), start_tp.float().to(device), start_ent.to(device)
+                n2 = min(z.size(0), start_ti.size(0))
+                ce_d = -(start_tp[:n2] * F.log_softmax(z[:n2], dim=-1).gather(-1, start_ti[:n2])).sum(dim=-1)
+                drifts.append(float((ce_d - start_ent[:n2]).clamp_min(0.0).mean().item()))
                 # Hidden-state cosine invariance of P across layers
                 if want_h:
                     s0, s1 = spans["sp_primary"]
                     for ly in probe_layers:
                         h_cur = out.hidden_states[ly][0, s0:s1, :].float()
-                        h_ref = p0_h_cache[idx_i][str(ly)].to(device)
+                        h_ref = start_h_cache[idx_i][str(ly)].to(device)
                         cs = F.cosine_similarity(h_cur, h_ref, dim=-1).mean().item()
                         layer_cos[str(ly)].append(float(cs))
                 del e, l, out
 
             mean_kl = sum(kls) / max(1, len(kls))
             g_pct = round(100.0 * (1.0 - mean_kl / max(base_kl[reg], 1e-8)), 2)
-            # Also track G relative to clean P0 bare student baseline (absolute alignment quality!)
-            g_abs = round(100.0 * (1.0 - mean_kl / max(base_kl["P0_Clean_Start"], 1e-8)), 2)
+            # Also track G relative to clean Start bare student baseline (absolute alignment quality!)
+            g_abs = round(100.0 * (1.0 - mean_kl / max(base_kl["Start_Clean"], 1e-8)), 2)
             mean_drift = round(sum(drifts) / max(1, len(drifts)), 5)
             h_cos_avg = {k: round(sum(v) / max(1, len(v)), 4) for k, v in layer_cos.items()}
             m_res[reg] = {
                 "kl": round(mean_kl, 5),
                 "G_vs_ctx_student_pct": g_pct,
                 "G_vs_clean_student_pct": g_abs,
-                "drift_kl_from_P0": mean_drift,
-                "hidden_cos_vs_P0": h_cos_avg,
+                "drift_kl_from_Start": mean_drift,
+                "hidden_cos_vs_Start": h_cos_avg,
             }
             row_str.append(f"{reg[:2]}:{g_pct:+5.1f}%(d={mean_drift:.3f})")
-        # Compute worst-case & average G across non-P0 arbitrary-context regimes P1..P5
+        # Compute worst-case & average G across non-start arbitrary-context regimes post_system..long_offset
         arb_gs = [m_res[r]["G_vs_ctx_student_pct"] for r in REGIMES_ALL[1:]]
-        arb_drifts = [m_res[r]["drift_kl_from_P0"] for r in REGIMES_ALL[1:]]
+        arb_drifts = [m_res[r]["drift_kl_from_Start"] for r in REGIMES_ALL[1:]]
         m_res["summary"] = {
-            "G_P0": m_res["P0_Clean_Start"]["G_vs_ctx_student_pct"],
-            "G_arb_mean_P1_P5": round(sum(arb_gs) / len(arb_gs), 2),
-            "G_arb_min_P1_P5": round(min(arb_gs), 2),
-            "drift_mean_P1_P5": round(sum(arb_drifts) / len(arb_drifts), 5),
-            "retention_ratio_pct": round(100.0 * (sum(arb_gs) / len(arb_gs)) / max(1.0, m_res["P0_Clean_Start"]["G_vs_ctx_student_pct"]), 1),
+            "G_Start": m_res["Start_Clean"]["G_vs_ctx_student_pct"],
+            "G_arb_mean_NonStart": round(sum(arb_gs) / len(arb_gs), 2),
+            "G_arb_min_NonStart": round(min(arb_gs), 2),
+            "drift_mean_NonStart": round(sum(arb_drifts) / len(arb_drifts), 5),
+            "retention_ratio_pct": round(100.0 * (sum(arb_gs) / len(arb_gs)) / max(1.0, m_res["Start_Clean"]["G_vs_ctx_student_pct"]), 1),
         }
         matrix["methods"][name] = m_res
-        print(f"  [{name:20s}] " + " | ".join(row_str) + f" || ArbMean={m_res['summary']['G_arb_mean_P1_P5']:+5.1f}%", flush=True)
+        print(f"  [{name:20s}] " + " | ".join(row_str) + f" || ArbMean={m_res['summary']['G_arb_mean_NonStart']:+5.1f}%", flush=True)
 
     # 3. Also evaluate Fixed KV L16 contrasts (forced at absolute position 0 before all dynamic context!)
     if kv_models:
@@ -1007,15 +1008,15 @@ def evaluate_position_matrix(
                 for item in eval_cache:
                     # Build token IDs equivalent to regime (KV MUST sit at absolute position 0!)
                     ids = list(tmpl.sys_open)
-                    if reg != "P0_Clean_Start":
+                    if reg != "Start_Clean":
                         ids += list(eval_ctx["persona_ids"])
                     ids += list(tmpl.im_end)
-                    if reg in ("P2_MultiTurn_Mid", "P4_PostQuery_Suffix", "P5_LongDrift_1000"):
-                        turns = eval_ctx["history_ids"] * (2 if reg == "P5_LongDrift_1000" else 1)
+                    if reg in ("PreQuery_MultiTurn", "PostQuery_Suffix", "LongOffset_1000"):
+                        turns = eval_ctx["history_ids"] * (2 if reg == "LongOffset_1000" else 1)
                         for u_i, a_i in turns:
                             ids += user_open + u_i + tmpl.im_end + asst_open + a_i + tmpl.im_end
                     ids += user_open
-                    if reg in ("P3_PostRAG_Doc", "P5_LongDrift_1000"):
+                    if reg in ("PostRAG_Doc", "LongOffset_1000"):
                         ids += list(eval_ctx["rag_ids"])
                     ids += list(item["q_ids"]) + list(tmpl.user_close_asst_open)
                     prompt_len = len(ids)
@@ -1038,12 +1039,12 @@ def evaluate_position_matrix(
                 row_str.append(f"{reg[:2]}:{g_pct:+5.1f}%")
             arb_gs = [kv_res[r]["G_vs_ctx_student_pct"] for r in REGIMES_ALL[1:]]
             kv_res["summary"] = {
-                "G_P0": kv_res["P0_Clean_Start"]["G_vs_ctx_student_pct"],
-                "G_arb_mean_P1_P5": round(sum(arb_gs) / len(arb_gs), 2),
-                "G_arb_min_P1_P5": round(min(arb_gs), 2),
+                "G_Start": kv_res["Start_Clean"]["G_vs_ctx_student_pct"],
+                "G_arb_mean_NonStart": round(sum(arb_gs) / len(arb_gs), 2),
+                "G_arb_min_NonStart": round(min(arb_gs), 2),
             }
             matrix["methods"][kv_name] = kv_res
-            print(f"  [{kv_name:20s}] " + " | ".join(row_str) + f" || ArbMean={kv_res['summary']['G_arb_mean_P1_P5']:+5.1f}%", flush=True)
+            print(f"  [{kv_name:20s}] " + " | ".join(row_str) + f" || ArbMean={kv_res['summary']['G_arb_mean_NonStart']:+5.1f}%", flush=True)
 
     print(f"  Position matrix completed in {time.time()-t0:.1f}s", flush=True)
     return matrix
@@ -1106,9 +1107,9 @@ def main():
 
     sp_a1, meta_a1 = train_sp_variant(
         student, tokenizer, tmpl, teacher_train_cache, train_pools,
-        mode="pos0_only", num_vectors=256, num_updates=45, anchored=False, tag="A1_Pos0_Only_SP",
+        mode="pos0_only", num_vectors=256, num_updates=45, anchored=False, tag="A1_StartOnly_Only_SP",
     )
-    results["train_meta"]["A1_Pos0_Only_SP"] = meta_a1
+    results["train_meta"]["A1_StartOnly_Only_SP"] = meta_a1
     torch.save(sp_a1.cpu(), os.path.join(OUT_DIR, "sp_a1_pos0.pt"))
     save()
 
@@ -1174,7 +1175,7 @@ def main():
 
     # Step 3: Full 9-Method x 6-Position Distributional Matrix & Hidden-State Drift
     sp_models: Dict[str, torch.Tensor] = {
-        "A1_Pos0_Only_SP": sp_a1,
+        "A1_StartOnly_Only_SP": sp_a1,
         "A2_Paper_PR_SP": sp_a2,
         "A3_MultiSlot_CR_SP": sp_a3,
         "A4_Full_CR_SP_Inv": sp_a4,
@@ -1196,35 +1197,35 @@ def main():
 
     # Step 4: IFBench32 Real End-to-End Evaluation across Insertion Positions!
     print("\n=== Step 4: IFBench32 End-to-End Evaluation across Insertion Positions ===", flush=True)
-    # P0 Clean Start
-    results["ifbench32_by_position"]["P0_Student"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "P0_Clean_Start", [], tag="P0-Start: Student")
-    results["ifbench32_by_position"]["P0_A1_Pos0_Only"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "P0_Clean_Start", [sp_a1], tag="P0-Start: A1 Pos0-Only")
-    results["ifbench32_by_position"]["P0_A4_Full_CR_Inv"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "P0_Clean_Start", [sp_a4], tag="P0-Start: A4 Full CR-SP")
+    # Start Clean Start
+    results["ifbench32_by_position"]["Start_Student"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "Start_Clean", [], tag="Start: Student")
+    results["ifbench32_by_position"]["Start_A1_StartOnly_Only"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "Start_Clean", [sp_a1], tag="Start: A1 StartOnly-Only")
+    results["ifbench32_by_position"]["Start_A4_Full_CR_Inv"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "Start_Clean", [sp_a4], tag="Start: A4 Full CR-SP")
     if sp_b1 is not None:
-        results["ifbench32_by_position"]["P0_B1_CR_TF_KV2SP"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "P0_Clean_Start", [sp_b1], tag="P0-Start: B1 CR-TF-KV2SP")
+        results["ifbench32_by_position"]["Start_B1_CR_TF_KV2SP"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "Start_Clean", [sp_b1], tag="Start: B1 CR-TF-KV2SP")
     save()
 
-    # P2 Multi-Turn Mid-Dialog Insertion (after 2 real chat turns, before new user query!)
-    results["ifbench32_by_position"]["P2_Student"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "P2_MultiTurn_Mid", [], tag="P2-MultiTurn: Student")
-    results["ifbench32_by_position"]["P2_A1_Pos0_Only"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "P2_MultiTurn_Mid", [sp_a1], tag="P2-MultiTurn: A1 Pos0-Only")
-    results["ifbench32_by_position"]["P2_A2_Paper_PR"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "P2_MultiTurn_Mid", [sp_a2], tag="P2-MultiTurn: A2 Paper-PR")
-    results["ifbench32_by_position"]["P2_A4_Full_CR_Inv"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "P2_MultiTurn_Mid", [sp_a4], tag="P2-MultiTurn: A4 Full CR-SP")
+    # PreQuery Multi-Turn Mid-Dialog Insertion (after 2 real chat turns, before new user query!)
+    results["ifbench32_by_position"]["PreQuery_Student"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "PreQuery_MultiTurn", [], tag="PreQuery-MultiTurn: Student")
+    results["ifbench32_by_position"]["PreQuery_A1_StartOnly_Only"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "PreQuery_MultiTurn", [sp_a1], tag="PreQuery-MultiTurn: A1 StartOnly-Only")
+    results["ifbench32_by_position"]["PreQuery_A2_Paper_PR"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "PreQuery_MultiTurn", [sp_a2], tag="PreQuery-MultiTurn: A2 Paper-PR")
+    results["ifbench32_by_position"]["PreQuery_A4_Full_CR_Inv"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "PreQuery_MultiTurn", [sp_a4], tag="PreQuery-MultiTurn: A4 Full CR-SP")
     if sp_b1 is not None:
-        results["ifbench32_by_position"]["P2_B1_CR_TF_KV2SP"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "P2_MultiTurn_Mid", [sp_b1], tag="P2-MultiTurn: B1 CR-TF-KV2SP")
+        results["ifbench32_by_position"]["PreQuery_B1_CR_TF_KV2SP"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "PreQuery_MultiTurn", [sp_b1], tag="PreQuery-MultiTurn: B1 CR-TF-KV2SP")
     save()
 
-    # P3 Post-RAG Insertion (after 420-tok enterprise telemetry/RAG block!)
-    results["ifbench32_by_position"]["P3_Student"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "P3_PostRAG_Doc", [], tag="P3-PostRAG: Student")
-    results["ifbench32_by_position"]["P3_A1_Pos0_Only"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "P3_PostRAG_Doc", [sp_a1], tag="P3-PostRAG: A1 Pos0-Only")
-    results["ifbench32_by_position"]["P3_A4_Full_CR_Inv"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "P3_PostRAG_Doc", [sp_a4], tag="P3-PostRAG: A4 Full CR-SP")
+    # PostRAG Post-RAG Insertion (after 420-tok enterprise telemetry/RAG block!)
+    results["ifbench32_by_position"]["PostRAG_Student"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "PostRAG_Doc", [], tag="PostRAG: Student")
+    results["ifbench32_by_position"]["PostRAG_A1_StartOnly_Only"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "PostRAG_Doc", [sp_a1], tag="PostRAG: A1 StartOnly-Only")
+    results["ifbench32_by_position"]["PostRAG_A4_Full_CR_Inv"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "PostRAG_Doc", [sp_a4], tag="PostRAG: A4 Full CR-SP")
     save()
 
-    # P4 Post-Query Suffix (Late Injection AFTER user query — ZERO history/query KV recomputation!)
-    results["ifbench32_by_position"]["P4_A1_Pos0_Only"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "P4_PostQuery_Suffix", [sp_a1], tag="P4-PostQuery: A1 Pos0-Only")
-    results["ifbench32_by_position"]["P4_A2_Paper_PR"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "P4_PostQuery_Suffix", [sp_a2], tag="P4-PostQuery: A2 Paper-PR")
-    results["ifbench32_by_position"]["P4_A4_Full_CR_Inv"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "P4_PostQuery_Suffix", [sp_a4], tag="P4-PostQuery: A4 Full CR-SP")
+    # PostQuery Post-Query Suffix (Late Injection AFTER user query — ZERO history/query KV recomputation!)
+    results["ifbench32_by_position"]["PostQuery_A1_StartOnly_Only"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "PostQuery_Suffix", [sp_a1], tag="PostQuery: A1 StartOnly-Only")
+    results["ifbench32_by_position"]["PostQuery_A2_Paper_PR"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "PostQuery_Suffix", [sp_a2], tag="PostQuery: A2 Paper-PR")
+    results["ifbench32_by_position"]["PostQuery_A4_Full_CR_Inv"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "PostQuery_Suffix", [sp_a4], tag="PostQuery: A4 Full CR-SP")
     if sp_b1 is not None:
-        results["ifbench32_by_position"]["P4_B1_CR_TF_KV2SP"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "P4_PostQuery_Suffix", [sp_b1], tag="P4-PostQuery: B1 CR-TF-KV2SP")
+        results["ifbench32_by_position"]["PostQuery_B1_CR_TF_KV2SP"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "PostQuery_Suffix", [sp_b1], tag="PostQuery: B1 CR-TF-KV2SP")
     save()
 
     # Split-Position Multi-Expert Assembly: [Sys: Persona + TF_Math] + [2-Turn Hist] + [Query + A4_Full_CR_SP_Inv]!

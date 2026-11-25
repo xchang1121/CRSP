@@ -1,4 +1,5 @@
 """
+Paper Reference: Section 2.4 (Algorithm 2, Eqs. 12–13, 16–17), Section 6.2–6.3, Tables 7–9, Fig. 10–11.
 Suite 7 (exp9): Scaled Multi-Seed Algorithm B (CR-MS-GRPO+) & Zero-Interference
                 Multi-Expert Arbitrary-Slot Composition (IF + Math + Domain-Doc)
 ================================================================================
@@ -24,7 +25,7 @@ Two core research tracks requested as direct follow-up to Suite 6 (exp8):
       PLUS matched Naive Controls (without Co-Presence & without Null-Task Identity L_null).
     - Evaluates Single, 2-Expert Split, 2-Expert Permutation Invariance ([IF;Math] vs [Math;IF]),
       AND 3-EXPERT SIMULTANEOUS SPLIT-SLOT COMPOSITION:
-          [Persona + Doc@P1] + [2-Turn History] + [Math@P2 + Query + IF@P4]  (192 vecs total!)
+          [Persona + Doc@PostSys] + [2-Turn History] + [Math@PreQuery + Query + IF@PostQuery]  (192 vecs total!)
       across ALL THREE tasks (IFEval96, IFBench64, MATH48, HeliosPay Doc36) + exact
       Cross-Expert KL Interference Matrix!
 """
@@ -177,29 +178,29 @@ def sample_slot_view_cscr(
     foreign_pool: Optional[List[torch.Tensor]] = None, co_prob: float = 0.60,
 ) -> Tuple[Dict[str, Any], str]:
     """
-    Sample a multi-slot runtime context view covering P0_RandPre, P1_SysEnd, P2_MultiTurn,
-    P3_PostRAG, and P4_PostQuery. When foreign_pool is given, with probability co_prob also
+    Sample a multi-slot runtime context view covering Start_RandPre, PostSys, PreQuery_MultiTurn,
+    PostRAG, and PostQuery. When foreign_pool is given, with probability co_prob also
     inject 1 or 2 synthetic foreign L=64 SPs into UNUSED slots (Co-Presence Augmentation!).
     Returns (slot_kwargs, target_sp_key).
     """
-    slot = rng.choices(["P1_sys", "P2_turn", "P3_rag", "P4_post", "P0_rand"], weights=[0.18, 0.27, 0.20, 0.25, 0.10])[0]
+    slot = rng.choices(["PostSys_sys", "PreQuery_turn", "PostRAG_rag", "PostQuery_post", "Start_rand"], weights=[0.18, 0.27, 0.20, 0.25, 0.10])[0]
     kw: Dict[str, Any] = {}
-    if slot == "P0_rand":
+    if slot == "Start_rand":
         pre = sample_random_prefix(train_pools["stream"], rng, 32, 160)
         kw = {"sys_text_ids": pre, "sp_sys_end": [sp]}
         sp_key = "sp_sys_end"
-    elif slot == "P1_sys":
+    elif slot == "PostSys_sys":
         kw = {"sys_text_ids": rng.choice(train_pools["personas"]), "sp_sys_end": [sp]}
         sp_key = "sp_sys_end"
-    elif slot == "P2_turn":
+    elif slot == "PreQuery_turn":
         k_t = rng.choice([1, 2])
         turns = [rng.choice(train_pools["turns"]) for _ in range(k_t)]
         kw = {"sys_text_ids": rng.choice(train_pools["personas"]), "history_turns_ids": turns, "sp_pre_query": [sp]}
         sp_key = "sp_pre_query"
-    elif slot == "P3_rag":
+    elif slot == "PostRAG_rag":
         kw = {"sys_text_ids": rng.choice(train_pools["personas"]), "rag_ids": rng.choice(train_pools["rags"]), "sp_pre_query": [sp]}
         sp_key = "sp_pre_query"
-    else:  # P4_post
+    else:  # PostQuery_post
         k_t = rng.choice([1, 2])
         turns = [rng.choice(train_pools["turns"]) for _ in range(k_t)]
         kw = {"sys_text_ids": rng.choice(train_pools["personas"]), "history_turns_ids": turns, "sp_post_query": [sp]}
@@ -324,15 +325,15 @@ def eval_ifbench64_slots(
         sp_sys_end=sp_sys_end, sp_pre_query=sp_pre_query, sp_post_query=sp_post_query,
         batch_size=32, max_new_tokens=2048, seed=42,
     )
-    p2r = {}
+    pre_query_res = {}
     closed = 0
     for inp, r in zip(inps64, outs):
         closed += int("</think>" in r)
-        p2r[inp.prompt] = strip_thinking(r)
-    s_ok = sum(int(ifbench_eval.test_instruction_following_strict(inp, p2r).follow_all_instructions) for inp in inps64)
+        pre_query_res[inp.prompt] = strip_thinking(r)
+    s_ok = sum(int(ifbench_eval.test_instruction_following_strict(inp, pre_query_res).follow_all_instructions) for inp in inps64)
     inst_l = []
     for inp in inps64:
-        inst_l.extend(ifbench_eval.test_instruction_following_strict(inp, p2r).follow_instruction_list)
+        inst_l.extend(ifbench_eval.test_instruction_following_strict(inp, pre_query_res).follow_instruction_list)
     n = len(inps64)
     res = {
         "prompt_strict": round(100.0 * s_ok / n, 2),
@@ -931,7 +932,7 @@ def compute_interference_matrix(
     """
     For each domain d in {IF, Math, Doc}, compare single-expert distribution vs:
       - Bare student (measures expert activation signal strength on its OWN domain vs OFF domains!)
-      - 3-expert Triple-Split [Doc@P1, Math@P2, IF@P4] (measures cross-expert interference KL!)
+      - 3-expert Triple-Split [Doc@PostSys, Math@PreQuery, IF@PostQuery] (measures cross-expert interference KL!)
     """
     device = next(student.parameters()).device
     dtype = next(student.parameters()).dtype
@@ -962,7 +963,7 @@ def compute_interference_matrix(
     sp_if, sp_math, sp_doc = experts["if"], experts["math"], experts["doc"]
     out_m: Dict[str, Any] = {}
     for dom, pairs in probes.items():
-        # Reference slot for each expert: Doc@P1, Math@P2, IF@P4
+        # Reference slot for each expert: Doc@PostSys, Math@PreQuery, IF@PostQuery
         slot_single = {
             "doc": dict(sp_sys_end=[sp_doc]),
             "math": dict(sp_pre_query=[sp_math]),
@@ -1059,7 +1060,7 @@ def main():
     results["harvest"]["if_train96"] = st_if
     save()
 
-    # Bare Student baseline on IFEval96 (Multi-Turn context: P2 and P4 without SP are identical!)
+    # Bare Student baseline on IFEval96 (Multi-Turn context: PreQuery and PostQuery without SP are identical!)
     results["track1_ifeval96_multiseed"]["Bare_Student"] = eval_ifeval96_slots(
         student, tokenizer, tmpl, eval_ctx, ifeval_test96, tag="Bare Student (MultiTurn)"
     )
@@ -1098,25 +1099,25 @@ def main():
         torch.save(sp_cold.cpu(), os.path.join(OUT_DIR, f"sp_if_cold_seed{sd}.pt"))
         save()
 
-        # Immediate IFEval96 evaluation for this seed (P2 & P4 + mid-step 5 convergence check!)
+        # Immediate IFEval96 evaluation for this seed (PreQuery & PostQuery + mid-step 5 convergence check!)
         r_sd: Dict[str, Any] = {}
-        r_sd["P2_Stage1_TF3"] = eval_ifeval96_slots(student, tokenizer, tmpl, eval_ctx, ifeval_test96, sp_pre_query=[sp_s1], tag=f"s{sd} P2 Stage1_TF3")
-        r_sd["P4_Stage1_TF3"] = eval_ifeval96_slots(student, tokenizer, tmpl, eval_ctx, ifeval_test96, sp_post_query=[sp_s1], tag=f"s{sd} P4 Stage1_TF3")
-        r_sd["P4_Cold_TF2_step5"] = eval_ifeval96_slots(student, tokenizer, tmpl, eval_ctx, ifeval_test96, sp_post_query=[sp_cold_mid], tag=f"s{sd} P4 Cold_TF2@step5")
-        r_sd["P2_Cold_TF2_step10"] = eval_ifeval96_slots(student, tokenizer, tmpl, eval_ctx, ifeval_test96, sp_pre_query=[sp_cold], tag=f"s{sd} P2 Cold_TF2@step10")
-        r_sd["P4_Cold_TF2_step10"] = eval_ifeval96_slots(student, tokenizer, tmpl, eval_ctx, ifeval_test96, sp_post_query=[sp_cold], tag=f"s{sd} P4 Cold_TF2@step10")
-        r_sd["P4_Full_AlgB_step5"] = eval_ifeval96_slots(student, tokenizer, tmpl, eval_ctx, ifeval_test96, sp_post_query=[sp_algb_mid], tag=f"s{sd} P4 Full_AlgB@step5")
-        r_sd["P2_Full_AlgB_step10"] = eval_ifeval96_slots(student, tokenizer, tmpl, eval_ctx, ifeval_test96, sp_pre_query=[sp_algb], tag=f"s{sd} P2 Full_AlgB@step10")
-        r_sd["P4_Full_AlgB_step10"] = eval_ifeval96_slots(student, tokenizer, tmpl, eval_ctx, ifeval_test96, sp_post_query=[sp_algb], tag=f"s{sd} P4 Full_AlgB@step10")
+        r_sd["PreQuery_Stage1_TF3"] = eval_ifeval96_slots(student, tokenizer, tmpl, eval_ctx, ifeval_test96, sp_pre_query=[sp_s1], tag=f"s{sd} PreQuery Stage1_TF3")
+        r_sd["PostQuery_Stage1_TF3"] = eval_ifeval96_slots(student, tokenizer, tmpl, eval_ctx, ifeval_test96, sp_post_query=[sp_s1], tag=f"s{sd} PostQuery Stage1_TF3")
+        r_sd["PostQuery_Cold_TF2_step5"] = eval_ifeval96_slots(student, tokenizer, tmpl, eval_ctx, ifeval_test96, sp_post_query=[sp_cold_mid], tag=f"s{sd} PostQuery Cold_TF2@step5")
+        r_sd["PreQuery_Cold_TF2_step10"] = eval_ifeval96_slots(student, tokenizer, tmpl, eval_ctx, ifeval_test96, sp_pre_query=[sp_cold], tag=f"s{sd} PreQuery Cold_TF2@step10")
+        r_sd["PostQuery_Cold_TF2_step10"] = eval_ifeval96_slots(student, tokenizer, tmpl, eval_ctx, ifeval_test96, sp_post_query=[sp_cold], tag=f"s{sd} PostQuery Cold_TF2@step10")
+        r_sd["PostQuery_Full_AlgB_step5"] = eval_ifeval96_slots(student, tokenizer, tmpl, eval_ctx, ifeval_test96, sp_post_query=[sp_algb_mid], tag=f"s{sd} PostQuery Full_AlgB@step5")
+        r_sd["PreQuery_Full_AlgB_step10"] = eval_ifeval96_slots(student, tokenizer, tmpl, eval_ctx, ifeval_test96, sp_pre_query=[sp_algb], tag=f"s{sd} PreQuery Full_AlgB@step10")
+        r_sd["PostQuery_Full_AlgB_step10"] = eval_ifeval96_slots(student, tokenizer, tmpl, eval_ctx, ifeval_test96, sp_post_query=[sp_algb], tag=f"s{sd} PostQuery Full_AlgB@step10")
         results["track1_ifeval96_multiseed"][f"seed_{sd}"] = r_sd
         save()
 
     # Aggregate Mean +/- Std across the 3 seeds on IFEval96!
     print("\n  --- Track 1 Multi-Seed Summary on Held-Out IFEval96 (Mean +/- Std across 3 Seeds) ---", flush=True)
     keys_agg = [
-        "P2_Stage1_TF3", "P4_Stage1_TF3",
-        "P4_Cold_TF2_step5", "P2_Cold_TF2_step10", "P4_Cold_TF2_step10",
-        "P4_Full_AlgB_step5", "P2_Full_AlgB_step10", "P4_Full_AlgB_step10",
+        "PreQuery_Stage1_TF3", "PostQuery_Stage1_TF3",
+        "PostQuery_Cold_TF2_step5", "PreQuery_Cold_TF2_step10", "PostQuery_Cold_TF2_step10",
+        "PostQuery_Full_AlgB_step5", "PreQuery_Full_AlgB_step10", "PostQuery_Full_AlgB_step10",
     ]
     for k in keys_agg:
         vals = [results["track1_ifeval96_multiseed"][f"seed_{sd}"][k]["prompt_strict"] for sd in seeds]
@@ -1140,10 +1141,10 @@ def main():
     e1_if_s1 = seed_models[42]["s1"]
 
     results["track1_ifbench64"]["Bare_Student"] = eval_ifbench64_slots(student, tokenizer, tmpl, eval_ctx, ifbench64, tag="Bare Student (MultiTurn)")
-    results["track1_ifbench64"]["P4_Stage1_TF3"] = eval_ifbench64_slots(student, tokenizer, tmpl, eval_ctx, ifbench64, sp_post_query=[e1_if_s1], tag="P4 Stage1_TF3 (L64)")
-    results["track1_ifbench64"]["P4_Cold_TF2"] = eval_ifbench64_slots(student, tokenizer, tmpl, eval_ctx, ifbench64, sp_post_query=[e1_if_naive], tag="P4 Cold_TF2 (L64)")
-    results["track1_ifbench64"]["P2_Full_AlgB"] = eval_ifbench64_slots(student, tokenizer, tmpl, eval_ctx, ifbench64, sp_pre_query=[e1_if_cscr], tag="P2 Full_AlgB CS-CR (L64)")
-    results["track1_ifbench64"]["P4_Full_AlgB"] = eval_ifbench64_slots(student, tokenizer, tmpl, eval_ctx, ifbench64, sp_post_query=[e1_if_cscr], tag="P4 Full_AlgB CS-CR (L64)")
+    results["track1_ifbench64"]["PostQuery_Stage1_TF3"] = eval_ifbench64_slots(student, tokenizer, tmpl, eval_ctx, ifbench64, sp_post_query=[e1_if_s1], tag="PostQuery Stage1_TF3 (L64)")
+    results["track1_ifbench64"]["PostQuery_Cold_TF2"] = eval_ifbench64_slots(student, tokenizer, tmpl, eval_ctx, ifbench64, sp_post_query=[e1_if_naive], tag="PostQuery Cold_TF2 (L64)")
+    results["track1_ifbench64"]["PreQuery_Full_AlgB"] = eval_ifbench64_slots(student, tokenizer, tmpl, eval_ctx, ifbench64, sp_pre_query=[e1_if_cscr], tag="PreQuery Full_AlgB CS-CR (L64)")
+    results["track1_ifbench64"]["PostQuery_Full_AlgB"] = eval_ifbench64_slots(student, tokenizer, tmpl, eval_ctx, ifbench64, sp_post_query=[e1_if_cscr], tag="PostQuery Full_AlgB CS-CR (L64)")
     save()
 
     # =========================================================================
@@ -1224,57 +1225,57 @@ def main():
     )
     save()
 
-    # 3.2 Domain-Doc HeliosPay36 Evaluations (Bare, In-Context Upper Bound, Single P1/P2/P4, Dual, Triple!)
+    # 3.2 Domain-Doc HeliosPay36 Evaluations (Bare, In-Context Upper Bound, Single post_system/pre_query/post_query, Dual, Triple!)
     print("\n  --- [Domain-Doc HeliosPay v4.2] Arbitrary-Slot & Multi-Expert Composition (36 items) ---", flush=True)
     d_ev = results["track2_composition_evals"]["doc36"]
     d_ev["Bare_Student"] = eval_doc36_slots(student, tokenizer, tmpl, eval_ctx, doc_test_rules, doc_test_facts, tag="Bare Student (0-Leakage)")
     d_ev["InContext_Doc_UpperBound"] = eval_doc36_slots(student, tokenizer, tmpl, eval_ctx, doc_test_rules, doc_test_facts, extra_sys_text=DOC_A_TEXT, tag="In-Context Raw Doc (Upper)")
-    d_ev["Single_Doc_Naive_P1"] = eval_doc36_slots(student, tokenizer, tmpl, eval_ctx, doc_test_rules, doc_test_facts, sp_sys_end=[e3_doc_naive], tag="Single Doc_Naive @ P1")
-    d_ev["Single_Doc_CSCR_P1"] = eval_doc36_slots(student, tokenizer, tmpl, eval_ctx, doc_test_rules, doc_test_facts, sp_sys_end=[e3_doc_cscr], tag="Single Doc_CSCR @ P1")
-    d_ev["Single_Doc_CSCR_P2"] = eval_doc36_slots(student, tokenizer, tmpl, eval_ctx, doc_test_rules, doc_test_facts, sp_pre_query=[e3_doc_cscr], tag="Single Doc_CSCR @ P2")
-    d_ev["Single_Doc_CSCR_P4"] = eval_doc36_slots(student, tokenizer, tmpl, eval_ctx, doc_test_rules, doc_test_facts, sp_post_query=[e3_doc_cscr], tag="Single Doc_CSCR @ P4")
-    d_ev["Dual_Naive_DocP1_IFP4"] = eval_doc36_slots(student, tokenizer, tmpl, eval_ctx, doc_test_rules, doc_test_facts, sp_sys_end=[e3_doc_naive], sp_post_query=[e1_if_naive], tag="Dual Naive [Doc@P1 + IF@P4]")
-    d_ev["Dual_CSCR_DocP1_IFP4"] = eval_doc36_slots(student, tokenizer, tmpl, eval_ctx, doc_test_rules, doc_test_facts, sp_sys_end=[e3_doc_cscr], sp_post_query=[e1_if_cscr], tag="Dual CS-CR [Doc@P1 + IF@P4]")
-    d_ev["Triple_Naive_Split"] = eval_doc36_slots(student, tokenizer, tmpl, eval_ctx, doc_test_rules, doc_test_facts, sp_sys_end=[e3_doc_naive], sp_pre_query=[e2_math_naive], sp_post_query=[e1_if_naive], tag="Triple Naive [P1+P2+P4]")
-    d_ev["Triple_CSCR_Split"] = eval_doc36_slots(student, tokenizer, tmpl, eval_ctx, doc_test_rules, doc_test_facts, sp_sys_end=[e3_doc_cscr], sp_pre_query=[e2_math_cscr], sp_post_query=[e1_if_cscr], tag="Triple CS-CR [P1+P2+P4]")
+    d_ev["Single_Doc_Naive_PostSys"] = eval_doc36_slots(student, tokenizer, tmpl, eval_ctx, doc_test_rules, doc_test_facts, sp_sys_end=[e3_doc_naive], tag="Single Doc_Naive @ PostSys")
+    d_ev["Single_Doc_CSCR_PostSys"] = eval_doc36_slots(student, tokenizer, tmpl, eval_ctx, doc_test_rules, doc_test_facts, sp_sys_end=[e3_doc_cscr], tag="Single Doc_CSCR @ PostSys")
+    d_ev["Single_Doc_CSCR_PreQuery"] = eval_doc36_slots(student, tokenizer, tmpl, eval_ctx, doc_test_rules, doc_test_facts, sp_pre_query=[e3_doc_cscr], tag="Single Doc_CSCR @ PreQuery")
+    d_ev["Single_Doc_CSCR_PostQuery"] = eval_doc36_slots(student, tokenizer, tmpl, eval_ctx, doc_test_rules, doc_test_facts, sp_post_query=[e3_doc_cscr], tag="Single Doc_CSCR @ PostQuery")
+    d_ev["Dual_Naive_DocPostSys_IFPostQuery"] = eval_doc36_slots(student, tokenizer, tmpl, eval_ctx, doc_test_rules, doc_test_facts, sp_sys_end=[e3_doc_naive], sp_post_query=[e1_if_naive], tag="Dual Naive [Doc@PostSys + IF@PostQuery]")
+    d_ev["Dual_CSCR_DocPostSys_IFPostQuery"] = eval_doc36_slots(student, tokenizer, tmpl, eval_ctx, doc_test_rules, doc_test_facts, sp_sys_end=[e3_doc_cscr], sp_post_query=[e1_if_cscr], tag="Dual CS-CR [Doc@PostSys + IF@PostQuery]")
+    d_ev["Triple_Naive_Split"] = eval_doc36_slots(student, tokenizer, tmpl, eval_ctx, doc_test_rules, doc_test_facts, sp_sys_end=[e3_doc_naive], sp_pre_query=[e2_math_naive], sp_post_query=[e1_if_naive], tag="Triple Naive [PostSys+PreQuery+PostQuery]")
+    d_ev["Triple_CSCR_Split"] = eval_doc36_slots(student, tokenizer, tmpl, eval_ctx, doc_test_rules, doc_test_facts, sp_sys_end=[e3_doc_cscr], sp_pre_query=[e2_math_cscr], sp_post_query=[e1_if_cscr], tag="Triple CS-CR [PostSys+PreQuery+PostQuery]")
     save()
 
-    # 3.3 MATH48 Evaluations (Bare, Single P2/P4, Dual Split, Permutation Invariance, Triple!)
+    # 3.3 MATH48 Evaluations (Bare, Single pre_query/post_query, Dual Split, Permutation Invariance, Triple!)
     print("\n  --- [MATH48 Held-Out Level 3-5] Arbitrary-Slot & Multi-Expert Composition ---", flush=True)
     m_ev = results["track2_composition_evals"]["math48"]
     m_ev["Bare_Student"] = eval_math48_slots(student, tokenizer, tmpl, eval_ctx, math_test48, tag="Bare Student (MultiTurn)")
-    m_ev["Single_Math_Naive_P2"] = eval_math48_slots(student, tokenizer, tmpl, eval_ctx, math_test48, sp_pre_query=[e2_math_naive], tag="Single Math_Naive @ P2")
-    m_ev["Single_Math_CSCR_P2"] = eval_math48_slots(student, tokenizer, tmpl, eval_ctx, math_test48, sp_pre_query=[e2_math_cscr], tag="Single Math_CSCR @ P2")
-    m_ev["Single_Math_CSCR_P4"] = eval_math48_slots(student, tokenizer, tmpl, eval_ctx, math_test48, sp_post_query=[e2_math_cscr], tag="Single Math_CSCR @ P4")
-    m_ev["Dual_CSCR_MathP2_IFP4"] = eval_math48_slots(student, tokenizer, tmpl, eval_ctx, math_test48, sp_pre_query=[e2_math_cscr], sp_post_query=[e1_if_cscr], tag="Dual CS-CR [Math@P2 + IF@P4]")
-    m_ev["Dual_CSCR_Adj_IF_Math_P2"] = eval_math48_slots(student, tokenizer, tmpl, eval_ctx, math_test48, sp_pre_query=[e1_if_cscr, e2_math_cscr], tag="Dual Adj [IF; Math] @ P2")
-    m_ev["Dual_CSCR_Adj_Math_IF_P2"] = eval_math48_slots(student, tokenizer, tmpl, eval_ctx, math_test48, sp_pre_query=[e2_math_cscr, e1_if_cscr], tag="Dual Adj [Math; IF] @ P2")
-    m_ev["Triple_Naive_Split"] = eval_math48_slots(student, tokenizer, tmpl, eval_ctx, math_test48, sp_sys_end=[e3_doc_naive], sp_pre_query=[e2_math_naive], sp_post_query=[e1_if_naive], tag="Triple Naive [P1+P2+P4]")
-    m_ev["Triple_CSCR_Split"] = eval_math48_slots(student, tokenizer, tmpl, eval_ctx, math_test48, sp_sys_end=[e3_doc_cscr], sp_pre_query=[e2_math_cscr], sp_post_query=[e1_if_cscr], tag="Triple CS-CR [P1+P2+P4]")
+    m_ev["Single_Math_Naive_PreQuery"] = eval_math48_slots(student, tokenizer, tmpl, eval_ctx, math_test48, sp_pre_query=[e2_math_naive], tag="Single Math_Naive @ PreQuery")
+    m_ev["Single_Math_CSCR_PreQuery"] = eval_math48_slots(student, tokenizer, tmpl, eval_ctx, math_test48, sp_pre_query=[e2_math_cscr], tag="Single Math_CSCR @ PreQuery")
+    m_ev["Single_Math_CSCR_PostQuery"] = eval_math48_slots(student, tokenizer, tmpl, eval_ctx, math_test48, sp_post_query=[e2_math_cscr], tag="Single Math_CSCR @ PostQuery")
+    m_ev["Dual_CSCR_MathPreQuery_IFPostQuery"] = eval_math48_slots(student, tokenizer, tmpl, eval_ctx, math_test48, sp_pre_query=[e2_math_cscr], sp_post_query=[e1_if_cscr], tag="Dual CS-CR [Math@PreQuery + IF@PostQuery]")
+    m_ev["Dual_CSCR_Adj_IF_Math_PreQuery"] = eval_math48_slots(student, tokenizer, tmpl, eval_ctx, math_test48, sp_pre_query=[e1_if_cscr, e2_math_cscr], tag="Dual Adj [IF; Math] @ PreQuery")
+    m_ev["Dual_CSCR_Adj_Math_IF_PreQuery"] = eval_math48_slots(student, tokenizer, tmpl, eval_ctx, math_test48, sp_pre_query=[e2_math_cscr, e1_if_cscr], tag="Dual Adj [Math; IF] @ PreQuery")
+    m_ev["Triple_Naive_Split"] = eval_math48_slots(student, tokenizer, tmpl, eval_ctx, math_test48, sp_sys_end=[e3_doc_naive], sp_pre_query=[e2_math_naive], sp_post_query=[e1_if_naive], tag="Triple Naive [PostSys+PreQuery+PostQuery]")
+    m_ev["Triple_CSCR_Split"] = eval_math48_slots(student, tokenizer, tmpl, eval_ctx, math_test48, sp_sys_end=[e3_doc_cscr], sp_pre_query=[e2_math_cscr], sp_post_query=[e1_if_cscr], tag="Triple CS-CR [PostSys+PreQuery+PostQuery]")
     save()
 
     # 3.4 IFEval96 Composition Evaluations (Dual, Permutation Invariance, Triple Naive vs Triple CS-CR!)
     print("\n  --- [IFEval96] Multi-Expert Composition & Permutation Invariance ---", flush=True)
     i_ev = results["track2_composition_evals"]["ifeval96"]
     i_ev["Bare_Student"] = results["track1_ifeval96_multiseed"]["Bare_Student"]
-    i_ev["Single_IF_Naive_P4"] = results["track1_ifeval96_multiseed"]["seed_42"]["P4_Cold_TF2_step10"]
-    i_ev["Single_IF_CSCR_P4"] = results["track1_ifeval96_multiseed"]["seed_42"]["P4_Full_AlgB_step10"]
-    i_ev["Dual_Naive_DocP1_IFP4"] = eval_ifeval96_slots(student, tokenizer, tmpl, eval_ctx, ifeval_test96, sp_sys_end=[e3_doc_naive], sp_post_query=[e1_if_naive], tag="Dual Naive [Doc@P1 + IF@P4]")
-    i_ev["Dual_CSCR_DocP1_IFP4"] = eval_ifeval96_slots(student, tokenizer, tmpl, eval_ctx, ifeval_test96, sp_sys_end=[e3_doc_cscr], sp_post_query=[e1_if_cscr], tag="Dual CS-CR [Doc@P1 + IF@P4]")
-    i_ev["Dual_CSCR_MathP2_IFP4"] = eval_ifeval96_slots(student, tokenizer, tmpl, eval_ctx, ifeval_test96, sp_pre_query=[e2_math_cscr], sp_post_query=[e1_if_cscr], tag="Dual CS-CR [Math@P2 + IF@P4]")
-    i_ev["Dual_CSCR_Adj_IF_Math_P2"] = eval_ifeval96_slots(student, tokenizer, tmpl, eval_ctx, ifeval_test96, sp_pre_query=[e1_if_cscr, e2_math_cscr], tag="Dual Adj [IF; Math] @ P2")
-    i_ev["Dual_CSCR_Adj_Math_IF_P2"] = eval_ifeval96_slots(student, tokenizer, tmpl, eval_ctx, ifeval_test96, sp_pre_query=[e2_math_cscr, e1_if_cscr], tag="Dual Adj [Math; IF] @ P2")
-    i_ev["Triple_Naive_Split"] = eval_ifeval96_slots(student, tokenizer, tmpl, eval_ctx, ifeval_test96, sp_sys_end=[e3_doc_naive], sp_pre_query=[e2_math_naive], sp_post_query=[e1_if_naive], tag="Triple Naive [P1+P2+P4]")
-    i_ev["Triple_CSCR_Split"] = eval_ifeval96_slots(student, tokenizer, tmpl, eval_ctx, ifeval_test96, sp_sys_end=[e3_doc_cscr], sp_pre_query=[e2_math_cscr], sp_post_query=[e1_if_cscr], tag="Triple CS-CR [P1+P2+P4]")
+    i_ev["Single_IF_Naive_PostQuery"] = results["track1_ifeval96_multiseed"]["seed_42"]["PostQuery_Cold_TF2_step10"]
+    i_ev["Single_IF_CSCR_PostQuery"] = results["track1_ifeval96_multiseed"]["seed_42"]["PostQuery_Full_AlgB_step10"]
+    i_ev["Dual_Naive_DocPostSys_IFPostQuery"] = eval_ifeval96_slots(student, tokenizer, tmpl, eval_ctx, ifeval_test96, sp_sys_end=[e3_doc_naive], sp_post_query=[e1_if_naive], tag="Dual Naive [Doc@PostSys + IF@PostQuery]")
+    i_ev["Dual_CSCR_DocPostSys_IFPostQuery"] = eval_ifeval96_slots(student, tokenizer, tmpl, eval_ctx, ifeval_test96, sp_sys_end=[e3_doc_cscr], sp_post_query=[e1_if_cscr], tag="Dual CS-CR [Doc@PostSys + IF@PostQuery]")
+    i_ev["Dual_CSCR_MathPreQuery_IFPostQuery"] = eval_ifeval96_slots(student, tokenizer, tmpl, eval_ctx, ifeval_test96, sp_pre_query=[e2_math_cscr], sp_post_query=[e1_if_cscr], tag="Dual CS-CR [Math@PreQuery + IF@PostQuery]")
+    i_ev["Dual_CSCR_Adj_IF_Math_PreQuery"] = eval_ifeval96_slots(student, tokenizer, tmpl, eval_ctx, ifeval_test96, sp_pre_query=[e1_if_cscr, e2_math_cscr], tag="Dual Adj [IF; Math] @ PreQuery")
+    i_ev["Dual_CSCR_Adj_Math_IF_PreQuery"] = eval_ifeval96_slots(student, tokenizer, tmpl, eval_ctx, ifeval_test96, sp_pre_query=[e2_math_cscr, e1_if_cscr], tag="Dual Adj [Math; IF] @ PreQuery")
+    i_ev["Triple_Naive_Split"] = eval_ifeval96_slots(student, tokenizer, tmpl, eval_ctx, ifeval_test96, sp_sys_end=[e3_doc_naive], sp_pre_query=[e2_math_naive], sp_post_query=[e1_if_naive], tag="Triple Naive [PostSys+PreQuery+PostQuery]")
+    i_ev["Triple_CSCR_Split"] = eval_ifeval96_slots(student, tokenizer, tmpl, eval_ctx, ifeval_test96, sp_sys_end=[e3_doc_cscr], sp_pre_query=[e2_math_cscr], sp_post_query=[e1_if_cscr], tag="Triple CS-CR [PostSys+PreQuery+PostQuery]")
     save()
 
     # 3.5 Official IFBench64 Grand Finale: 3-Expert Triple-Split Naive vs CS-CR!
     print("\n  --- [Official IFBench64] Grand Finale: 3-Expert Simultaneous Split-Slot Composition ---", flush=True)
     b_ev = results["track2_composition_evals"]["ifbench64"]
     b_ev["Bare_Student"] = results["track1_ifbench64"]["Bare_Student"]
-    b_ev["Single_IF_CSCR_P4"] = results["track1_ifbench64"]["P4_Full_AlgB"]
-    b_ev["Triple_Naive_Split"] = eval_ifbench64_slots(student, tokenizer, tmpl, eval_ctx, ifbench64, sp_sys_end=[e3_doc_naive], sp_pre_query=[e2_math_naive], sp_post_query=[e1_if_naive], tag="Triple Naive [P1+P2+P4]")
-    b_ev["Triple_CSCR_Split"] = eval_ifbench64_slots(student, tokenizer, tmpl, eval_ctx, ifbench64, sp_sys_end=[e3_doc_cscr], sp_pre_query=[e2_math_cscr], sp_post_query=[e1_if_cscr], tag="Triple CS-CR [P1+P2+P4]")
+    b_ev["Single_IF_CSCR_PostQuery"] = results["track1_ifbench64"]["PostQuery_Full_AlgB"]
+    b_ev["Triple_Naive_Split"] = eval_ifbench64_slots(student, tokenizer, tmpl, eval_ctx, ifbench64, sp_sys_end=[e3_doc_naive], sp_pre_query=[e2_math_naive], sp_post_query=[e1_if_naive], tag="Triple Naive [PostSys+PreQuery+PostQuery]")
+    b_ev["Triple_CSCR_Split"] = eval_ifbench64_slots(student, tokenizer, tmpl, eval_ctx, ifbench64, sp_sys_end=[e3_doc_cscr], sp_pre_query=[e2_math_cscr], sp_post_query=[e1_if_cscr], tag="Triple CS-CR [PostSys+PreQuery+PostQuery]")
     save()
 
     results["total_elapsed_sec"] = round(time.time() - t_start, 1)

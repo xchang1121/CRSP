@@ -1,4 +1,5 @@
 """
+Paper Reference: Section 7.1–7.2, Tables 10 & 14, Fig. 12–13 (Smooth 6-Point KV-PD & L=4096 E2E Evaluation).
 Suite 8C (exp10c): Fast Batched L=4096 End-to-End Long-Context Generation (MATH32, IFEval48, IFBench32)
 =======================================================================================================
 Complements exp10 (Part A 0..8192 sweep, Part B attention mass, Part C dual composition & interference)
@@ -179,14 +180,14 @@ def run_ifbench_fast(model, tokenizer, tmpl, ctx_bundle, inps, mode: str,
             sp_sys_start=sp_sys_start, sp_pre_query=sp_pre_query, sp_post_query=sp_post_query,
             batch_size=bs, max_new_tokens=2048, temperature=0.6, seed=42,
         )
-    p2r, closed = {}, 0
+    pre_query_res, closed = {}, 0
     for inp, r in zip(inps, outs):
         closed += int("</think>" in r)
-        p2r[inp.prompt] = strip_thinking(r)
-    s_ok = sum(int(ifbench_eval.test_instruction_following_strict(inp, p2r).follow_all_instructions) for inp in inps)
+        pre_query_res[inp.prompt] = strip_thinking(r)
+    s_ok = sum(int(ifbench_eval.test_instruction_following_strict(inp, pre_query_res).follow_all_instructions) for inp in inps)
     inst_l = []
     for inp in inps:
-        inst_l.extend(ifbench_eval.test_instruction_following_strict(inp, p2r).follow_instruction_list)
+        inst_l.extend(ifbench_eval.test_instruction_following_strict(inp, pre_query_res).follow_instruction_list)
     n = len(inps)
     res = {
         "prompt_strict": round(100.0 * s_ok / n, 2),
@@ -320,7 +321,7 @@ def main():
             rb, _ = eval_config_on_val_cache(student, tmpl, vcache, ctx_bundles[L], mode="base")
             rk, ref_out = eval_config_on_val_cache(
                 student, tmpl, vcache, ctx_bundles[L], mode="kv", kv_list=kvl,
-                ref_p0_logits_list=None if L == 0 else ref0, save_ref_top32=(L == 0),
+                ref_start_logits_list=None if L == 0 else ref0, save_ref_top32=(L == 0),
             )
             if L == 0:
                 ref0 = ref_out
@@ -336,13 +337,13 @@ def main():
     print("\n--- PHASE 3: MATH32 (N=32, 1536 tok) at L_ctx in {0, 4096} ---", flush=True)
     math_cfgs = [
         ("Base_Frozen",               "sp", {}),
-        ("PR_CSPD_Math_P0",           "sp", {"sp_sys_start": [sp_pr_math]}),
-        ("KVPD_Math_P0",              "kv", {"kv_list": [kv_math]}),
-        ("Direct_CRSP_Math_P2",       "sp", {"sp_pre_query": [sp_crsp_math_64]}),
-        ("Alg1_Math_P2",              "sp", {"sp_pre_query": [sp_alg1_math_64]}),
-        ("PR_CSPD_Dual_P0",           "sp", {"sp_sys_start": [sp_pr_math, sp_pr_if]}),
-        ("KVPD_Dual_P0",              "kv", {"kv_list": [kv_math, kv_if]}),
-        ("Alg1_CRSP_Split_M@P2_I@P4", "sp", {"sp_pre_query": [sp_alg1_math_64], "sp_post_query": [sp_alg1_if_64]}),
+        ("PR_CSPD_Math_Start",           "sp", {"sp_sys_start": [sp_pr_math]}),
+        ("KVPD_Math_Start",              "kv", {"kv_list": [kv_math]}),
+        ("Direct_CRSP_Math_PreQuery",       "sp", {"sp_pre_query": [sp_crsp_math_64]}),
+        ("Alg1_Math_PreQuery",              "sp", {"sp_pre_query": [sp_alg1_math_64]}),
+        ("PR_CSPD_Dual_Start",           "sp", {"sp_sys_start": [sp_pr_math, sp_pr_if]}),
+        ("KVPD_Dual_Start",              "kv", {"kv_list": [kv_math, kv_if]}),
+        ("Alg1_CRSP_Split_Math_PreQuery_IF_PostQuery", "sp", {"sp_pre_query": [sp_alg1_math_64], "sp_post_query": [sp_alg1_if_64]}),
     ]
     for L in [4096, 0]:
         results["e2e_math32"][str(L)] = {}
@@ -356,13 +357,13 @@ def main():
     print("\n--- PHASE 4: IFEval48 (N=48, 1536 tok) at L_ctx = 4096 ---", flush=True)
     ifeval_cfgs = [
         ("Base_Frozen",               "sp", {}),
-        ("PR_CSPD_L256_at_P0",        "sp", {"sp_sys_start": [sp_pr_if]}),
-        ("KVPD_L16_at_P0",            "kv", {"kv_list": [kv_if]}),
-        ("Direct_CRSP_L256_at_P2",    "sp", {"sp_pre_query": [sp_crsp_if_256]}),
-        ("Alg1_KVInv_L64_at_P4",      "sp", {"sp_post_query": [sp_alg1_if_64]}),
-        ("PR_CSPD_Dual_P0",           "sp", {"sp_sys_start": [sp_pr_math, sp_pr_if]}),
-        ("KVPD_Dual_P0",              "kv", {"kv_list": [kv_math, kv_if]}),
-        ("Alg1_CRSP_Split_M@P2_I@P4", "sp", {"sp_pre_query": [sp_alg1_math_64], "sp_post_query": [sp_alg1_if_64]}),
+        ("PR_CSPD_L256_at_Start",        "sp", {"sp_sys_start": [sp_pr_if]}),
+        ("KVPD_L16_at_Start",            "kv", {"kv_list": [kv_if]}),
+        ("Direct_CRSP_L256_at_PreQuery",    "sp", {"sp_pre_query": [sp_crsp_if_256]}),
+        ("Alg1_KVInv_L64_at_PostQuery",      "sp", {"sp_post_query": [sp_alg1_if_64]}),
+        ("PR_CSPD_Dual_Start",           "sp", {"sp_sys_start": [sp_pr_math, sp_pr_if]}),
+        ("KVPD_Dual_Start",              "kv", {"kv_list": [kv_math, kv_if]}),
+        ("Alg1_CRSP_Split_Math_PreQuery_IF_PostQuery", "sp", {"sp_pre_query": [sp_alg1_math_64], "sp_post_query": [sp_alg1_if_64]}),
     ]
     results["e2e_ifeval48_4096"] = {}
     for name, mode, kw in ifeval_cfgs:

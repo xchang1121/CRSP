@@ -1,4 +1,5 @@
 """
+Paper Reference: Section 5.2, Fig. 8(a) (KV-PD Length Scaling & Private-Doc Rule Execution).
 Suite 2 (exp4): Vertical-Domain Document Continual Learning Breakthroughs on Colab A100.
 Frozen backbone: Jackwang111/M2RL-SFT (Qwen3-4B BF16).
 

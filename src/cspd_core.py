@@ -1,4 +1,5 @@
 """
+Paper Reference: Section 2.2 (Eqs. 2–6), Section 4, Section 7.4 (Response-Only lm_head Projection).
 Core implementation of Composable Soft-Prompt Distillation (CSPD)
 Paper: "Composable Soft-Prompt Distillation of RL Experts: Toward Continual Post-Training" (2026)
 

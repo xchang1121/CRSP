@@ -1,4 +1,5 @@
 """
+Paper Reference: Section 4.1–4.2 (Stage I Input-Space CSPD Single/Multi-Expert Baseline).
 Stage A Experiment: Faithful Reproduction of Composable Soft-Prompt Distillation (CSPD)
 Paper: "Composable Soft-Prompt Distillation of RL Experts: Toward Continual Post-Training" (2026)
 

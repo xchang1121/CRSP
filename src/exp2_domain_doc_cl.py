@@ -1,4 +1,5 @@
 """
+Paper Reference: Section 4.2 (Input-Space CSPD Capacity & Concatenation Limit on Private Docs).
 Stage B Experiment: Continual Learning of Vertical-Domain Documents via
 Context-Distilled Composable Soft-Prompt Capsules (CSPD-Doc).
 

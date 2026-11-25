@@ -1,4 +1,5 @@
 """
+Paper Reference: Section 3.2, Section 5.2, Table 5, Fig. 7–8 (5-Domain Private Docs & v4.2->v5.0).
 Extended Zero-Leakage Vertical-Domain Document Continual Learning Benchmark Suite:
   - 5 Strictly Zero-Leakage Vertical Domains:
       A_heliospay (FinTech), B_nvx418 (BioPharma), C_lithox9 (Semiconductor EUV),

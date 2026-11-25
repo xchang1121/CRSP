@@ -1,4 +1,5 @@
 """
+Paper Reference: Section 5.2, Table 5, Fig. 7–8 (5-Domain Auto-Routed KV-PD + Micro-RAG & 4-Token Delta).
 Suite 3 (exp5): Enterprise Vertical-Domain Continual Learning Stress Tests on Colab A100.
 Frozen backbone: Jackwang111/M2RL-SFT (Qwen3-4B BF16).
 

@@ -1,4 +1,5 @@
 """
+Paper Reference: Section 2.4 (Algorithm 1, Eqs. 14–15), Section 6.1, Table 6, Fig. 9 (KV-Inv-CRSP & Multi-Slot TF).
 Suite 6 (exp8): KV-Prefix Inversion to Context-Robust Soft Prompts (Q1) &
                 Direct Teacher-Free Context-Robust Soft Prompt Construction (Q2)
 ================================================================================
@@ -21,15 +22,15 @@ Directly investigates the user's two core research questions on frozen M2RL-SFT 
       (Strictly executed BEFORE M2RL-RL_IF is ever loaded on GPU!)
       We construct and compare 4 fundamentally distinct Teacher-Free CR methods:
         - TF1_CR_KVGRPO_Inv       : Online KV-Space GRPO -> Inv-3 Functional Inversion -> CR-SP (unifies Q1 & Q2!)
-        - TF2_CR_Direct_GRPO      : Direct Multi-Slot Online GRPO on Layer-0 Input-SP (L=64, P0..P4 rollouts)
+        - TF2_CR_Direct_GRPO      : Direct Multi-Slot Online GRPO on Layer-0 Input-SP (L=64, Start..PostQuery rollouts)
         - TF3_CR_Anchored_SelfBoot: Multi-Context Verified Self-Bootstrap + Bare-Student KL Anchor + L_inv
         - TF4_CR_SelfRubric       : Zero-RL Rubric-Prompted Self-Teacher + Verifier Filter -> Inv-3 CR-SP
 
 Evaluates:
   - Layer-by-layer geometric inversion error profile (layers 0..35) for Inv1a & Inv1b
-  - Full 11-Method x 6-Position (P0..P5) Distributional & Hidden-State Drift Matrix
-  - IFBench32 real end-to-end strict accuracy across P0 (Start), P2 (Multi-Turn Mid),
-    P3 (Post-RAG), and P4 (Post-Query Late Injection) for both Q1 & Q2 tracks!
+  - Full 11-Method x 6-Position (start..long_offset) Distributional & Hidden-State Drift Matrix
+  - IFBench32 real end-to-end strict accuracy across Start (Start), PreQuery (Multi-Turn Mid),
+    PostRAG (Post-RAG), and PostQuery (Post-Query Late Injection) for both Q1 & Q2 tracks!
 """
 
 import json
@@ -114,7 +115,7 @@ SELF_AUDIT_RUBRIC = (
 # 1. Helper: KV-Prefix IFBench32 Evaluator & Multi-Layer Functional Cache
 # ---------------------------------------------------------------------------
 
-def eval_kv_ifbench32_p0(
+def eval_kv_ifbench32_start(
     student, tokenizer, tmpl: ChatTemplateTokens, inps32, kv_tensor: torch.Tensor, tag: str = ""
 ) -> Dict[str, Any]:
     t0 = time.time()
@@ -125,18 +126,18 @@ def eval_kv_ifbench32_p0(
         student, tokenizer, tmpl, prompts, [kv_dev], system_texts=[""] * len(prompts),
         batch_size=32, max_new_tokens=2048, temperature=0.6, top_p=0.95, top_k=20, enable_thinking=True,
     )
-    p2r = {}
+    pre_query_res = {}
     closed = 0
     for inp, r in zip(inps32, outs):
         closed += int("</think>" in r)
-        p2r[inp.prompt] = strip_thinking(r)
-    s_ok = sum(int(ifbench_eval.test_instruction_following_strict(inp, p2r).follow_all_instructions) for inp in inps32)
+        pre_query_res[inp.prompt] = strip_thinking(r)
+    s_ok = sum(int(ifbench_eval.test_instruction_following_strict(inp, pre_query_res).follow_all_instructions) for inp in inps32)
     inst_l = []
     for inp in inps32:
-        inst_l.extend(ifbench_eval.test_instruction_following_strict(inp, p2r).follow_instruction_list)
+        inst_l.extend(ifbench_eval.test_instruction_following_strict(inp, pre_query_res).follow_instruction_list)
     n = len(inps32)
     res = {
-        "regime": "P0_KV_Prefix",
+        "regime": "Start_KV_Prefix",
         "prompt_strict": round(100.0 * s_ok / n, 2),
         "inst_strict": round(100.0 * sum(inst_l) / max(1, len(inst_l)), 2),
         "n_strict": s_ok, "n_total": n,
@@ -738,7 +739,7 @@ def train_tf_anchored_selfboot_cr(
     1. Harvests verified strict+closed winning traces from bare Student (3 rollouts/prompt).
     2. Precomputes bare-student clean Top-32 trust-region anchor distributions on winning traces.
     3. Optimizes Multi-Slot Verified-Win NLL + Bare-Student KL Trust-Region Anchor (prevents RFT overfitting!)
-       + Cross-Context Behavioral Invariance L_inv across P0..P4!
+       + Cross-Context Behavioral Invariance L_inv across Start..PostQuery!
     """
     t0 = time.time()
     device = next(student.parameters()).device
@@ -1162,37 +1163,37 @@ def main():
     save()
 
     # =========================================================================
-    # PHASE 4: IFBench32 REAL END-TO-END ACROSS P0/P2/P3/P4
+    # PHASE 4: IFBench32 REAL END-TO-END ACROSS start/pre_query/post_rag/post_query
     # =========================================================================
     print("\n=== Phase 4: IFBench32 End-to-End Evaluation (Q1 KV-Inv & Q2 Teacher-Free CR) ===", flush=True)
 
     # --- Q1 Track: KV_Distilled BEFORE vs AFTER Geometric & Functional Inversion ---
-    results["ifbench32_evals"]["P0_KV_Distilled_L16"] = eval_kv_ifbench32_p0(student, tokenizer, tmpl, ifbench32, kv_dist_l16, tag="P0-KV: KV_Distilled_L16")
-    results["ifbench32_evals"]["P0_Inv1a_GeoKV_DF"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "P0_Clean_Start", [sp_inv1a], tag="P0-Start: Inv1a GeoKV (L16)")
-    results["ifbench32_evals"]["P0_Inv3_FuncOp_L256"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "P0_Clean_Start", [sp_inv3_256], tag="P0-Start: Inv3 FuncOp L256")
-    results["ifbench32_evals"]["P2_Inv3_FuncOp_L256"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "P2_MultiTurn_Mid", [sp_inv3_256], tag="P2-MultiTurn: Inv3 FuncOp L256")
-    results["ifbench32_evals"]["P2_Inv3_FuncOp_L64"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "P2_MultiTurn_Mid", [sp_inv3_64], tag="P2-MultiTurn: Inv3 FuncOp L64")
-    results["ifbench32_evals"]["P3_Inv3_FuncOp_L256"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "P3_PostRAG_Doc", [sp_inv3_256], tag="P3-PostRAG: Inv3 FuncOp L256")
-    results["ifbench32_evals"]["P4_Inv3_FuncOp_L256"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "P4_PostQuery_Suffix", [sp_inv3_256], tag="P4-PostQuery: Inv3 FuncOp L256")
-    results["ifbench32_evals"]["P4_Inv3_FuncOp_L64"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "P4_PostQuery_Suffix", [sp_inv3_64], tag="P4-PostQuery: Inv3 FuncOp L64")
+    results["ifbench32_evals"]["Start_KV_Distilled_L16"] = eval_kv_ifbench32_start(student, tokenizer, tmpl, ifbench32, kv_dist_l16, tag="Start-KV: KV_Distilled_L16")
+    results["ifbench32_evals"]["Start_Inv1a_GeoKV_DF"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "Start_Clean", [sp_inv1a], tag="Start: Inv1a GeoKV (L16)")
+    results["ifbench32_evals"]["Start_Inv3_FuncOp_L256"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "Start_Clean", [sp_inv3_256], tag="Start: Inv3 FuncOp L256")
+    results["ifbench32_evals"]["PreQuery_Inv3_FuncOp_L256"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "PreQuery_MultiTurn", [sp_inv3_256], tag="PreQuery-MultiTurn: Inv3 FuncOp L256")
+    results["ifbench32_evals"]["PreQuery_Inv3_FuncOp_L64"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "PreQuery_MultiTurn", [sp_inv3_64], tag="PreQuery-MultiTurn: Inv3 FuncOp L64")
+    results["ifbench32_evals"]["PostRAG_Inv3_FuncOp_L256"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "PostRAG_Doc", [sp_inv3_256], tag="PostRAG: Inv3 FuncOp L256")
+    results["ifbench32_evals"]["PostQuery_Inv3_FuncOp_L256"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "PostQuery_Suffix", [sp_inv3_256], tag="PostQuery: Inv3 FuncOp L256")
+    results["ifbench32_evals"]["PostQuery_Inv3_FuncOp_L64"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "PostQuery_Suffix", [sp_inv3_64], tag="PostQuery: Inv3 FuncOp L64")
     save()
 
     # --- Q2 Track: All 4 Zero-Post-RL Teacher-Free CR Constructions ---
-    results["ifbench32_evals"]["P0_KV_GRPO_TF_L16"] = eval_kv_ifbench32_p0(student, tokenizer, tmpl, ifbench32, kv_grpo_tf, tag="P0-KV: KV_GRPO_TF_L16 (0-Tch)")
-    results["ifbench32_evals"]["P0_TF1_CR_KVGRPO_Inv"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "P0_Clean_Start", [sp_tf1], tag="P0-Start: TF1 KVGRPO->Inv3")
-    results["ifbench32_evals"]["P2_TF1_CR_KVGRPO_Inv"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "P2_MultiTurn_Mid", [sp_tf1], tag="P2-MultiTurn: TF1 KVGRPO->Inv3")
-    results["ifbench32_evals"]["P4_TF1_CR_KVGRPO_Inv"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "P4_PostQuery_Suffix", [sp_tf1], tag="P4-PostQuery: TF1 KVGRPO->Inv3")
+    results["ifbench32_evals"]["Start_KV_GRPO_TF_L16"] = eval_kv_ifbench32_start(student, tokenizer, tmpl, ifbench32, kv_grpo_tf, tag="Start-KV: KV_GRPO_TF_L16 (0-Tch)")
+    results["ifbench32_evals"]["Start_TF1_CR_KVGRPO_Inv"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "Start_Clean", [sp_tf1], tag="Start: TF1 KVGRPO->Inv3")
+    results["ifbench32_evals"]["PreQuery_TF1_CR_KVGRPO_Inv"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "PreQuery_MultiTurn", [sp_tf1], tag="PreQuery-MultiTurn: TF1 KVGRPO->Inv3")
+    results["ifbench32_evals"]["PostQuery_TF1_CR_KVGRPO_Inv"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "PostQuery_Suffix", [sp_tf1], tag="PostQuery: TF1 KVGRPO->Inv3")
     save()
 
-    results["ifbench32_evals"]["P2_TF2_CR_Direct_GRPO"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "P2_MultiTurn_Mid", [sp_tf2], tag="P2-MultiTurn: TF2 Direct GRPO")
-    results["ifbench32_evals"]["P4_TF2_CR_Direct_GRPO"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "P4_PostQuery_Suffix", [sp_tf2], tag="P4-PostQuery: TF2 Direct GRPO")
-    results["ifbench32_evals"]["P2_TF3_CR_Anchored_SelfBoot"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "P2_MultiTurn_Mid", [sp_tf3], tag="P2-MultiTurn: TF3 AnchSelfBoot")
-    results["ifbench32_evals"]["P4_TF3_CR_Anchored_SelfBoot"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "P4_PostQuery_Suffix", [sp_tf3], tag="P4-PostQuery: TF3 AnchSelfBoot")
+    results["ifbench32_evals"]["PreQuery_TF2_CR_Direct_GRPO"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "PreQuery_MultiTurn", [sp_tf2], tag="PreQuery-MultiTurn: TF2 Direct GRPO")
+    results["ifbench32_evals"]["PostQuery_TF2_CR_Direct_GRPO"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "PostQuery_Suffix", [sp_tf2], tag="PostQuery: TF2 Direct GRPO")
+    results["ifbench32_evals"]["PreQuery_TF3_CR_Anchored_SelfBoot"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "PreQuery_MultiTurn", [sp_tf3], tag="PreQuery-MultiTurn: TF3 AnchSelfBoot")
+    results["ifbench32_evals"]["PostQuery_TF3_CR_Anchored_SelfBoot"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "PostQuery_Suffix", [sp_tf3], tag="PostQuery: TF3 AnchSelfBoot")
     save()
 
-    results["ifbench32_evals"]["P0_TF4_CR_SelfRubric"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "P0_Clean_Start", [sp_tf4], tag="P0-Start: TF4 SelfRubric->Inv3")
-    results["ifbench32_evals"]["P2_TF4_CR_SelfRubric"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "P2_MultiTurn_Mid", [sp_tf4], tag="P2-MultiTurn: TF4 SelfRubric")
-    results["ifbench32_evals"]["P4_TF4_CR_SelfRubric"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "P4_PostQuery_Suffix", [sp_tf4], tag="P4-PostQuery: TF4 SelfRubric")
+    results["ifbench32_evals"]["Start_TF4_CR_SelfRubric"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "Start_Clean", [sp_tf4], tag="Start: TF4 SelfRubric->Inv3")
+    results["ifbench32_evals"]["PreQuery_TF4_CR_SelfRubric"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "PreQuery_MultiTurn", [sp_tf4], tag="PreQuery-MultiTurn: TF4 SelfRubric")
+    results["ifbench32_evals"]["PostQuery_TF4_CR_SelfRubric"] = eval_ifbench32_regime(student, tokenizer, tmpl, eval_ctx, ifbench32, "PostQuery_Suffix", [sp_tf4], tag="PostQuery: TF4 SelfRubric")
     save()
 
     results["total_elapsed_sec"] = round(time.time() - t_start, 1)

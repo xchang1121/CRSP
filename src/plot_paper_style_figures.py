@@ -1,4 +1,5 @@
 """
+Paper Reference: Reproduces All 15 Publication Figures (Figs. 1–15 -> docs/figures/pfig01..pfig15.png).
 Generate 15 clean, single-row, publication-grade figures strictly adhering to
 the minimalist visual grammar and color palette of the manuscript:
   - pfig01_unified_overview.png
@@ -171,12 +172,12 @@ def make_pfig01():
     # Arbitrary-slot sequence strip
     seq_y = 10.6
     segs = [
-        (70.0, 3.6, "#ECEFF1", "#607D8B", "Sys"),
-        (73.9, 4.4, PURPLE,    "white",   "Doc\n@P1"),
-        (78.6, 3.8, "#ECEFF1", "#607D8B", "Hist\n/RAG"),
-        (82.7, 4.6, BLUE,      "white",   "Math\n@P2"),
-        (87.6, 4.5, "#ECEFF1", "#607D8B", "User\nQuery"),
-        (92.4, 5.2, ORANGE,    "white",   "IF\n@P4"),
+        (70.0, 3.2, "#ECEFF1", "#607D8B", "Sys"),
+        (73.5, 4.9, PURPLE,    "white",   "Doc\nPost-Sys"),
+        (78.7, 3.5, "#ECEFF1", "#607D8B", "Hist\n/RAG"),
+        (82.5, 5.1, BLUE,      "white",   "Math\nPre-Q"),
+        (87.9, 4.1, "#ECEFF1", "#607D8B", "User\nQuery"),
+        (92.3, 5.3, ORANGE,    "white",   "IF\nPost-Q"),
     ]
     for sx, sw, sfc, stc, slbl in segs:
         ec_c = "#90A4AE" if sfc == "#ECEFF1" else "white"
@@ -651,7 +652,7 @@ def make_pfig07():
         ax.set_ylim(-4, 86)
         ax.set_title(dom_titles[i], fontsize=8.5, pad=5)
         if i == 0:
-            ax.set_ylabel("Zero-leakage overall acc. (%)", fontsize=8.4)
+            ax.set_ylabel("Private-doc overall acc. (%)", fontsize=8.4)
         ax.tick_params(axis="y", labelsize=7.5)
         if i == 5:
             ax.annotate(f"{y_kvr[-1]:.1f}%", xy=(5, y_kvr[-1]), xytext=(-25, 6), textcoords="offset points",
@@ -773,17 +774,17 @@ def make_pfig09():
 
     regimes = ["P0_Clean_Start", "P1_MidSys_Persona", "P2_MultiTurn_Mid",
                "P3_PostRAG_Doc", "P4_PostQuery_Suffix", "P5_LongDrift_1000"]
-    r_cols = ["P0", "P1", "P2", "P3", "P4", "P5", "Mean\n(P1–P5)"]
+    r_cols = ["Start", "Post-\nSys", "Pre-\nQuery", "Post-\nRAG", "Post-\nQuery", "Long\nOffset", "Non-Start\nMean"]
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13.8, 4.4), gridspec_kw={"width_ratios": [1.30, 1.0], "wspace": 0.56})
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13.8, 4.4), gridspec_kw={"width_ratios": [1.32, 1.0], "wspace": 0.56})
 
     # (a) RdBu diverging heatmap across 8 methods x 7 columns (mirrors paper Fig. 3b!)
     rows_spec = [
-        ("Pos-0 SP (L=256)",               pm7["A1_Pos0_Only_SP"]),
+        ("Start-Only SP (L=256)",          pm7["A1_Pos0_Only_SP"]),
         ("Prefix-Robust SP (L=256)",       pm7["A2_Paper_PR_SP"]),
         ("Direct CRSP (L=256)",            pm7["A4_Full_CR_SP_Inv"]),
         ("Direct CRSP (L=64)",             pm7["A5_CR_SP_L64"]),
-        ("Fixed-P0 KV-PD (L=16)",          pm7["KV_Distilled_L16"]),
+        ("Start-Fixed KV-PD (L=16)",       pm7["KV_Distilled_L16"]),
         ("Geometric KV Inv. (Data-Free)",  pm8["Inv1a_GeoKV_DF"]),
         ("KV-Inv-CRSP (Alg. 1, L=256)",    pm8["Inv2_LogitCR_L256"]),
         ("KV-Inv + Hidden Align (L=256)",  pm8["Inv3_FuncOp_L256"]),
@@ -796,11 +797,11 @@ def make_pfig09():
 
     im = ax1.imshow(mat, cmap="RdBu", vmin=-30, vmax=48, aspect="auto")
     ax1.set_xticks(np.arange(7))
-    ax1.set_xticklabels(r_cols, fontsize=8.0)
+    ax1.set_xticklabels(r_cols, fontsize=7.5)
     ax1.set_yticks(np.arange(len(rows_spec)))
     ax1.set_yticklabels([r[0] for r in rows_spec], fontsize=8.0)
     ax1.axvline(5.5, color="#222222", lw=1.0)
-    ax1.set_title("(a) Six-regime positional alignment gain, G_vs ctx (%)", pad=22)
+    ax1.set_title("(a) Six-slot positional alignment gain, G_ctx (%)", pad=22)
     for r in range(mat.shape[0]):
         for c in range(mat.shape[1]):
             v = mat[r, c]
@@ -831,8 +832,8 @@ def make_pfig09():
     h2 = 0.35
     p2v = [c[1] for c in comp]
     p4v = [c[2] for c in comp]
-    b_p2 = ax2.barh(y2 + h2/2, p2v, h2, color=BLUE,   label="Slot P2 (Multi-Turn Mid)", zorder=3)
-    b_p4 = ax2.barh(y2 - h2/2, p4v, h2, color=ORANGE, label="Slot P4 (Post-Query)", zorder=3)
+    b_p2 = ax2.barh(y2 + h2/2, p2v, h2, color=BLUE,   label="Pre-Query (Multi-Turn)", zorder=3)
+    b_p4 = ax2.barh(y2 - h2/2, p4v, h2, color=ORANGE, label="Post-Query", zorder=3)
     ax2.axvline(ib7["P2_Student"]["prompt_strict"], color=GRAY, linestyle=":", lw=1.0)
     for b, v in zip(b_p2, p2v):
         if not np.isnan(v):
@@ -844,7 +845,7 @@ def make_pfig09():
     ax2.set_yticks(y2)
     ax2.set_yticklabels([c[0] for c in comp], fontsize=7.8)
     ax2.set_xlim(0, 62)
-    ax2.set_xlabel("IFBench32 Prompt Strict Accuracy (%, N=32)")
+    ax2.set_xlabel("IFBench Prompt Strict Accuracy (%, N=32)")
     ax2.set_title("(b) Multi-slot & teacher-free end-to-end accuracy", pad=22)
     ax2.legend(loc="upper center", bbox_to_anchor=(0.5, 1.11), ncol=2, frameon=False, fontsize=7.4)
 
@@ -872,13 +873,13 @@ def make_pfig10():
     style_boxed(ax1, "y")
     bare96 = d9["track1_ifeval96_multiseed"]["Bare_Student"]["prompt_strict"]
     m_items = [
-        ("Self-Boot\n(P2)",       s9["P2_Stage1_TF3"]["strict_mean"],       s9["P2_Stage1_TF3"]["strict_std"],       s9["P2_Stage1_TF3"]["strict_per_seed"],       LBLUE),
-        ("Multi-GRPO\n(P2)",      s9["P2_Cold_TF2_step10"]["strict_mean"],  s9["P2_Cold_TF2_step10"]["strict_std"],  s9["P2_Cold_TF2_step10"]["strict_per_seed"],  ORANGE),
-        ("Alg. 2\n(P2)",          s9["P2_Full_AlgB_step10"]["strict_mean"], s9["P2_Full_AlgB_step10"]["strict_std"], s9["P2_Full_AlgB_step10"]["strict_per_seed"], GREEN),
-        ("Direct L64\n(P2)",      s9b["P2_PostRL_Direct_L64"]["strict_mean"],s9b["P2_PostRL_Direct_L64"]["strict_std"],s9b["P2_PostRL_Direct_L64"]["strict_per_seed"],BLUE),
-        ("Alg. 2*\n(P4)",         s9["P4_Full_AlgB_step10"]["strict_mean"], s9["P4_Full_AlgB_step10"]["strict_std"], s9["P4_Full_AlgB_step10"]["strict_per_seed"], RED),
-        ("Direct L64\n(P4)",      s9b["P4_PostRL_Direct_L64"]["strict_mean"],s9b["P4_PostRL_Direct_L64"]["strict_std"],s9b["P4_PostRL_Direct_L64"]["strict_per_seed"],BLUE),
-        ("Alg. 1 L64\n(P4)",      ev9b["P4_PostRL_KVInv2_L64"]["prompt_strict"], 0.0, [], TEAL),
+        ("Self-Boot\n(Pre-Q)",    s9["P2_Stage1_TF3"]["strict_mean"],       s9["P2_Stage1_TF3"]["strict_std"],       s9["P2_Stage1_TF3"]["strict_per_seed"],       LBLUE),
+        ("Multi-GRPO\n(Pre-Q)",   s9["P2_Cold_TF2_step10"]["strict_mean"],  s9["P2_Cold_TF2_step10"]["strict_std"],  s9["P2_Cold_TF2_step10"]["strict_per_seed"],  ORANGE),
+        ("Alg. 2\n(Pre-Q)",       s9["P2_Full_AlgB_step10"]["strict_mean"], s9["P2_Full_AlgB_step10"]["strict_std"], s9["P2_Full_AlgB_step10"]["strict_per_seed"], GREEN),
+        ("Direct L64\n(Pre-Q)",   s9b["P2_PostRL_Direct_L64"]["strict_mean"],s9b["P2_PostRL_Direct_L64"]["strict_std"],s9b["P2_PostRL_Direct_L64"]["strict_per_seed"],BLUE),
+        ("Alg. 2*\n(Post-Q)",     s9["P4_Full_AlgB_step10"]["strict_mean"], s9["P4_Full_AlgB_step10"]["strict_std"], s9["P4_Full_AlgB_step10"]["strict_per_seed"], RED),
+        ("Direct L64\n(Post-Q)",  s9b["P4_PostRL_Direct_L64"]["strict_mean"],s9b["P4_PostRL_Direct_L64"]["strict_std"],s9b["P4_PostRL_Direct_L64"]["strict_per_seed"],BLUE),
+        ("Alg. 1 L64\n(Post-Q)",  ev9b["P4_PostRL_KVInv2_L64"]["prompt_strict"], 0.0, [], TEAL),
     ]
     xm = np.arange(len(m_items))
     for i, (lbl, m, sd, pts, col) in enumerate(m_items):
@@ -894,39 +895,39 @@ def make_pfig10():
     ax1.axhline(bare96, color=GRAY, linestyle="--", lw=1.1, label=f"Frozen backbone ({bare96:.1f}%)")
     ax1.axvline(3.5, color=GRAY, linestyle=":", lw=0.9)
     ax1.set_xticks(xm)
-    ax1.set_xticklabels([it[0] for it in m_items], fontsize=6.4)
+    ax1.set_xticklabels([it[0] for it in m_items], fontsize=6.2)
     ax1.set_ylabel("IFEval Prompt Strict Acc. (%, N=96)")
     ax1.set_ylim(30, 86)
-    ax1.set_title("(a) 3-seed stability (*P4 ref. mismatch)", pad=22)
+    ax1.set_title("(a) 3-seed stability (*Post-Q ref. mismatch)", pad=22)
     ax1.legend(loc="upper center", bbox_to_anchor=(0.5, 1.11), frameon=False, fontsize=7.5)
 
-    # (b) Scaled IFBench64 Pareto plane (Closed Precision vs Overall Strict)
+    # (b) Scaled IFBench (N=64) plane (Completed Precision vs Overall Strict)
     style_boxed(ax2, "both")
     pts = [
-        ("Frozen backbone",         ib9["Bare_Student"],               GRAY,   "s", (-50, 14)),
-        ("Source KV-PD (P0)",       ib9b["P0_KV_PostRL_IF_L16"],       PURPLE, "D", (-22, -28)),
-        ("Multi-GRPO (P4)",         ib9["P4_Cold_TF2"],                RED,    "v", (8, -6)),
-        ("Alg. 2 TF-CRSP (P4)",     ib9["P4_Full_AlgB"],               ORANGE, "^", (-88, -16)),
-        ("Direct CRSP L64 (P2)",    ib9b["P2_PostRL_Direct_L64"],      LBLUE,  "o", (10, -14)),
-        ("Direct CRSP L256 (P4)",   ib9b["P4_PostRL_Direct_L256"],     BLUE,   "o", (-105, 16)),
-        ("Alg. 1 L256 (P2)",        ib9b["P2_PostRL_KVInv2_L256"],     TEAL,   "P", (12, 13)),
-        ("Alg. 1 L64 (P4)",         ib9b["P4_PostRL_KVInv2_L64"],      GREEN,  "*", (-102, -4)),
-        ("Triple Alg. 1 Split",     ib9b["Triple_PostRL_KVInv2_Split"],"#B9770E","X", (-98, -36)),
+        ("Frozen backbone",          ib9["Bare_Student"],               GRAY,   "s", (-50, 14)),
+        ("Source KV-PD (Start)",     ib9b["P0_KV_PostRL_IF_L16"],       PURPLE, "D", (-26, -28)),
+        ("Multi-GRPO (Post-Q)",      ib9["P4_Cold_TF2"],                RED,    "v", (8, -6)),
+        ("Alg. 2 TF-CRSP (Post-Q)",  ib9["P4_Full_AlgB"],               ORANGE, "^", (-95, -16)),
+        ("Direct CRSP L64 (Pre-Q)",  ib9b["P2_PostRL_Direct_L64"],      LBLUE,  "o", (10, -14)),
+        ("Direct CRSP L256 (Post-Q)",ib9b["P4_PostRL_Direct_L256"],     BLUE,   "o", (-112, 16)),
+        ("Alg. 1 L256 (Pre-Q)",      ib9b["P2_PostRL_KVInv2_L256"],     TEAL,   "P", (12, 13)),
+        ("Alg. 1 L64 (Post-Q)",      ib9b["P4_PostRL_KVInv2_L64"],      GREEN,  "*", (-108, -4)),
+        ("Triple Alg. 1 Split",      ib9b["Triple_PostRL_KVInv2_Split"],"#B9770E","X", (-98, -36)),
     ]
     for lbl, rec, col, mk, offset in pts:
         sx, sy = rec["closed_acc"], rec["prompt_strict"]
         ms = 140 if mk == "*" else 56
         ax2.scatter(sx, sy, color=col, marker=mk, s=ms, edgecolor=DARK, lw=0.7, zorder=5)
         ax2.annotate(f"{lbl}\n({sy:.1f}%, {sx:.1f}%)", xy=(sx, sy), xytext=offset,
-                     textcoords="offset points", fontsize=6.8, color="#1A1A1A",
+                     textcoords="offset points", fontsize=6.6, color="#1A1A1A",
                      arrowprops=dict(arrowstyle="->", color=GRAY, lw=0.6))
-    ax2.set_xlabel("Closed-think precision (%)")
-    ax2.set_ylabel("IFBench64 Prompt Strict Acc. (%, N=64)")
+    ax2.set_xlabel("Completed-response precision (%)")
+    ax2.set_ylabel("IFBench Prompt Strict Acc. (%, N=64)")
     ax2.set_xlim(42, 95)
     ax2.set_ylim(29, 58)
-    ax2.set_title("(b) Scaled IFBench64 accuracy vs. closed precision", pad=22)
+    ax2.set_title("(b) IFBench (N=64) accuracy vs. completed precision", pad=22)
 
-    # (c) Adversarial P3 Post-RAG 4-tier horizontal bars (mirrors paper Fig. 6a!)
+    # (c) Adversarial Post-RAG 4-tier horizontal bars (mirrors paper Fig. 6a!)
     style_boxed(ax3, "x")
     p3_rows = [
         ("Direct CRSP\n(L=256)",        ib9b["P3_PostRL_Direct_L256"],  BLUE),
@@ -940,7 +941,7 @@ def make_pfig10():
     c3 = [r[1]["closed_acc"]    for r in p3_rows]
     cols3 = [r[2] for r in p3_rows]
     b_s3 = ax3.barh(y3 + h3/2, s3, h3, color=cols3, label="Prompt strict (%)", zorder=3)
-    b_c3 = ax3.barh(y3 - h3/2, c3, h3, color=LBLUE, edgecolor=BLUE, lw=0.6, alpha=0.85, label="Closed precision (%)", zorder=3)
+    b_c3 = ax3.barh(y3 - h3/2, c3, h3, color=LBLUE, edgecolor=BLUE, lw=0.6, alpha=0.85, label="Completed precision (%)", zorder=3)
     ax3.axvline(ib9b["P3_Bare_Student"]["prompt_strict"], color=GRAY, linestyle=":", lw=0.9)
     for b, v in zip(b_s3, s3):
         ax3.text(v + 1.5, b.get_y() + b.get_height()/2, f"{v:.1f}", va="center", ha="left", fontsize=7.4, fontweight="bold" if v > 45 else "normal")
@@ -949,8 +950,8 @@ def make_pfig10():
     ax3.set_yticks(y3)
     ax3.set_yticklabels([r[0] for r in p3_rows], fontsize=7.7)
     ax3.set_xlim(0, 86)
-    ax3.set_xlabel("Adversarial P3 Post-RAG accuracy (%)")
-    ax3.set_title("(c) Adversarial P3 Post-RAG (+420 tok)", pad=22)
+    ax3.set_xlabel("Adversarial Post-RAG accuracy (%)")
+    ax3.set_title("(c) Adversarial Post-RAG (+420 tok)", pad=22)
     ax3.legend(loc="upper center", bbox_to_anchor=(0.48, 1.11), ncol=2, frameon=False, fontsize=7.1, handlelength=1.4, columnspacing=0.8)
 
     path = os.path.join(OUT, "pfig10_crsp_multiseed_and_scaled_ifbench64.png")
@@ -1009,7 +1010,7 @@ def make_pfig11():
     cats = [
         "Frozen\nbase",
         "TF Solo\nMath",
-        "TF Split\nP2+P4",
+        "TF Split\nPre+Post",
         "TF Adj.\n[I;M]",
         "TF Adj.\n[M;I]",
         "RL Solo\nMath",
@@ -1064,12 +1065,12 @@ def make_pfig11():
     doc9b = d9b["doc36_evals"]
     d_rows = [
         ("In-Context\nUpper Bound",       doc9["InContext_Doc_UpperBound"]["rule_acc"],                 doc9["InContext_Doc_UpperBound"]["fact_acc"]),
-        ("KV-PD L=32\n(P0 Prefix)",       d4["runs"]["KV_A_L32_AdamW"]["A_heliospay"]["rules"],         d4["runs"]["KV_A_L32_AdamW"]["A_heliospay"]["facts"]),
+        ("KV-PD L=32\n(Start Prefix)",    d4["runs"]["KV_A_L32_AdamW"]["A_heliospay"]["rules"],         d4["runs"]["KV_A_L32_AdamW"]["A_heliospay"]["facts"]),
         ("KV-PD L=16 +\nMicro-RAG",       d5["auto_router"]["e2e_kv16_microRAG_auto_routed"]["A_heliospay"]["rules"],
                                           d5["auto_router"]["e2e_kv16_microRAG_auto_routed"]["A_heliospay"]["facts"]),
-        ("CRSP Doc L=128\n@ P2 (Pre-Q)",  doc9b["Single_Doc_CSCR_MuonL128_P2"]["rule_acc"],             doc9b["Single_Doc_CSCR_MuonL128_P2"]["fact_acc"]),
-        ("CRSP Doc L=128\n@ P4 (Post-Q)", doc9b["Single_Doc_CSCR_MuonL128_P4"]["rule_acc"],             doc9b["Single_Doc_CSCR_MuonL128_P4"]["fact_acc"]),
-        ("CRSP Doc L=128\n@ P1 (Far)",    doc9b["Single_Doc_CSCR_MuonL128_P1"]["rule_acc"],             doc9b["Single_Doc_CSCR_MuonL128_P1"]["fact_acc"]),
+        ("CRSP Doc L=128\nPre-Query",     doc9b["Single_Doc_CSCR_MuonL128_P2"]["rule_acc"],             doc9b["Single_Doc_CSCR_MuonL128_P2"]["fact_acc"]),
+        ("CRSP Doc L=128\nPost-Query",    doc9b["Single_Doc_CSCR_MuonL128_P4"]["rule_acc"],             doc9b["Single_Doc_CSCR_MuonL128_P4"]["fact_acc"]),
+        ("CRSP Doc L=128\nPost-Sys (Far)",doc9b["Single_Doc_CSCR_MuonL128_P1"]["rule_acc"],             doc9b["Single_Doc_CSCR_MuonL128_P1"]["fact_acc"]),
         ("CRSP Doc L=64\n(RMS≤0.055)",    doc9["Single_Doc_CSCR_P2"]["rule_acc"],                       doc9["Single_Doc_CSCR_P2"]["fact_acc"]),
     ]
     yd = np.arange(len(d_rows))[::-1]
@@ -1084,13 +1085,13 @@ def make_pfig11():
             ax3.text(v + 1.8, b.get_y() + b.get_height()/2, f"{v:.1f}", va="center", ha="left", fontsize=7.0)
     for b, v in zip(b_df, df):
         ax3.text(v + 1.8, b.get_y() + b.get_height()/2, f"{v:.1f}", va="center", ha="left", fontsize=7.0, color=TEAL if v > 0 else GRAY)
-    ax3.annotate("5.0× recency\ngradient", xy=(44, 2.8), xytext=(64, 1.4), ha="center",
+    ax3.annotate("5.0× proximity\ngradient", xy=(44, 2.8), xytext=(64, 1.4), ha="center",
                  arrowprops=dict(arrowstyle="->", color=TEAL, lw=1.0), fontsize=7.2, fontweight="bold", color=TEAL)
     ax3.set_yticks(yd)
     ax3.set_yticklabels([r[0] for r in d_rows], fontsize=7.3)
     ax3.set_xlim(0, 118)
     ax3.set_xlabel("HeliosPay v4.2 accuracy (%)")
-    ax3.set_title("(c) Zero-leakage doc capacity by slot", pad=22)
+    ax3.set_title("(c) Private-doc capacity by slot", pad=22)
     ax3.legend(loc="lower right", frameon=False, fontsize=7.2)
 
     path = os.path.join(OUT, "pfig11_crsp_multiexpert_composition_and_duality.png")
@@ -1119,12 +1120,12 @@ def make_pfig12():
     if_s = d10["partA_single_sweep_if"]
     kv_if = d10c["kvpd_smooth_6pt"]["if"]
     ax1.axhline(0.0, color=DARK, lw=0.8, ls="--", zorder=1)
-    ax1.plot(xl, [if_s["Direct_CRSP_L256_at_P2"][L]["g_vs_ctx"] for L in lens], "-o",  color=BLUE,   lw=2.0, ms=4.8, label="Direct CRSP @ P2 (L=256)", zorder=5)
-    ax1.plot(xl, [if_s["Alg1_KVInv_L64_at_P2"][L]["g_vs_ctx"]   for L in lens], "-^",  color=TEAL,   lw=1.9, ms=4.8, label="Alg. 1 CRSP @ P2 (L=64)",  zorder=5)
-    ax1.plot(xl, [kv_if[L]["g_vs_ctx"]                           for L in lens], "-D",  color=PURPLE, lw=1.9, ms=4.5, label="KV-PD @ P0 (L=16)",        zorder=4)
-    ax1.plot(xl, [if_s["PR_CSPD_L256_at_P0"][L]["g_vs_ctx"]      for L in lens], "-s",  color=ORANGE, lw=1.8, ms=4.5, label="PR-CSPD @ P0 (L=256)",     zorder=3)
-    ax1.plot(xl, [if_s["Pos0_CSPD_L256_at_P0"][L]["g_vs_ctx"]    for L in lens], "--s", color=GRAY,   lw=1.4, ms=4.0, label="Pos-0 CSPD @ P0 (L=256)",  zorder=2)
-    ax1.plot(xl, [if_s["Direct_CRSP_L256_at_P0"][L]["g_vs_ctx"]  for L in lens], ":x",  color=RED,    lw=1.7, ms=5.0, label="Direct CRSP @ P0 (ctrl)",  zorder=3)
+    ax1.plot(xl, [if_s["Direct_CRSP_L256_at_P2"][L]["g_vs_ctx"] for L in lens], "-o",  color=BLUE,   lw=2.0, ms=4.8, label="Direct CRSP Pre-Q (L=256)", zorder=5)
+    ax1.plot(xl, [if_s["Alg1_KVInv_L64_at_P2"][L]["g_vs_ctx"]   for L in lens], "-^",  color=TEAL,   lw=1.9, ms=4.8, label="Alg. 1 CRSP Pre-Q (L=64)",  zorder=5)
+    ax1.plot(xl, [kv_if[L]["g_vs_ctx"]                           for L in lens], "-D",  color=PURPLE, lw=1.9, ms=4.5, label="KV-PD Start (L=16)",        zorder=4)
+    ax1.plot(xl, [if_s["PR_CSPD_L256_at_P0"][L]["g_vs_ctx"]      for L in lens], "-s",  color=ORANGE, lw=1.8, ms=4.5, label="PR-CSPD Start (L=256)",     zorder=3)
+    ax1.plot(xl, [if_s["Pos0_CSPD_L256_at_P0"][L]["g_vs_ctx"]    for L in lens], "--s", color=GRAY,   lw=1.4, ms=4.0, label="Start-Only CSPD (L=256)",   zorder=2)
+    ax1.plot(xl, [if_s["Direct_CRSP_L256_at_P0"][L]["g_vs_ctx"]  for L in lens], ":x",  color=RED,    lw=1.7, ms=5.0, label="Direct CRSP Start (ctrl)",  zorder=3)
 
     ax1.annotate("", xy=(5, 30.24), xytext=(5, -8.36),
                  arrowprops=dict(arrowstyle="<->", color=BLUE, lw=1.2))
@@ -1143,12 +1144,12 @@ def make_pfig12():
     ma_s = d10["partA_single_sweep_math"]
     kv_m = d10c["kvpd_smooth_6pt"]["math"]
     ax2.axhline(0.0, color=DARK, lw=0.8, ls="--", zorder=1)
-    ax2.plot(xl, [ma_s["Direct_CRSP_Math_L64_P2"][L]["g_vs_ctx"] for L in lens], "-o", color=BLUE,   lw=2.0, ms=4.8, label="Direct CRSP @ P2 (L=64)", zorder=5)
-    ax2.plot(xl, [ma_s["Alg1_KVInv_Math_L64_P2"][L]["g_vs_ctx"]  for L in lens], "-^", color=TEAL,   lw=1.9, ms=4.8, label="Alg. 1 CRSP @ P2 (L=64)", zorder=5)
-    ax2.plot(xl, [kv_m[L]["g_vs_ctx"]                             for L in lens], "-D", color=PURPLE, lw=1.9, ms=4.5, label="KV-PD @ P0 (L=16)",       zorder=4)
-    ax2.plot(xl, [ma_s["PR_CSPD_Math_L256_at_P0"][L]["g_vs_ctx"] for L in lens], "-s", color=ORANGE, lw=1.8, ms=4.5, label="PR-CSPD @ P0 (L=256)",    zorder=3)
+    ax2.plot(xl, [ma_s["Direct_CRSP_Math_L64_P2"][L]["g_vs_ctx"] for L in lens], "-o", color=BLUE,   lw=2.0, ms=4.8, label="Direct CRSP Pre-Q (L=64)", zorder=5)
+    ax2.plot(xl, [ma_s["Alg1_KVInv_Math_L64_P2"][L]["g_vs_ctx"]  for L in lens], "-^", color=TEAL,   lw=1.9, ms=4.8, label="Alg. 1 CRSP Pre-Q (L=64)", zorder=5)
+    ax2.plot(xl, [kv_m[L]["g_vs_ctx"]                             for L in lens], "-D", color=PURPLE, lw=1.9, ms=4.5, label="KV-PD Start (L=16)",       zorder=4)
+    ax2.plot(xl, [ma_s["PR_CSPD_Math_L256_at_P0"][L]["g_vs_ctx"] for L in lens], "-s", color=ORANGE, lw=1.8, ms=4.5, label="PR-CSPD Start (L=256)",    zorder=3)
     ctrl_vals = [ma_s["Direct_CRSP_Math_L64_P0"][L]["g_vs_ctx"] for L in lens]
-    ax2.plot(xl[:5], ctrl_vals[:5], ":x", color=RED, lw=1.7, ms=5.0, label="Direct CRSP @ P0 (ctrl)", zorder=3)
+    ax2.plot(xl[:5], ctrl_vals[:5], ":x", color=RED, lw=1.7, ms=5.0, label="Direct CRSP Start (ctrl)", zorder=3)
     ax2.plot([4, 5], [ctrl_vals[4], -104], ":", color=RED, lw=1.7, zorder=3)
     ax2.annotate("−225.5% @ 8k\n(off-scale)", xy=(5, -104), xytext=(3.45, -88), ha="center",
                  arrowprops=dict(arrowstyle="->", color=RED, lw=1.0), fontsize=6.9, fontweight="bold", color=RED)
@@ -1170,16 +1171,16 @@ def make_pfig12():
     cr_am   = [am["Direct_CRSP_L256_at_P4"][L]["mean_mod_pct"] for L in lens]
     alg1_am = [am["Alg1_KVInv_L64_at_P4"][L]["mean_mod_pct"] for L in lens]
 
-    ax3.plot(xl, kv_am,   "-D", color=PURPLE, lw=2.1, ms=4.8, label="KV-PD @ P0 (16 tok)",         zorder=5)
-    ax3.plot(xl, pr_am,   "-s", color=ORANGE, lw=1.9, ms=4.6, label="PR-CSPD @ P0 (256 vec)",      zorder=4)
-    ax3.plot(xl, cr_am,   "-o", color=BLUE,   lw=1.8, ms=4.6, label="Direct CRSP @ P4 (256 vec)",  zorder=4)
-    ax3.plot(xl, alg1_am, "-^", color=TEAL,   lw=1.9, ms=4.8, label="Alg. 1 CRSP @ P4 (64 vec)",   zorder=5)
+    ax3.plot(xl, kv_am,   "-D", color=PURPLE, lw=2.1, ms=4.8, label="KV-PD Start (16 tok)",         zorder=5)
+    ax3.plot(xl, pr_am,   "-s", color=ORANGE, lw=1.9, ms=4.6, label="PR-CSPD Start (256 vec)",      zorder=4)
+    ax3.plot(xl, cr_am,   "-o", color=BLUE,   lw=1.8, ms=4.6, label="Direct CRSP Post-Q (256 vec)", zorder=4)
+    ax3.plot(xl, alg1_am, "-^", color=TEAL,   lw=1.9, ms=4.8, label="Alg. 1 CRSP Post-Q (64 vec)",  zorder=5)
 
     ax3.annotate("77.6% retained\n(3.5× vs PR-CSPD)", xy=(5, kv_am[-1]), xytext=(3.15, 32.8), ha="center",
                  arrowprops=dict(arrowstyle="->", color=PURPLE, lw=1.0), fontsize=7.0, fontweight="bold", color=PURPLE)
     ax3.annotate("−54.8% decay\n(shallow −71%)", xy=(5, pr_am[-1]), xytext=(3.95, 16.5), ha="center",
                  arrowprops=dict(arrowstyle="->", color=ORANGE, lw=1.0), fontsize=6.9, fontweight="bold", color=ORANGE)
-    ax3.text(2.8, 2.3, "Alg. 1 @ P4 flat 512→8k (6.9% → 6.4%)", ha="center", fontsize=6.9, color=TEAL,
+    ax3.text(2.8, 2.3, "Alg. 1 Post-Q flat 512→8k (6.9% → 6.4%)", ha="center", fontsize=6.7, color=TEAL,
              bbox=dict(boxstyle="round,pad=0.18", fc="#EEF7F6", ec=TEAL, lw=0.6))
     ax3.set_xticks(xl)
     ax3.set_xticklabels(xtl)
@@ -1225,11 +1226,11 @@ def make_pfig13():
     alg1_sp = mean_pair(ci, cm, "Alg1_CRSP_Split_M@P2_I@P4")
 
     ax1.axhline(0.0, color=DARK, lw=0.8, ls="--", zorder=1)
-    ax1.plot(xc, dir_sp,  "-o",  color=BLUE,   lw=2.0, ms=5.0, label="Direct CRSP Split [M@P2+I@P4]", zorder=5)
-    ax1.plot(xc, alg1_sp, "-^",  color=TEAL,   lw=1.9, ms=5.0, label="Alg. 1 Split [M@P2+I@P4]",      zorder=5)
-    ax1.plot(xc, kv_mi,   "-D",  color=PURPLE, lw=1.9, ms=4.7, label="KV-PD Dual @ P0 (|Δ|≤0.2 pp)",  zorder=4)
-    ax1.plot(xc, pr_mi,   "-s",  color=ORANGE, lw=1.9, ms=4.7, label="PR-CSPD Dual @ P0 [M; I]",      zorder=3)
-    ax1.plot(xc, pr_im,   "--s", color=RED,    lw=1.5, ms=4.2, label="PR-CSPD Dual @ P0 [I; M]",      zorder=3)
+    ax1.plot(xc, dir_sp,  "-o",  color=BLUE,   lw=2.0, ms=5.0, label="Direct CRSP Split [M:Pre+I:Post]", zorder=5)
+    ax1.plot(xc, alg1_sp, "-^",  color=TEAL,   lw=1.9, ms=5.0, label="Alg. 1 Split [M:Pre+I:Post]",      zorder=5)
+    ax1.plot(xc, kv_mi,   "-D",  color=PURPLE, lw=1.9, ms=4.7, label="KV-PD Dual Start (|Δ|≤0.2 pp)",   zorder=4)
+    ax1.plot(xc, pr_mi,   "-s",  color=ORANGE, lw=1.9, ms=4.7, label="PR-CSPD Dual Start [M; I]",       zorder=3)
+    ax1.plot(xc, pr_im,   "--s", color=RED,    lw=1.5, ms=4.2, label="PR-CSPD Dual Start [I; M]",       zorder=3)
     ax1.fill_between(xc, pr_mi, pr_im, color=ORANGE, alpha=0.14, zorder=2)
 
     ax1.annotate("Order gap 22.9 pp (IF)\nKL int. 0.386 (10.3×)", xy=(2.0, pr_mi[2]), xytext=(2.28, -14.0), ha="center",
@@ -1259,10 +1260,10 @@ def make_pfig13():
     v_kv   = [ev_if["KVPD_Dual_P0"]["prompt_strict"],              ev_ifb["KVPD_Dual_P0"]["prompt_strict"],              ev_ma["KVPD_Dual_P0"]["acc"]]
     v_alg1 = [ev_if["Alg1_CRSP_Split_M@P2_I@P4"]["prompt_strict"], ev_ifb["Alg1_CRSP_Split_M@P2_I@P4"]["prompt_strict"], ev_ma["Alg1_CRSP_Split_M@P2_I@P4"]["acc"]]
 
-    b0 = ax2.bar(xb - 1.5*wb, v_base, wb, color=LBLUE,  edgecolor=DARK, lw=0.5, label="Frozen base",          zorder=3)
-    b1 = ax2.bar(xb - 0.5*wb, v_pr,   wb, color=ORANGE, edgecolor=DARK, lw=0.5, label="PR-CSPD Dual @ P0",    zorder=3)
-    b2 = ax2.bar(xb + 0.5*wb, v_kv,   wb, color=PURPLE, edgecolor=DARK, lw=0.5, label="KV-PD Dual @ P0",      zorder=3)
-    b3 = ax2.bar(xb + 1.5*wb, v_alg1, wb, color=TEAL,   edgecolor=DARK, lw=0.5, label="Alg. 1 Split [P2+P4]", zorder=3)
+    b0 = ax2.bar(xb - 1.5*wb, v_base, wb, color=LBLUE,  edgecolor=DARK, lw=0.5, label="Frozen base",             zorder=3)
+    b1 = ax2.bar(xb - 0.5*wb, v_pr,   wb, color=ORANGE, edgecolor=DARK, lw=0.5, label="PR-CSPD Dual Start",      zorder=3)
+    b2 = ax2.bar(xb + 0.5*wb, v_kv,   wb, color=PURPLE, edgecolor=DARK, lw=0.5, label="KV-PD Dual Start",        zorder=3)
+    b3 = ax2.bar(xb + 1.5*wb, v_alg1, wb, color=TEAL,   edgecolor=DARK, lw=0.5, label="Alg. 1 Split [Pre+Post]", zorder=3)
 
     for bars in [b0, b1, b2, b3]:
         for b in bars:
@@ -1298,14 +1299,14 @@ def make_pfig13():
 
     ax3.plot(xd, f_rag32, "-o",  color=TEAL,   lw=2.0, ms=4.8, label="KV-PD L=32 + Micro-RAG (facts)", zorder=5)
     ax3.plot(xd, f_rag16, "--^", color=GREEN,  lw=1.7, ms=4.6, label="KV-PD L=16 + Micro-RAG (facts)", zorder=4)
-    ax3.plot([0, 3], f_man, ":D", color=GRAY,  lw=1.5, ms=4.5, label="Full Manual @ P0 (facts)",       zorder=3)
-    ax3.plot(xd, r_kv32,  "-s",  color=PURPLE, lw=2.0, ms=4.8, label="KV-PD L=32 @ P0 (rules)",        zorder=5)
-    ax3.plot(xd, r_kv16,  "--s", color=ORANGE, lw=1.7, ms=4.4, label="KV-PD L=16 @ P0 (rules)",        zorder=4)
-    ax3.plot([0, 3], r_man, ":x", color=RED,   lw=1.7, ms=5.2, label="Full Manual @ P0 (rules)",       zorder=4)
+    ax3.plot([0, 3], f_man, ":D", color=GRAY,  lw=1.5, ms=4.5, label="Full Manual Start (facts)",      zorder=3)
+    ax3.plot(xd, r_kv32,  "-s",  color=PURPLE, lw=2.0, ms=4.8, label="KV-PD L=32 Start (rules)",       zorder=5)
+    ax3.plot(xd, r_kv16,  "--s", color=ORANGE, lw=1.7, ms=4.4, label="KV-PD L=16 Start (rules)",       zorder=4)
+    ax3.plot([0, 3], r_man, ":x", color=RED,   lw=1.7, ms=5.2, label="Full Manual Start (rules)",      zorder=4)
 
     ax3.annotate("Query-adjacent Micro-RAG:\n91.7% facts @ 4k", xy=(3, f_rag32[-1]), xytext=(1.35, 107.0), ha="center",
                  arrowprops=dict(arrowstyle="->", color=TEAL, lw=1.0), fontsize=6.6, fontweight="bold", color=TEAL)
-    ax3.annotate("Short-ctx KV-PD rules\ncollapse to 0% @ ≥1k", xy=(1.0, 0.8), xytext=(1.95, 18.0), ha="center",
+    ax3.annotate("Short-ctx KV-PD rules\ndrop to 0% at ≥1k", xy=(1.0, 0.8), xytext=(1.95, 18.0), ha="center",
                  arrowprops=dict(arrowstyle="->", color=PURPLE, lw=1.0), fontsize=6.6, fontweight="bold", color=PURPLE,
                  bbox=dict(boxstyle="round,pad=0.16", fc="#F6F2FA", ec=PURPLE, lw=0.6))
     ax3.set_xticks(xd)
@@ -1313,7 +1314,7 @@ def make_pfig13():
     ax3.set_xlabel("Preceding context length (tokens)")
     ax3.set_ylabel("HeliosPay v4.2 accuracy (%)")
     ax3.set_ylim(-6, 120)
-    ax3.set_title("(c) Zero-leakage doc KV-PD (0 → 4k)", pad=10)
+    ax3.set_title("(c) Private-doc KV-PD (0 → 4k)", pad=10)
     ax3.legend(loc="center right", bbox_to_anchor=(0.99, 0.45), frameon=True, facecolor="white", framealpha=0.95, edgecolor="#DDDDDD", fontsize=6.1, handlelength=1.6)
 
     path = os.path.join(OUT, "pfig13_long_context_composition_and_doc_e2e.png")
@@ -1345,11 +1346,11 @@ def make_pfig14():
     cats_a = [
         "No-PR\n(L=0)",
         "PR-CSPD\n(L=0)",
-        "PR-CSPD\n@P0 (4k)",
-        "KV-PD\n@P0 (4k)",
-        "Direct\n@P4 (4k)",
-        "Alg. 1\n@P2 (4k)",
-        "Alg. 1\nSplit (4k)",
+        "PR-CSPD\nStart\n(4k)",
+        "KV-PD\nStart\n(4k)",
+        "Direct\nPost-Q\n(4k)",
+        "Alg. 1\nPre-Q\n(4k)",
+        "Alg. 1\nSplit\n(4k)",
     ]
     gap_if = [
         abs(g1b["ablation_nopr_Math_IF"]["G_if_pct"] - g1b["ablation_nopr_IF_Math"]["G_if_pct"]),
@@ -1383,10 +1384,10 @@ def make_pfig14():
     ax1.annotate("0.0 pp\n(≤0.2 @ 0–8k)", xy=(3, 1.8), xytext=(3.0, 9.8), ha="center",
                  arrowprops=dict(arrowstyle="->", color=PURPLE, lw=0.9), fontsize=6.1, fontweight="bold", color=PURPLE,
                  bbox=dict(boxstyle="round,pad=0.14", fc="#F6F2FA", ec=PURPLE, lw=0.5))
-    ax1.annotate("P4 recency\nbias", xy=(4 + wa/2, 16.3), xytext=(4.65, 22.0), ha="center",
+    ax1.annotate("Post-Q\nrecency bias", xy=(4 + wa/2, 16.3), xytext=(4.65, 22.0), ha="center",
                  arrowprops=dict(arrowstyle="->", color=BLUE, lw=0.9), fontsize=6.3, fontweight="bold", color=BLUE)
     ax1.set_xticks(xa)
-    ax1.set_xticklabels(cats_a, fontsize=6.6)
+    ax1.set_xticklabels(cats_a, fontsize=6.4)
     ax1.set_ylabel("Order / slot-swap gap |Δ| (pp) ↓")
     ax1.set_ylim(0, 29.5)
     ax1.set_title("(a) Dual-expert order & slot-swap sensitivity", pad=10)
@@ -1396,10 +1397,10 @@ def make_pfig14():
     style_boxed(ax2, "y")
     pB4k = d11["partB_3expert_all6_perms"]["L4096"]
     fams_b = [
-        ("PR-CSPD\n@P0",        "PR_CSPD_P0_3Exp",        ORANGE),
-        ("KV-PD\n@P0",          "KVPD_P0_3Exp",           PURPLE),
-        ("Alg. 1 Split\n(P1,P2,P4)", "Alg1_Split_P1P2P4_3Exp", BLUE),
-        ("Alg. 1 Adj.\n@P2",    "Alg1_Adj_P2_3Exp",       TEAL),
+        ("PR-CSPD\nStart",             "PR_CSPD_P0_3Exp",        ORANGE),
+        ("KV-PD\nStart",               "KVPD_P0_3Exp",           PURPLE),
+        ("Alg. 1 Split\n(Sys,Pre,Post)","Alg1_Split_P1P2P4_3Exp", BLUE),
+        ("Alg. 1 Adj.\nPre-Q",         "Alg1_Adj_P2_3Exp",       TEAL),
     ]
     perm_keys = ["DMI", "DIM", "MDI", "MID", "IDM", "IMD"]
     offsets = np.linspace(-0.20, 0.20, 6)
@@ -1433,10 +1434,10 @@ def make_pfig14():
     ax2.annotate("All 6 perms:\n+0.3% (sp 0.12)", xy=(1.0, 1.5), xytext=(1.0, 44), ha="center",
                  arrowprops=dict(arrowstyle="->", color=PURPLE, lw=0.9), fontsize=6.0, fontweight="bold", color=PURPLE,
                  bbox=dict(boxstyle="round,pad=0.14", fc="#F6F2FA", ec=PURPLE, lw=0.5))
-    ax2.annotate("Doc@P1 (DMI/DIM)\n−139% / −137%", xy=(2.0, -148), xytext=(2.05, -400), ha="center",
-                 arrowprops=dict(arrowstyle="->", color=RED, lw=0.9), fontsize=6.0, fontweight="bold", color=RED,
+    ax2.annotate("Doc Post-Sys (DMI/DIM)\n−139% / −137%", xy=(2.0, -148), xytext=(2.05, -400), ha="center",
+                 arrowprops=dict(arrowstyle="->", color=RED, lw=0.9), fontsize=5.8, fontweight="bold", color=RED,
                  bbox=dict(boxstyle="round,pad=0.14", fc="#FDF2F2", ec=RED, lw=0.5))
-    ax2.text(2.0, 44, "Doc@P2/P4:\n+11..+22%", ha="center", va="bottom", fontsize=6.0, fontweight="bold", color=BLUE)
+    ax2.text(2.0, 44, "Doc Pre/Post-Q:\n+11..+22%", ha="center", va="bottom", fontsize=5.9, fontweight="bold", color=BLUE)
     ax2.text(3.0, 44, "All 6 > +23%\nMDI +27.6%", ha="center", va="bottom", fontsize=6.0, fontweight="bold", color=TEAL,
              bbox=dict(boxstyle="round,pad=0.14", fc="#EEF7F6", ec=TEAL, lw=0.5))
 
@@ -1444,11 +1445,11 @@ def make_pfig14():
     style_boxed(ax3, "y")
     pC = d11["partC_e2e_order_swap"]
     c_labels = [
-        "MATH32\nAlg. 1 Split",
-        "IFBench32\nAlg. 1 Split",
-        "IFEval48\nAlg. 1 Split",
-        "IFBench32\nKV-PD @P0",
-        "IFBench32\nPR-CSPD @P0",
+        "MATH (32)\nAlg. 1 Split",
+        "IFBench (32)\nAlg. 1 Split",
+        "IFEval (48)\nAlg. 1 Split",
+        "IFBench (32)\nKV-PD Start",
+        "IFBench (32)\nPR-CSPD Start",
     ]
     fwd_vals = [
         pC["math32"]["4096"]["Alg1_Split_M@P2_I@P4"]["acc"],
@@ -1466,8 +1467,8 @@ def make_pfig14():
     ]
     xc = np.arange(len(c_labels))
     wc = 0.35
-    bc1 = ax3.bar(xc - wc/2, fwd_vals, wc, color=TEAL,   edgecolor=DARK, lw=0.5, label="Primary ([M@P2+I@P4] / [M; I])", zorder=3)
-    bc2 = ax3.bar(xc + wc/2, rev_vals, wc, color=LBLUE,  edgecolor=DARK, lw=0.5, label="Swapped ([I@P2+M@P4] / [I; M])", zorder=3)
+    bc1 = ax3.bar(xc - wc/2, fwd_vals, wc, color=TEAL,   edgecolor=DARK, lw=0.5, label="Primary ([M:Pre+I:Post] / [M; I])", zorder=3)
+    bc2 = ax3.bar(xc + wc/2, rev_vals, wc, color=LBLUE,  edgecolor=DARK, lw=0.5, label="Swapped ([I:Pre+M:Post] / [I; M])", zorder=3)
     # Color KV-PD and PR-CSPD distinct muted shades to echo architectures while keeping Fwd vs Rev clear
     bc1[3].set_color(PURPLE); bc2[3].set_color("#C9B3DC")
     bc1[4].set_color(ORANGE); bc2[4].set_color("#F7C99E")
@@ -1515,7 +1516,7 @@ def make_pfig15():
     # ------------------------------------------------------------------
     style_boxed(ax1, grid="y")
     slots = ["P0_Clean", "P0_FullCtx", "P1_SysEnd", "P2_MultiTurn", "P3_PostRAG", "P4_PostQuery", "P5_AllCombined"]
-    s_labels = ["P0\nClean", "P0\nFullCtx", "P1\nSysEnd", "P2\nTurn", "P3\nRAG", "P4\nPostQ", "P5\nAll"]
+    s_labels = ["Start\nClean", "Start\nFullCtx", "Post-\nSys", "Pre-\nQuery", "Post-\nRAG", "Post-\nQuery", "Long\nOffset"]
     i_vals = [d12["partA1_official_6slots"]["official_I_on_IF"][s]["g_vs_slot"] for s in slots]
     m_vals = [d12["partA1_official_6slots"]["official_M_on_Math"][s]["g_vs_slot"] for s in slots]
 
@@ -1535,13 +1536,13 @@ def make_pfig15():
         va = "bottom" if v >= 0 else "top"
         ax1.text(b.get_x() + b.get_width()/2, v + off, f"{v:+.0f}", ha="center", va=va, fontsize=6.4, color=DARK)
 
-    ax1.text(5.5, 69.5, "Post-query\ncollapse zone", ha="center", va="top", fontsize=6.8, fontweight="bold", color=RED,
+    ax1.text(5.5, 69.5, "Post-query\nfailure zone", ha="center", va="top", fontsize=6.8, fontweight="bold", color=RED,
              bbox=dict(boxstyle="round,pad=0.18", fc="white", ec=RED, lw=0.6, alpha=0.92))
     ax1.set_xticks(x1)
-    ax1.set_xticklabels(s_labels, fontsize=7.0)
+    ax1.set_xticklabels(s_labels, fontsize=6.8)
     ax1.set_ylabel("Slot-matched KL recovery G (%)")
     ax1.set_ylim(-60, 82)
-    ax1.set_title("(a) Reference step-200 CSPD across slots P0-P5", pad=9)
+    ax1.set_title("(a) Reference step-200 CSPD across insertion slots", pad=9)
     ax1.legend(loc="lower left", frameon=True, facecolor="white", framealpha=0.94, edgecolor="#DDDDDD", fontsize=6.6, handlelength=1.4)
 
     # ------------------------------------------------------------------
@@ -1556,9 +1557,9 @@ def make_pfig15():
     ax2.axhline(100, color=GRAY, lw=0.7, ls=":", zorder=1)
 
     series = [
-        ("Official_CSPD_I@P0", BLUE,   "o", "Ref-CSPD @ P0"),
-        ("KVPD_IF_EOS@P0",     PURPLE, "s", "KV-PD-EOS @ P0"),
-        ("Alg1_CRSP_EOS@P4",   TEAL,   "^", "Alg. 1 CRSP-EOS @ P4"),
+        ("Official_CSPD_I@P0", BLUE,   "o", "Ref-CSPD (Start)"),
+        ("KVPD_IF_EOS@P0",     PURPLE, "s", "KV-PD Complete (Start)"),
+        ("Alg1_CRSP_EOS@P4",   TEAL,   "^", "Alg. 1 CRSP Complete (Post-Q)"),
     ]
     for key, col, mk, lbl in series:
         y0 = [pC["L0"][key]["open_first_0_to_l"][str(c)]["recovery_vs_base_pct"] for c in cuts]
@@ -1566,10 +1567,10 @@ def make_pfig15():
         ax2.plot(cuts, y0, color=col, marker=mk, ms=4.2, lw=1.7, ls="-",  label=f"{lbl} (L=0)", zorder=4)
         ax2.plot(cuts, y4, color=col, marker=mk, ms=3.5, lw=1.2, ls="--", alpha=0.82, label=f"{lbl} (L=4096)", zorder=3)
 
-    ax2.text(20.0, -28.0, "Mid-layer surge\n(L16-24: +48-61 pp)", ha="center", va="bottom", fontsize=6.6, color=BLUE,
+    ax2.text(20.0, -28.0, "Mid-layer gain\n(L16-24: +48-61 pp)", ha="center", va="bottom", fontsize=6.6, color=BLUE,
              bbox=dict(boxstyle="round,pad=0.16", fc="white", ec=BLUE, lw=0.55, alpha=0.92))
-    ax2.annotate("P4 shallow shift\nat L=4096 (+21.9%)", xy=(8, 21.9), xytext=(2.5, 48.0),
-                 fontsize=6.4, color=TEAL, fontweight="bold",
+    ax2.annotate("Post-Q shallow shift\nat L=4096 (+21.9%)", xy=(8, 21.9), xytext=(2.5, 48.0),
+                 fontsize=6.3, color=TEAL, fontweight="bold",
                  arrowprops=dict(arrowstyle="->", color=TEAL, lw=0.9, shrinkA=1, shrinkB=3))
 
     ax2.set_xticks(cuts)
@@ -1579,13 +1580,13 @@ def make_pfig15():
     ax2.set_ylabel("Cumulative gain recovery (%)")
     ax2.set_title("(b) 36-layer direct-path ablation (L=0 vs L=4096)", pad=9)
     ax2.legend(loc="upper left", ncol=1, frameon=True, facecolor="white", framealpha=0.92,
-               edgecolor="#DDDDDD", fontsize=5.8, handlelength=1.7, labelspacing=0.25)
+               edgecolor="#DDDDDD", fontsize=5.5, handlelength=1.5, labelspacing=0.25)
 
     # ------------------------------------------------------------------
-    # (c) Complete-EOS Upgrade on KV-PD @ P0 Across All 6 E2E Benchmarks
+    # (c) Complete-EOS Upgrade on KV-PD (Start) Across All 6 E2E Benchmarks
     # ------------------------------------------------------------------
     style_boxed(ax3, grid="y")
-    b_labels = ["MATH32\nL=0", "MATH32\nL=4096", "IFBench32\nL=0", "IFBench32\nL=4096", "IFEval48\nL=0", "IFEval48\nL=4096"]
+    b_labels = ["MATH\nL=0", "MATH\nL=4096", "IFBench\nL=0", "IFBench\nL=4096", "IFEval\nL=0", "IFEval\nL=4096"]
     trunc_vals = [
         d10c["e2e_math32"]["0"]["KVPD_Math_P0"]["acc"],
         d10c["e2e_math32"]["4096"]["KVPD_Math_P0"]["acc"],
@@ -1605,8 +1606,8 @@ def make_pfig15():
 
     x3 = np.arange(len(b_labels))
     w3 = 0.36
-    c1 = ax3.bar(x3 - w3/2, trunc_vals, w3, color="#C9B3DC", edgecolor=DARK, lw=0.5, label="Truncated traces ([:512])", zorder=3)
-    c2 = ax3.bar(x3 + w3/2, eos_vals,   w3, color=PURPLE,    edgecolor=DARK, lw=0.5, label="Complete-EOS traces (</think>+EOS)", zorder=3)
+    c1 = ax3.bar(x3 - w3/2, trunc_vals, w3, color="#C9B3DC", edgecolor=DARK, lw=0.5, label="Truncated traces (512 tok)", zorder=3)
+    c2 = ax3.bar(x3 + w3/2, eos_vals,   w3, color=PURPLE,    edgecolor=DARK, lw=0.5, label="Complete traces (</think>+EOS)", zorder=3)
 
     for b, v in zip(c1, trunc_vals):
         ax3.text(b.get_x() + b.get_width()/2, v + 1.1, f"{v:.1f}", ha="center", va="bottom", fontsize=6.2, color=GRAY)
@@ -1622,15 +1623,15 @@ def make_pfig15():
 
     mean_t = float(np.mean(trunc_vals))
     mean_e = float(np.mean(eos_vals))
-    ax3.text(0.02, 0.965, f"6-task mean: {mean_t:.1f}% → {mean_e:.1f}% (+{mean_e - mean_t:.1f} pp)\nClosed traces: 66.1% → 72.8% (+6.7 pp)",
-             transform=ax3.transAxes, ha="left", va="top", fontsize=5.8, fontweight="bold", color=PURPLE,
+    ax3.text(0.02, 0.965, f"6-task mean: {mean_t:.1f}% → {mean_e:.1f}% (+{mean_e - mean_t:.1f} pp)\nCompleted traces: 66.1% → 72.8% (+6.7 pp)",
+             transform=ax3.transAxes, ha="left", va="top", fontsize=5.7, fontweight="bold", color=PURPLE,
              bbox=dict(boxstyle="round,pad=0.18", fc="#F7F2FA", ec=PURPLE, lw=0.6))
 
     ax3.set_xticks(x3)
     ax3.set_xticklabels(b_labels, fontsize=6.8)
     ax3.set_ylabel("End-to-end strict accuracy (%)")
     ax3.set_ylim(0, 122)
-    ax3.set_title("(c) Complete-EOS trajectory upgrade (KV-PD @ P0)", pad=9)
+    ax3.set_title("(c) Complete-trajectory upgrade (KV-PD, Start)", pad=9)
     ax3.legend(loc="upper right", frameon=True, facecolor="white", framealpha=0.95, edgecolor="#DDDDDD", fontsize=5.7, handlelength=1.2)
 
     path = os.path.join(OUT, "pfig15_official_cspd_eos_and_pathway.png")
