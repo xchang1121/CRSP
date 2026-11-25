@@ -16,14 +16,14 @@
 
 ## 1. 引言
 
-大语言模型的强化学习后训练与企业私有规范适配通常按单一领域独立进行。数学推理、代码生成、智能体交互与复杂指令遵循各自依赖不同的数据分布与验证器（Wang et al., 2026b; Ma et al., 2026a），企业业务规章也需要随合规要求持续更新。理想的能力整合系统应当同时满足四项需求：（1）充分保留各领域专家的能力增量；（2）不损害已有领域性能与基座的通用域外能力；（3）新增或移除任一模块时，无需重新训练其他模块；（4）能够在包含系统人设、多轮对话与检索文档的长上下文中按需挂载，并支持低干扰的多专家组合。
+大语言模型的强化学习后训练与企业私有规范适配通常按单一领域独立进行。数学推理、代码生成、智能体交互与复杂指令遵循各自依赖不同的数据分布与验证器 [[1]](#ref-1)[[2]](#ref-2)，企业业务规章也需要随合规要求持续更新。理想的能力整合系统应当同时满足四项需求：（1）充分保留各领域专家的能力增量；（2）不损害已有领域性能与基座的通用域外能力；（3）新增或移除任一模块时，无需重新训练其他模块；（4）能够在包含系统人设、多轮对话与检索文档的长上下文中按需挂载，并支持低干扰的多专家组合。
 
-现有的能力整合路线主要分为两类。权重空间方法（如任务算术、TIES 权重合并与多教师同策略蒸馏 MOPD；Ilharco et al., 2023; Yadav et al., 2023; Wang et al., 2026b）将多个专家写入同一套模型参数，每次新增能力都需重新整合，且修改主干权重容易引起遗忘和域外能力退化（Wang et al., 2026c）。低秩适配器（LoRA；Hu et al., 2021）虽然保持各专家参数独立，但在多租户并发请求挂载不同适配器时，每层、每解码步都需执行额外的矩阵运算，从而降低吞吐并增加首词元延迟。
+现有的能力整合路线主要分为两类。权重空间方法（如任务算术 [[3]](#ref-3)、TIES 权重合并 [[4]](#ref-4) 与多教师同策略蒸馏 MOPD [[1]](#ref-1)）将多个专家写入同一套模型参数，每次新增能力都需重新整合，且修改主干权重容易引起遗忘和域外能力退化 [[5]](#ref-5)。低秩适配器（LoRA [[6]](#ref-6)）虽然保持各专家参数独立，但在多租户并发请求挂载不同适配器时，每层、每解码步都需执行额外的矩阵运算，从而降低吞吐并增加首词元延迟。
 
 本文研究在**严格冻结主干参数**的条件下，将专精能力封装于外部连续表示的递进方案。围绕表示深度、参数幅值约束与挂载槽位三个设计维度，本文构建了三阶段统一框架（图 1）：
 
 1. **阶段一（输入空间 `CSPD`）**：将强化学习专家独立蒸馏为前置输入词嵌入软提示，通过前缀鲁棒训练实现无需联合微调的直接拼接。实验在验证其跨模型泛化、域外保持与并发吞吐优势的同时，也定位了三项明确局限：跨全网反向传播耗时较高、未见私有文档直接拼接失效，以及离开序列起点后的槽位退化。
-2. **阶段二（逐层键值空间 `KV-PD`）**：基于输入软提示主要经由各层响应侧注意力生效的发现，将可训练参数直接放到全部 Transformer 层的分组查询注意力键值缓存中，利用真实文本前向缓存初始化来省去跨层反向传播。面向未见私有文档持续学习，本文在 `KV-PD` 上引入了自动路由、`Micro-RAG` 常量检索与增量补丁。但受旋转位置编码（RoPE；Su et al., 2024）约束，`KV-PD` 的键张量绑定于序列起点索引，无法动态插入复杂长上下文中间。
+2. **阶段二（逐层键值空间 `KV-PD`）**：基于输入软提示主要经由各层响应侧注意力生效的发现，将可训练参数直接放到全部 Transformer 层的分组查询注意力键值缓存中，利用真实文本前向缓存初始化来省去跨层反向传播。面向未见私有文档持续学习，本文在 `KV-PD` 上引入了自动路由、`Micro-RAG` 常量检索与增量补丁。但受旋转位置编码（RoPE [[7]](#ref-7)）约束，`KV-PD` 的键张量绑定于序列起点索引，无法动态插入复杂长上下文中间。
 3. **阶段三（任意槽位软提示 `CRSP`）**：重新回到位置无关的输入嵌入空间，针对六类常见部署位置引入多槽语境随机化、一致性损失与非目标保持损失。针对已有 `KV-PD` 但无原教师（算法 1），以及无教师、仅有验证器（算法 2）两类场景，分别设计了对应的构造算法，并与前两阶段一同在长上下文、多专家注入顺序和服务化部署下开展对比评测。
 
 ![图 1：面向冻结主干模型的三阶段模块化软提示蒸馏统一架构总览](figures/pfig01_unified_overview.png)
@@ -59,7 +59,7 @@
 
 #### 蒸馏目标与完整轨迹过滤
 
-给定领域 $`j`$ 的强化学习教师 $`p_{\theta_j}`$ 与轨迹数据集 $`\mathcal{D}_j`$，单专家软提示 $`\mathbf{P}_j`$ 根据教师监督形式采用两类训练目标。在大规模离线训练中，仅在教师生成的验证通过回复上最小化长度归一化负对数似然（Kim and Rush, 2016）：
+给定领域 $`j`$ 的强化学习教师 $`p_{\theta_j}`$ 与轨迹数据集 $`\mathcal{D}_j`$，单专家软提示 $`\mathbf{P}_j`$ 根据教师监督形式采用两类训练目标。在大规模离线训练中，仅在教师生成的验证通过回复上最小化长度归一化负对数似然 [[8]](#ref-8)：
 
 ```math
 \mathbf{P}_j^\star = \arg\min_{\mathbf{P}_j} \mathbb{E}_{(x,y) \sim \mathcal{D}_j} \left[ -\frac{1}{\lvert y \rvert} \sum_{t=1}^{\lvert y \rvert} \log p_{\theta_0}\big(y_t \mid \mathcal{I}(\mathbf{P}_j, x), y_{\lt t}\big) \right] \qquad \text{(2)}
@@ -87,7 +87,7 @@ p(y \mid x) = p_{\theta_0}\big(y \mid \mathcal{I}(\mathbf{P}_{1:k}, x)\big) \qqu
 \tilde{\mathbf{E}}_{\text{in}} = \begin{cases} [\mathbf{F};\, \mathbf{P}_j;\, \text{Emb}(x)], & \text{以概率 } p_{\text{pr}} \\ [\mathbf{P}_j;\, \text{Emb}(x)], & \text{以概率 } 1 - p_{\text{pr}} \end{cases} \qquad \text{(5)}
 ```
 
-优化器除 AdamW 外，本文还对比了矩阵正交化优化器 Muon（Liu et al., 2025）。该方法对动量矩阵 $`\mathbf{M}_t`$ 执行迭代 Newton-Schulz 近似极分解 $`\text{Orth}(\mathbf{M}_t) = \mathbf{U}\mathbf{V}^\top`$，更新规则如下：
+优化器除 AdamW 外，本文还对比了矩阵正交化优化器 Muon [[9]](#ref-9)。该方法对动量矩阵 $`\mathbf{M}_t`$ 执行迭代 Newton-Schulz 近似极分解 $`\text{Orth}(\mathbf{M}_t) = \mathbf{U}\mathbf{V}^\top`$，更新规则如下：
 
 ```math
 \mathbf{P}_{t+1} = \mathbf{P}_t - \eta \sqrt{\max\left(1, \frac{L}{d}\right)}\, \text{Orth}(\mathbf{M}_t) \qquad \text{(6)}
@@ -193,7 +193,7 @@ Algorithm 1: 基于输出分布的键值逆向蒸馏（KV-Inv-CRSP）
 9:  return P*
 ```
 
-2. **路径二：无强化学习教师的两阶段构造（算法 2，`Two-Stage TF-CRSP`）**。当仅有冻结基座 $`f_{\theta_0}`$ 与程序化验证器 $`R(x, y) \in [0, 1]`$ 时，先由基座多次采样并筛选通过轨迹 $`\mathcal{D}_{\text{win}}`$，执行带基座 KL 约束的多槽自举热启动（式 (16)）；随后以热启动结果 $`\mathbf{P}_{\text{S1}}`$ 作为初值和参考策略 $`\pi_{\text{ref}}`$，开展多槽在线组相对策略优化 GRPO（Shao et al., 2024，式 (17)）：
+2. **路径二：无强化学习教师的两阶段构造（算法 2，`Two-Stage TF-CRSP`）**。当仅有冻结基座 $`f_{\theta_0}`$ 与程序化验证器 $`R(x, y) \in [0, 1]`$ 时，先由基座多次采样并筛选通过轨迹 $`\mathcal{D}_{\text{win}}`$，执行带基座 KL 约束的多槽自举热启动（式 (16)）；随后以热启动结果 $`\mathbf{P}_{\text{S1}}`$ 作为初值和参考策略 $`\pi_{\text{ref}}`$，开展多槽在线组相对策略优化 GRPO [[10]](#ref-10)（式 (17)）：
 
 ```math
 \mathcal{L}_{\text{Stage1}}(\mathbf{P}) = \mathbb{E}_{(x,y)\sim\mathcal{D}_{\text{win}},\, (s,\mathcal{C})\sim q_{\text{slot}}}\Big[\mathcal{L}_{\text{NLL}}(\mathbf{P}; s,\mathcal{C}) + \beta_{\text{base}}\, D_{\text{KL}}\big(p_{\theta_0}(\cdot \mid s,\mathcal{C}) \, \Vert \, p_{\theta_0,\mathbf{P}}(\cdot \mid s,\mathcal{C})\big)\Big] + \lambda_{\text{inv}}\, \mathcal{L}_{\text{inv}}(\mathbf{P}) \qquad \text{(16)}
@@ -223,7 +223,7 @@ Algorithm 2: 无强化学习教师的两阶段 CRSP 构造（Two-Stage TF-CRSP�
 
 #### 虚拟词元导出与解码输出屏蔽
 
-为了让 `CSPD` 与 `CRSP` 直接运行在标准词元 ID 推理引擎（如 SGLang、vLLM）上而无需改动推理内核，本文将软提示矩阵追加到派生 `safetensors` 权重的 `model.embed_tokens.weight` 末尾（其余权重分片通过符号链接复用，并做 SHA-256 校验），推理时只需将对应的连续虚拟词元 ID 插入目标槽位（如序列起点、系统提示后、查询前或查询后）。需要注意的是，在输入与输出词嵌入共享权重（tied embeddings）的模型（如 Qwen3）上，追加的高幅值虚拟词元行同时会充当输出投影行，可能在解码时被意外采样出来。因此，推理引擎必须在采样阶段屏蔽所有虚拟词元与词表填充位（例如将对应 logit 偏置设为 $`-10^9`$，或通过词表白名单仅允许采样原始词表）。在多专家布局上，本文区分**分槽插入**（如数学置于查询前、指令遵循置于查询后）与**同槽拼接**（如两模块在查询前相邻拼接）。由于查询前与查询后位于系统提示、历史对话与检索文本之后，不同专家组合的并发请求可在前缀缓存树（如 RadixAttention）中共享前置长上下文的 KV 缓存。
+为了让 `CSPD` 与 `CRSP` 直接运行在标准词元 ID 推理引擎（如 SGLang、vLLM）上而无需改动推理内核，本文将软提示矩阵追加到派生 `safetensors` 权重的 `model.embed_tokens.weight` 末尾（其余权重分片通过符号链接复用，并做 SHA-256 校验），推理时只需将对应的连续虚拟词元 ID 插入目标槽位（如序列起点、系统提示后、查询前或查询后）。需要注意的是，在输入与输出词嵌入共享权重（tied embeddings）的模型（如 Qwen3 [[11]](#ref-11)）上，追加的高幅值虚拟词元行同时会充当输出投影行，可能在解码时被意外采样出来。因此，推理引擎必须在采样阶段屏蔽所有虚拟词元与词表填充位（例如将对应 logit 偏置设为 $`-10^9`$，或通过词表白名单仅允许采样原始词表）。在多专家布局上，本文区分**分槽插入**（如数学置于查询前、指令遵循置于查询后）与**同槽拼接**（如两模块在查询前相邻拼接）。由于查询前与查询后位于系统提示、历史对话与检索文本之后，不同专家组合的并发请求可在前缀缓存树（如 RadixAttention）中共享前置长上下文的 KV 缓存。
 
 ---
 
@@ -256,7 +256,7 @@ K(A) = \frac{D_{\text{KL}}(T \Vert B) - D_{\text{KL}}(T \Vert A)}{D_{\text{KL}}(
 
 评测解析器与私有文档数据集分别实现于 [`src/benchmarks.py`](../src/benchmarks.py) 与 [`src/domain_docs_extended.py`](../src/domain_docs_extended.py)，全部 15 张论文图表由 [`src/plot_paper_style_figures.py`](../src/plot_paper_style_figures.py) 从已归档的实验 JSON 直接生成。
 
-1. **跨架构单专家与四域组合基准**：单专家实验涵盖 7B 至 35B 参数规模的 23 组稠密与混合专家（MoE）公开模型对（256 向量软提示）。其余受控实验均在 36 层 Qwen3-4B 主干 `M2RL-SFT`（Wang et al., 2026b，原生上下文窗口 32,768 词元）上完成。四域组合基准包括数学（AIME24）、代码（LiveCodeBench v5）、科学（GPQA-Diamond）与指令遵循（下简称 IF，基准为 IFBench）四个强化学习教师（200 步 Muon，128–256 随机前缀）及六项域外基准（XSTest、TruthfulQA、BFCL、TriviaQA、BBEH、FinQA）。受控消融在单卡 A100-80GB 或 RTX PRO 6000 Blackwell 上采用 Top-64 前向散度（45 或 60 步，对比 512 词元截断轨迹与完整 `</think>` + EOS 轨迹），评测留出 `IFEval`（$`N=48/96`$）、`IFBench`（$`N=32/40/64`$）与 `MATH`（$`N=32/48`$）。除严格通过率外，同时统计最大生成预算内正常结束思考并给出最终答案的样本比例（完成率）及其条件准确率（完成准确率）。
+1. **跨架构单专家与四域组合基准**：单专家实验涵盖 7B 至 35B 参数规模的 23 组稠密与混合专家（MoE）公开模型对（256 向量软提示）。其余受控实验均在 36 层 Qwen3-4B [[11]](#ref-11) 主干 `M2RL-SFT` [[1]](#ref-1)（原生上下文窗口 32,768 词元）上完成。四域组合基准包括数学（AIME24）、代码（LiveCodeBench v5 [[12]](#ref-12)）、科学（GPQA-Diamond [[13]](#ref-13)）与指令遵循（下简称 IF，基准为 IFBench [[14]](#ref-14)）四个强化学习教师（200 步 Muon，128–256 随机前缀）及六项域外基准（XSTest [[15]](#ref-15)、TruthfulQA [[16]](#ref-16)、BFCL [[17]](#ref-17)、TriviaQA [[18]](#ref-18)、BBEH [[19]](#ref-19)、FinQA [[20]](#ref-20)）。受控消融在单卡 A100-80GB 或 RTX PRO 6000 Blackwell 上采用 Top-64 前向散度（45 或 60 步，对比 512 词元截断轨迹与完整 `</think>` + EOS 轨迹），评测留出 `IFEval`（$`N=48/96`$）、`IFBench`（$`N=32/40/64`$）与 `MATH` [[21]](#ref-21)（$`N=32/48`$）。除严格通过率外，同时统计最大生成预算内正常结束思考并给出最终答案的样本比例（完成率）及其条件准确率（完成准确率）。
 2. **五域合成私有文档持续学习基准**：构建五个完全合成、基座模型未在预训练中见过的企业规范域——`HeliosPay v4.2`（含不兼容升级版 `v5.0`）、`NVX-418`、`Litho-X9`、`GridPulse-9` 与 `Meridian-C3`，共含 172 道域内多条件规则与常量事实题以及 24 道域外拒答题。
 3. **六槽位鲁棒性与三专家分槽并发基准**：在六类语义槽位（含 420 词元无关检索文档的检索后槽位与超千词元历史的长偏移后槽位）上评测同语境增益 $`G_{\text{ctx}}`$、跨位置漂移 $`D_{\text{drift}}`$、三随机种子（42、108、202）收敛方差，以及三专家分槽并发（文档置于系统提示后、数学置于查询前、指令遵循置于查询后）的 Top-32 跨专家干扰矩阵与端到端准确率。
 4. **长上下文（0 → 8192）、注入顺序与部署基准**：从 `Salesforce/wikitext` 抽取 126 段不重复文本并结合多轮对话历史，构造 $`L_{\text{ctx}} \in \lbrace 0, 512, 1024, 2048, 4096, 8192\rbrace`$ 测试集，测定单、双、四专家衰减、9 层注意力占比、全部 36 层直接响应通路遮蔽消融、双专家分槽与同槽互换、三专家全部 $`3!=6`$ 种排列，以及回复位置投影显存与虚拟词元导出等价性。
@@ -271,35 +271,35 @@ K(A) = \frac{D_{\text{KL}}(T \Vert B) - D_{\text{KL}}(T \Vert A)}{D_{\text{KL}}(
 
 表 1 给出了 256 向量输入软提示在 23 组公开模型对上的单专家结果，覆盖数学推理、代码生成、软件工程与终端智能体。在 23 组评测中，有 22 组恢复了至少 90% 的教师增益，15 组达到或超过原教师（多步智能体中 6 组有 5 组超过教师）。在 `GPT-OSS-Swallow-20B` 上的消融进一步显示：（1）软提示长度取 2/8/32/256/512 时，恢复率分别为 51.23%、74.11%、90.01%、93.10% 与 87.83%，32 个向量已能获取大部分收益；（2）在相近参数量下，软提示（737k 参数，96.06%）与 5 秩 K/V LoRA（814k 参数，95.72%）表现接近，且训练集中混入 31% 错误轨迹时仍可保持 90.54% 的恢复率。
 
-| 强化学习前基座模型 | 强化学习专家教师 | 文献来源 | 基座得分 | 教师得分 | 软提示得分 | 恢复率 $`R`$ (%) |
-| :--- | :--- | :--- | :---: | :---: | :---: | :---: |
+| 强化学习前基座模型 | 强化学习专家教师 | 参考 | 基座得分 | 教师得分 | 软提示得分 | 恢复率 $`R`$ (%) |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: |
 | *(a) 数学推理（AIME / MATH / AMC / HMMT）* | | | | | | |
-| MiMo-7B-SFT | MiMo-7B-RL | Xiaomi LLM-Core et al., 2025 | 63.77 | 73.18 | 72.25 | 90.15 |
-| GPT-OSS-Swallow-20B-SFT | GPT-OSS-Swallow-20B-RL | Swallow LLM, 2026a | 76.53 | 90.21 | 89.67 | 96.06 |
-| Qwen3-Swallow-8B-SFT | Qwen3-Swallow-8B-RL | Swallow LLM, 2026b | 63.68 | 83.01 | 82.28 | 96.22 |
-| OLMo-3-7B-Instruct-DPO | OLMo-3-7B-Instruct | Team OLMo et al., 2026 | 42.97 | 60.72 | 60.13 | 96.70 |
-| Nemotron-Cascade-8B-SFT | Nemotron-Cascade-8B-MathRL | Wang et al., 2026a | 85.25 | 89.34 | 89.30 | 99.18 |
-| Qwen3-Swallow-30B-A3B-SFT | Qwen3-Swallow-30B-A3B-RL | Swallow LLM, 2026b | 72.91 | 86.25 | 86.23 | 99.79 |
-| Eurus-2-7B-SFT | Eurus-2-7B-PRIME | Cui et al., 2025 | 36.06 | 49.63 | 49.91 | 102.07 |
-| INTELLECT-MATH-SFT | INTELLECT-MATH | Prime Intellect, 2025 | 45.47 | 54.11 | 54.62 | 105.89 |
-| Poro-2-8B-Long-Math-SFT | Poro-2-8B-Long-Math-RL | Hakala et al., 2026 | 68.34 | 72.43 | 73.88 | 135.47 |
-| Klear-Reasoner-8B-SFT | Klear-Reasoner-8B | Su et al., 2026 | 62.15 | 65.00 | 66.11 | 139.02 |
+| MiMo-7B-SFT | MiMo-7B-RL | [[22]](#ref-22) | 63.77 | 73.18 | 72.25 | 90.15 |
+| GPT-OSS-Swallow-20B-SFT | GPT-OSS-Swallow-20B-RL | [[23]](#ref-23) | 76.53 | 90.21 | 89.67 | 96.06 |
+| Qwen3-Swallow-8B-SFT | Qwen3-Swallow-8B-RL | [[24]](#ref-24) | 63.68 | 83.01 | 82.28 | 96.22 |
+| OLMo-3-7B-Instruct-DPO | OLMo-3-7B-Instruct | [[25]](#ref-25) | 42.97 | 60.72 | 60.13 | 96.70 |
+| Nemotron-Cascade-8B-SFT | Nemotron-Cascade-8B-MathRL | [[26]](#ref-26) | 85.25 | 89.34 | 89.30 | 99.18 |
+| Qwen3-Swallow-30B-A3B-SFT | Qwen3-Swallow-30B-A3B-RL | [[24]](#ref-24) | 72.91 | 86.25 | 86.23 | 99.79 |
+| Eurus-2-7B-SFT | Eurus-2-7B-PRIME | [[27]](#ref-27) | 36.06 | 49.63 | 49.91 | 102.07 |
+| INTELLECT-MATH-SFT | INTELLECT-MATH | [[28]](#ref-28) | 45.47 | 54.11 | 54.62 | 105.89 |
+| Poro-2-8B-Long-Math-SFT | Poro-2-8B-Long-Math-RL | [[29]](#ref-29) | 68.34 | 72.43 | 73.88 | 135.47 |
+| Klear-Reasoner-8B-SFT | Klear-Reasoner-8B | [[30]](#ref-30) | 62.15 | 65.00 | 66.11 | 139.02 |
 | *(b) 代码生成（LiveCodeBench）* | | | | | | |
-| MiMo-7B-SFT | MiMo-7B-RL（代理数据） | Xiaomi LLM-Core et al., 2025 | 50.17 | 52.87 | 52.55 | 88.08 |
-| Nemotron-Cascade-8B-SFT | Nemotron-Cascade-8B-CodeRL | Wang et al., 2026a | 55.73 | 69.39 | 69.56 | 101.21 |
-| Klear-Reasoner-8B-SFT | Klear-Reasoner-8B | Su et al., 2026 | 53.44 | 57.27 | 57.34 | 101.83 |
-| Qwen3-14B | AReaL-boba-2-14B-Open | Fu et al., 2026 | 64.86 | 68.06 | 68.14 | 102.38 |
-| Mellum2-12B-A2.5B-SFT | Mellum2-12B-A2.5B-Instruct | Kojic et al., 2026 | 36.30 | 39.05 | 39.34 | 110.34 |
-| Qwen3-8B | AReaL-boba-2-8B-Open | Fu et al., 2026 | 58.54 | 62.20 | 62.96 | 120.83 |
-| OLMo-3-7B-Instruct-DPO | OLMo-3-7B-Instruct | Team OLMo et al., 2026 | 28.50 | 34.10 | 36.54 | 143.44 |
+| MiMo-7B-SFT | MiMo-7B-RL（代理数据） | [[22]](#ref-22) | 50.17 | 52.87 | 52.55 | 88.08 |
+| Nemotron-Cascade-8B-SFT | Nemotron-Cascade-8B-CodeRL | [[26]](#ref-26) | 55.73 | 69.39 | 69.56 | 101.21 |
+| Klear-Reasoner-8B-SFT | Klear-Reasoner-8B | [[30]](#ref-30) | 53.44 | 57.27 | 57.34 | 101.83 |
+| Qwen3-14B | AReaL-boba-2-14B-Open | [[31]](#ref-31) | 64.86 | 68.06 | 68.14 | 102.38 |
+| Mellum2-12B-A2.5B-SFT | Mellum2-12B-A2.5B-Instruct | [[32]](#ref-32) | 36.30 | 39.05 | 39.34 | 110.34 |
+| Qwen3-8B | AReaL-boba-2-8B-Open | [[31]](#ref-31) | 58.54 | 62.20 | 62.96 | 120.83 |
+| OLMo-3-7B-Instruct-DPO | OLMo-3-7B-Instruct | [[25]](#ref-25) | 28.50 | 34.10 | 36.54 | 143.44 |
 | *(c) 软件工程智能体（SWE-bench Verified，500 任务）* | | | | | | |
-| Nemotron-Cascade-8B-SFT | Nemotron-Cascade-8B | Wang et al., 2026a | 23.60 | 34.60 | 33.75 | 92.27 |
-| Qwen3-32B | DeepSWE-Preview | Luo et al., 2025 | 24.90 | 44.05 | 45.65 | 108.36 |
-| Qwen3.5-35B-A3B | Lego-RL-35B-A3B | Du et al., 2026 | 64.00 | 70.40 | 72.25 | 128.91 |
-| SWE-Gym-OpenHands-7B | SkyRL-Agent-7b-v0 | Cao et al., 2025 | 11.40 | 12.80 | 13.60 | 157.14 |
+| Nemotron-Cascade-8B-SFT | Nemotron-Cascade-8B | [[26]](#ref-26) | 23.60 | 34.60 | 33.75 | 92.27 |
+| Qwen3-32B | DeepSWE-Preview | [[33]](#ref-33) | 24.90 | 44.05 | 45.65 | 108.36 |
+| Qwen3.5-35B-A3B | Lego-RL-35B-A3B | [[34]](#ref-34) | 64.00 | 70.40 | 72.25 | 128.91 |
+| SWE-Gym-OpenHands-7B | SkyRL-Agent-7b-v0 | [[35]](#ref-35) | 11.40 | 12.80 | 13.60 | 157.14 |
 | *(d) 终端交互智能体（Terminal-Bench 2.1，89 任务）* | | | | | | |
-| Qwen3.5-9B | TMax-9B | Ivison et al., 2026 | 20.22 | 28.09 | 29.96 | 123.81 |
-| Qwen3.6-27B | TMax-27B | Ivison et al., 2026 | 43.45 | 46.07 | 48.69 | 200.00 |
+| Qwen3.5-9B | TMax-9B | [[36]](#ref-36) | 20.22 | 28.09 | 29.96 | 123.81 |
+| Qwen3.6-27B | TMax-27B | [[36]](#ref-36) | 43.45 | 46.07 | 48.69 | 200.00 |
 
 **表 1：23 组公开数学、代码与智能体强化学习专家的单专家输入软提示蒸馏结果（百分比）。**
 
@@ -320,7 +320,7 @@ K(A) = \frac{D_{\text{KL}}(T \Vert B) - D_{\text{KL}}(T \Vert A)}{D_{\text{KL}}(
 
 **表 2：`M2RL-SFT` 四领域多专家组合与权重、LoRA 整合基线对比（百分比）。** M、C、S、I 依次表示数学、代码、科学与指令遵循模块。
 
-持续扩展实验验证了独立软提示的增删特性（图 2、图 3）。按顺序逐一前置添加（基座 → I → SI → CSI → MCSI）使四域均值单调上升（50.4 → 61.0 → 61.7 → 63.7 → 67.8%）；改为后置追加（基座 → I → IS → ISC → ISCM）同样单调上升（50.41 → 60.99 → 62.29 → 63.58 → 67.72%；最终四域得分分别为 79.90%、65.72%、57.92%、67.33%）。在 `MCSI` 和 `ISCM` 上逐一移除任一模块均使均值下降（`ISCM` 留一移除 M/C/S/I 分别变化 -4.14/-0.25/-0.47/-3.30 pp）。相比之下，渐进软提示训练削弱了最早加入的指令遵循能力（IFBench 降至 50.9%–61.4%），而 TIES 权重合并在仅合并指令遵循专家时就使代码基准从 58.61% 降至 52.69%。
+持续扩展实验验证了独立软提示的增删特性（图 2、图 3）。按顺序逐一前置添加（基座 → I → SI → CSI → MCSI）使四域均值单调上升（50.4 → 61.0 → 61.7 → 63.7 → 67.8%）；改为后置追加（基座 → I → IS → ISC → ISCM）同样单调上升（50.41 → 60.99 → 62.29 → 63.58 → 67.72%；最终四域得分分别为 79.90%、65.72%、57.92%、67.33%）。在 `MCSI` 和 `ISCM` 上逐一移除任一模块均使均值下降（`ISCM` 留一移除 M/C/S/I 分别变化 -4.14/-0.25/-0.47/-3.30 pp）。相比之下，渐进软提示训练 [[37]](#ref-37) 削弱了最早加入的指令遵循能力（IFBench 降至 50.9%–61.4%），而 TIES 权重合并在仅合并指令遵循专家时就使代码基准从 58.61% 降至 52.69%。
 
 ![图 2：输入空间软提示的持续增量添加轨迹与留一移除跨领域贡献矩阵](figures/pfig02_cspd_continual_and_loo.png)
 
@@ -330,7 +330,7 @@ K(A) = \frac{D_{\text{KL}}(T \Vert B) - D_{\text{KL}}(T \Vert A)}{D_{\text{KL}}(
 
 **图 3：独立软提示、渐进软提示与 TIES 权重合并的持续扩展对比。** 独立软提示在各阶段均值均高于另外两种方法，并避免了 TIES 在代码任务上的遗忘现象。
 
-由于主干参数保持冻结，四域 `CSPD` 在六个域外通用基准上取得最高均值 **56.6**（表 3，高出 MOPD 3.1 分），在 TruthfulQA 上几乎未下降（-0.4，对比 MOPD 为 -3.6）。在服务吞吐方面，软提示仅增加少量预填充词元而不改动解码线性层：在单卡 B200（SGLang，BF16 `GPT-OSS-20B`，每并发请求挂载不同适配器）上，32 并发吞吐维持在原模型 0.8% 以内（715.4 vs. 721.3 tokens/s），为 4 秩 LoRA（298.5 tokens/s）的 **2.40 倍**，P95 首词元延迟降低 **2.27 倍**（17.26 vs. 39.21 s），且对投机解码草稿模型影响很小（EAGLE-3 接受长度 -2.6%，DFlash -4.7%，图 4）。
+由于主干参数保持冻结，四域 `CSPD` 在六个域外通用基准上取得最高均值 **56.6**（表 3，高出 MOPD 3.1 分），在 TruthfulQA 上几乎未下降（-0.4，对比 MOPD 为 -3.6）。在服务吞吐方面，软提示仅增加少量预填充词元而不改动解码线性层：在单卡 B200（SGLang，BF16 `GPT-OSS-20B`，每并发请求挂载不同适配器）上，32 并发吞吐维持在原模型 0.8% 以内（715.4 vs. 721.3 tokens/s），为 4 秩 LoRA（298.5 tokens/s）的 **2.40 倍**，P95 首词元延迟降低 **2.27 倍**（17.26 vs. 39.21 s），且对投机解码草稿模型影响很小（EAGLE-3 [[38]](#ref-38) 接受长度 -2.6%，DFlash [[39]](#ref-39) -4.7%，图 4）。
 
 | 方法 | XSTest | TruthfulQA | BFCL | TriviaQA | BBEH | FinQA | 六基准均值 |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
@@ -653,13 +653,13 @@ K(A) = \frac{D_{\text{KL}}(T \Vert B) - D_{\text{KL}}(T \Vert A)}{D_{\text{KL}}(
 
 ## 9. 相关工作
 
-**后训练压缩与低维适配。** 已有研究表明，强化学习后训练的有效参数变化大多集中在低维子空间或稀疏子网络中：低秩适配（LoRA；Hu et al., 2021）在多种后训练场景下接近全参数微调（Schulman and Thinking Machines Lab, 2025），单层微调、稀疏子网络和极低维适配器也能恢复大部分强化学习增益（Zhang et al., 2026; Mukherjee et al., 2025; Morris et al., 2026; Mukherjee et al., 2026）。这为在冻结主干外部以低维连续参数承载专家能力提供了依据。
+**后训练压缩与低维适配。** 已有研究表明，强化学习后训练的有效参数变化大多集中在低维子空间或稀疏子网络中：低秩适配（LoRA [[6]](#ref-6)）在多种后训练场景下接近全参数微调 [[40]](#ref-40)，单层微调 [[41]](#ref-41)、稀疏子网络 [[42]](#ref-42)、极低维适配器 [[43]](#ref-43) 以及稀疏随机梯度下降 [[44]](#ref-44) 也能恢复大部分强化学习增益。这为在冻结主干外部以低维连续参数承载专家能力提供了依据。
 
-**后训练蒸馏与多专家整合。** 序列级知识蒸馏通过教师生成的轨迹迁移推理能力（Kim and Rush, 2016; DeepSeek-AI et al., 2025），同策略蒸馏进一步在学生自生成轨迹上对齐教师分布（Agarwal et al., 2024; Gu et al., 2024; Lu and Thinking Machines Lab, 2025）。多教师同策略蒸馏（MOPD；Wang et al., 2026b; Ma et al., 2026a）与参数算术、符号裁剪等权重合并方法（Wortsman et al., 2022; Ilharco et al., 2023; Yadav et al., 2023; Yu et al., 2024）将多个专家写入同一份权重，新增能力时需重新整合且可能损害域外泛化（Wang et al., 2026c; Wu et al., 2026）。本文通过冻结主干与外部模块化参数化使专家训练与组合相互独立。
+**后训练蒸馏与多专家整合。** 序列级知识蒸馏 [[8]](#ref-8) 与大规模推理蒸馏（DeepSeek-R1 [[45]](#ref-45)）通过教师生成的轨迹迁移推理能力；同策略蒸馏进一步在学生自生成轨迹上对齐教师分布（包括自生成纠错蒸馏 [[46]](#ref-46)、MiniLLM [[47]](#ref-47) 与在线分布蒸馏 [[48]](#ref-48)）。多教师同策略蒸馏（MOPD [[1]](#ref-1)[[2]](#ref-2)）与权重合并方法（如 Model Soups [[49]](#ref-49)、任务算术 [[3]](#ref-3)、TIES [[4]](#ref-4) 与 DARE [[50]](#ref-50)）将多个专家写入同一份权重，新增能力时需重新整合且可能损害域外泛化 [[5]](#ref-5)[[51]](#ref-51)。本文通过冻结主干与外部模块化参数化使专家训练与组合相互独立。
 
-**连续提示微调与键值缓存适配。** 连续参数可注入输入词嵌入（Prompt Tuning；Lester et al., 2021）、逐层键值缓存（Prefix-Tuning；Li and Liang, 2021）或中间隐状态（ReFT；Wu et al., 2024）。PromptKD（Kim et al., 2024）、特权上下文软提示蒸馏（Ma et al., 2026b）、动态演示提示（Teng et al., 2026）与安全软提示蒸馏（Alfarra et al., 2026）探索了软提示在蒸馏和推理中的应用；在键值缓存压缩方面，Cartridges 通过自学习压缩长上下文（Eyuboglu et al., 2025），Hypertune 训练可共存加载的键值前缀（Hyperstition, 2026）。本文打通了从输入空间 `CSPD` 到逐层 `KV-PD` 再到纯输出分布逆向蒸馏 `CRSP` 的路径，并界定了程序性策略与私有文档记忆的适用边界。
+**连续提示微调与键值缓存适配。** 连续参数可注入输入词嵌入（Prompt Tuning [[52]](#ref-52)）、逐层键值缓存（Prefix-Tuning [[53]](#ref-53)）或中间隐状态（ReFT [[54]](#ref-54)）。PromptKD [[55]](#ref-55)、特权上下文软提示蒸馏 [[56]](#ref-56)、动态提示微调（DDPT [[57]](#ref-57)）与安全软提示蒸馏 [[58]](#ref-58) 探索了软提示在蒸馏和推理中的应用；在键值缓存压缩方面，Cartridges [[59]](#ref-59) 通过自学习压缩长上下文，Hypertune [[60]](#ref-60) 训练可共存加载的键值前缀。本文打通了从输入空间 `CSPD` 到逐层 `KV-PD` 再到纯输出分布逆向蒸馏 `CRSP` 的路径，并界定了程序性策略与私有文档记忆的适用边界。
 
-**模块化组合、持续学习与推理服务。** 适配器组合常见方案包括权重合并（Huang et al., 2023; Prabhakar et al., 2024）与路由门控混合（Pfeiffer et al., 2021; Buehler and Buehler, 2024; Zadouri et al., 2024; Morrison et al., 2026）；输入空间中的 APT（Bowman et al., 2023）、ATTEMPT（Asai et al., 2022）、渐进提示（Razdaibiedina et al., 2023）与技能新词嵌入（Berthon et al., 2026）研究了任务级提示组合。服务系统方面，Punica（Chen et al., 2023）与 S-LoRA（Sheng et al., 2024）优化多租户 LoRA 批处理，PreFT 研究仅预填充适配（Lanpouthakoun et al., 2026），EAGLE-3（Li et al., 2025）与 DFlash（Chen et al., 2026）推进了投机解码加速。本文提出的 `CRSP` 将模块化组合拓展到了数千词元复杂长上下文的任意槽位部署与跨租户前缀缓存共享。
+**模块化组合、持续学习与推理服务。** 适配器组合常见方案包括权重合并（LoraHub [[61]](#ref-61)、LoRA Soups [[62]](#ref-62)）与路由门控混合（AdapterFusion [[63]](#ref-63)、X-LoRA [[64]](#ref-64)、MoE 轻量微调 [[65]](#ref-65) 与模块化 MoE 后训练 [[66]](#ref-66)）；输入空间中的 APT [[67]](#ref-67)、ATTEMPT [[68]](#ref-68)、渐进提示 [[37]](#ref-37) 与技能新词嵌入 [[69]](#ref-69) 研究了任务级提示组合。服务系统方面，Punica [[70]](#ref-70) 与 S-LoRA [[71]](#ref-71) 优化多租户 LoRA 批处理，PreFT [[72]](#ref-72) 研究仅预填充适配，EAGLE-3 [[38]](#ref-38) 与 DFlash [[39]](#ref-39) 推进了投机解码加速。本文提出的 `CRSP` 将模块化组合拓展到了数千词元复杂长上下文的任意槽位部署与跨租户前缀缓存共享。
 
 ---
 
@@ -673,75 +673,75 @@ K(A) = \frac{D_{\text{KL}}(T \Vert B) - D_{\text{KL}}(T \Vert A)}{D_{\text{KL}}(
 
 ## 参考文献
 
-- Agarwal, R., Vieillard, N., Zhou, Y., Stanczyk, P., Ramos, S., Geist, M., & Bachem, O. (2024). On-Policy Distillation of Language Models: Learning from Self-Generated Mistakes. *International Conference on Learning Representations (ICLR)*.
-- Alfarra, M., Pinneri, C., Kianfar, D., Almousa, M., & Louizos, C. (2026). Distilling Safe LLM Systems via Soft Prompts for On-Device Settings. *arXiv preprint arXiv:2606.09388*.
-- Asai, A., Salehi, M., Peters, M. E., & Hajishirzi, H. (2022). ATTEMPT: Parameter-Efficient Multi-Task Tuning via Attentional Mixtures of Soft Prompts. *Proceedings of EMNLP*.
-- Berthon, A., Astorga, N., & van der Schaar, M. (2026). Skill Neologisms: Towards Skill-Based Continual Learning. *Proceedings of the 43rd International Conference on Machine Learning (ICML)*, PMLR 306: 7815–7836.
-- Bowman, B., Achille, A., Zancato, L., Trager, M., Perera, P., Paolini, G., & Soatto, S. (2023). A-la-carte Prompt Tuning (APT): Combining Distinct Data via Composable Prompting. *Proceedings of CVPR*.
-- Buehler, E. L., & Buehler, M. J. (2024). X-LoRA: Mixture of Low-Rank Adapter Experts, a Flexible Framework for Large Language Models. *APL Machine Learning*.
-- Cao, S., Hegde, S., Li, D., et al. (2025). SkyRL-v0: Train Real-World Long-Horizon Agents via Reinforcement Learning.
-- Chen, J., Liang, Y., & Liu, Z. (2026). DFlash: Block Diffusion for Flash Speculative Decoding. *Proceedings of ICML*.
-- Chen, L., Ye, Z., Wu, Y., Zhuo, D., Ceze, L., & Krishnamurthy, A. (2023). Punica: Multi-Tenant LoRA Serving. *arXiv preprint arXiv:2310.18547*.
-- Chen, Z., Chen, W., Smiley, C., Shah, S., Borova, I., Langdon, D., Moussa, R., Beane, M., Huang, T.-H., Routledge, B., & Wang, W. Y. (2021). FinQA: A Dataset of Numerical Reasoning over Financial Data. *Proceedings of EMNLP*, 3697–3711.
-- Cui, G., Yuan, L., Wang, Z., et al. (2025). Process Reinforcement through Implicit Rewards. *arXiv preprint arXiv:2502.01456*.
-- DeepSeek-AI, et al. (2025). DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning. *arXiv preprint arXiv:2501.12948*.
-- Du, Y., Jiang, Y., Yuan, T., et al. (2026). LEGO-RL: Harness-Native Reinforcement Learning for Coding Agents. *arXiv preprint arXiv:2608.17393*.
-- Eyuboglu, S., et al. (2025). Cartridges: Lightweight and General-Purpose Long Context Representations via Self-Study. *arXiv preprint arXiv:2506.06266*.
-- Fu, W., Gao, J., Shen, X., et al. (2026). AReaL: A Large-Scale Asynchronous Reinforcement Learning System for Language Reasoning. *arXiv preprint arXiv:2505.24298*.
-- Gu, Y., Dong, L., Wei, F., & Huang, M. (2024). MiniLLM: Knowledge Distillation of Large Language Models. *International Conference on Learning Representations (ICLR)*.
-- Hakala, K., Luoma, J., Zautner, D., et al. (2026). Enabling Language-Specific Reasoning in Multilingual Models with Reinforcement Learning. *ROCm Technical Blog*.
-- Hendrycks, D., Burns, C., Kadavath, S., et al. (2021). Measuring Mathematical Problem Solving with the MATH Dataset. *NeurIPS Datasets and Benchmarks*.
-- Hu, E. J., Shen, Y., Wallis, P., Allen-Zhu, Z., Li, Y., Wang, S., Wang, L., & Chen, W. (2021). LoRA: Low-Rank Adaptation of Large Language Models. *arXiv preprint arXiv:2106.09685*.
-- Huang, C., Liu, Q., Lin, B. Y., Pang, T., Du, C., & Lin, M. (2023). LoraHub: Efficient Cross-Task Generalization via Dynamic LoRA Composition. *arXiv preprint arXiv:2307.13269*.
-- Hyperstition. (2026). Hypertune: Serving and Composing Individually Fine-Tuned Models with Soft Prefills.
-- Ilharco, G., Ribeiro, M. T., Wortsman, M., Gururangan, S., Schmidt, L., Hajishirzi, H., & Farhadi, A. (2023). Editing Models with Task Arithmetic. *International Conference on Learning Representations (ICLR)*.
-- Ivison, H., Yin, J. O., Shao, R., Xiao, T., Lambert, N., & Hajishirzi, H. (2026). TMax: A Simple Recipe for Terminal Agents. *arXiv preprint arXiv:2606.23321*.
-- Jain, N., Han, K., Gu, A., Li, W.-D., Yan, F., Zhang, T., Wang, S., Solar-Lezama, A., Sen, K., & Stoica, I. (2025). LiveCodeBench: Holistic and Contamination Free Evaluation of Large Language Models for Code. *International Conference on Learning Representations (ICLR)*.
-- Joshi, M., Choi, E., Weld, D., & Zettlemoyer, L. (2017). TriviaQA: A Large Scale Distantly Supervised Challenge Dataset for Reading Comprehension. *Proceedings of ACL*, 1601–1611.
-- Kazemi, M., Fatemi, B., Bansal, H., et al. (2025). BIG-Bench Extra Hard. *Proceedings of ACL*, 26473–26501.
-- Kim, G., Jang, D., & Yang, E. (2024). PromptKD: Distilling Student-Friendly Knowledge for Generative Language Models via Prompt Tuning. *Findings of EMNLP*.
-- Kim, Y., & Rush, A. M. (2016). Sequence-Level Knowledge Distillation. *Proceedings of EMNLP*.
-- Kojic, M., Bondyrev, I., de Moor, A., et al. (2026). Mellum2 Technical Report. *arXiv preprint arXiv:2605.31268*.
-- Lanpouthakoun, A., Arora, A., Wu, Z., Pai, D., Keigwin, B., Jurafsky, D., & Potts, C. (2026). PreFT: Prefill-Only Finetuning for Efficient Inference. *arXiv preprint arXiv:2605.14217*.
-- Lester, B., Al-Rfou, R., & Constant, N. (2021). The Power of Scale for Parameter-Efficient Prompt Tuning. *Proceedings of EMNLP*.
-- Li, X. L., & Liang, P. (2021). Prefix-Tuning: Optimizing Continuous Prompts for Generation. *Proceedings of ACL-IJCNLP*.
-- Li, Y., Wei, F., Zhang, C., & Zhang, H. (2025). EAGLE-3: Scaling up Inference Acceleration of Large Language Models via Training-Time Test. *arXiv preprint arXiv:2503.01840*.
-- Lin, S., Hilton, J., & Evans, O. (2022). TruthfulQA: Measuring How Models Mimic Human Falsehoods. *Proceedings of ACL*.
-- Liu, J., Su, J., Yao, X., et al. (2025). Muon is Scalable for LLM Training. *arXiv preprint arXiv:2502.16982*.
-- Lu, K., & Thinking Machines Lab. (2025). On-Policy Distillation. *Thinking Machines Lab: Connectionism*.
-- Luo, M., Jain, N., Singh, J., et al. (2025). DeepSWE: Training a Fully Open-Sourced, State-of-the-Art Coding Agent by Scaling RL.
-- Ma, W., Wei, J., Zhao, L., et al. (2026a). MOPD: Multi-Teacher On-Policy Distillation for Capability Integration in LLM Post-Training. *arXiv preprint arXiv:2606.30406*.
-- Ma, Y., Zhu, Z., Jiang, M., & Xiao, C. (2026b). One Student, Many Teachers: Multi-Task On-Policy Distillation via Soft-Prompt Privileged Context. *arXiv preprint arXiv:2607.18293*.
-- Morris, J. X., Mireshghallah, N., Ibrahim, M., & Mahloujifar, S. (2026). Learning to Reason in 13 Parameters. *arXiv preprint arXiv:2602.04118*.
-- Morrison, J., Adhikesaven, S., Bhagia, A., Zaharia, M., Smith, N. A., & Min, S. (2026). Train Separately, Merge Together: Modular Post-Training with Mixture-of-Experts. *arXiv preprint arXiv:2604.18473*.
-- Mukherjee, S., Yuan, L., Hakkani-Tur, D., & Peng, H. (2025). Reinforcement Learning Finetunes Small Subnetworks in Large Language Models. *Advances in Neural Information Processing Systems (NeurIPS)*.
-- Mukherjee, S., Yuan, L., Jayasinha, P., Hakkani-Tur, D., & Peng, H. (2026). Do We Need Adam? Surprisingly Strong and Sparse Reinforcement Learning with SGD in LLMs. *arXiv preprint arXiv:2602.07729*.
-- Patil, S. G., Mao, H., Yan, F., Ji, C. C.-J., Suresh, V., Stoica, I., & Gonzalez, J. E. (2025). The Berkeley Function Calling Leaderboard (BFCL): From Tool Use to Agentic Evaluation of Large Language Models. *Proceedings of ICML*.
-- Pfeiffer, J., Kamath, A., Rücklé, A., Cho, K., & Gurevych, I. (2021). AdapterFusion: Non-Destructive Task Composition for Transfer Learning. *Proceedings of EACL*.
-- Prabhakar, A., Li, Y., Narasimhan, K., Kakade, S., Malach, E., & Jelassi, S. (2024). LoRA Soups: Merging LoRAs for Practical Skill Composition Tasks. *arXiv preprint arXiv:2410.13025*.
-- Prime Intellect. (2025). Distributed Training in the Inference-Time-Compute Paradigm.
-- Pyatkin, V., Malik, S., Graf, V., Ivison, H., Huang, S., Dasigi, P., Lambert, N., & Hajishirzi, H. (2025). Generalizing Verifiable Instruction Following. *arXiv preprint arXiv:2507.02833*.
-- Razdaibiedina, A., Mao, Y., Hou, R., Khabsa, M., Lewis, M., & Almahairi, A. (2023). Progressive Prompts: Continual Learning for Language Models. *International Conference on Learning Representations (ICLR)*.
-- Rein, D., Hou, B. L., Stickland, A. C., et al. (2024). GPQA: A Graduate-Level Google-Proof Q&A Benchmark. *Conference on Language Modeling (COLM)*.
-- Röttger, P., Kirk, H. R., Vidgen, B., Attanasio, G., Bianchi, F., & Hovy, D. (2024). XSTest: A Test Suite for Identifying Exaggerated Safety Behaviours in Large Language Models. *Proceedings of NAACL*.
-- Schulman, J., & Thinking Machines Lab. (2025). LoRA Without Regret. *Thinking Machines Lab: Connectionism*.
-- Shao, Z., Wang, P., Zhu, Q., et al. (2024). DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models. *arXiv preprint arXiv:2402.03300*.
-- Sheng, Y., Cao, S., Li, D., Hooper, C., Lee, N., Yang, S., Chou, C., Zhu, B., Zheng, L., Keutzer, K., Gonzalez, J. E., & Stoica, I. (2024). S-LoRA: Serving Thousands of Concurrent LoRA Adapters. *Proceedings of MLSys*.
-- Su, J., Ahmed, M., Lu, Y., Pan, S., Bo, W., & Liu, Y. (2024). RoFormer: Enhanced Transformer with Rotary Position Embedding. *Neurocomputing*, 568: 127063.
-- Su, Z., Pan, L., Bai, X., et al. (2026). Klear-Reasoner: Advancing Reasoning Capability via Gradient-Preserving Clipping Policy Optimization. *arXiv preprint arXiv:2508.07629*.
-- Swallow LLM. (2026a). GPT-OSS Swallow.
-- Swallow LLM. (2026b). Qwen3 Swallow.
-- Team OLMo, Ettinger, A., Bertsch, A., et al. (2026). OLMo 3. *arXiv preprint arXiv:2512.13961*.
-- Teng, G., Shen, C., Wang, W., et al. (2026). DDPT: Enhancing Complex Reasoning in Large Language Models via Distillation and Dynamic Prompt Tuning. *Neurocomputing*.
-- Wang, B., Lee, C., Lee, N., et al. (2026a). Nemotron-Cascade: Scaling Cascaded Reinforcement Learning for General-Purpose Reasoning Models. *arXiv preprint arXiv:2512.13607*.
-- Wang, H., Long, X., Li, Z., Xu, Y., Li, T., & Tang, Y. (2026b). To Mix or to Merge: Toward Multi-Domain Reinforcement Learning for Large Language Models. *Conference on Language Modeling (COLM)*.
-- Wang, Y., Zhou, Y., Zhu, S., et al. (2026c). On the Generalization Limitation of On-Policy Distillation for Post-RL Consolidation. *arXiv preprint arXiv:2611.05609*.
-- Wortsman, M., Ilharco, G., Gadre, S. Y., et al. (2022). Model Soups: Averaging Weights of Multiple Fine-Tuned Models Improves Accuracy without Increasing Inference Time. *Proceedings of ICML*.
-- Wu, C., Li, Z., Bu, J., Liu, J., & Wang, H. (2026). Sparsity Curse: Understanding RLVR Model Parameter Space from Model Merging. *arXiv preprint arXiv:2606.18521*.
-- Wu, Z., Arora, A., Wang, Z., Geiger, A., Jurafsky, D., Manning, C. D., & Potts, C. (2024). ReFT: Representation Finetuning for Language Models. *Advances in Neural Information Processing Systems (NeurIPS)*.
-- Xiaomi LLM-Core, Xia, B., Shen, B., et al. (2025). MiMo: Unlocking the Reasoning Potential of Language Model – From Pretraining to Posttraining. *arXiv preprint arXiv:2505.07608*.
-- Yadav, P., Tam, D., Choshen, L., Raffel, C., & Bansal, M. (2023). TIES-Merging: Resolving Interference When Merging Models. *Advances in Neural Information Processing Systems (NeurIPS)*.
-- Yang, A., et al. (2025). Qwen3 Technical Report. *arXiv preprint arXiv:2505.09388*.
-- Yu, L., Yu, B., Yu, H., Huang, F., & Li, Y. (2024). Language Models are Super Mario: Absorbing Abilities from Homologous Models as a Free Lunch. *Proceedings of ICML*.
-- Zadouri, T., Üstün, A., Ahmadian, A., Ermiş, B., Locatelli, A., & Hooker, S. (2024). Pushing Mixture of Experts to the Limit: Extremely Parameter Efficient MoE for Instruction Tuning. *International Conference on Learning Representations (ICLR)*.
-- Zhang, Z., Hu, R., Glentis, A., Li, D., Yau, C.-Y., Lin, H., & Hong, M. (2026). Is One Layer Enough? Training A Single Transformer Layer Can Match Full-Parameter RL Training. *arXiv preprint arXiv:2607.01232*.
+1. <a id="ref-1"></a>Wang, H., Long, X., Li, Z., Xu, Y., Li, T., & Tang, Y. (2026). To Mix or to Merge: Toward Multi-Domain Reinforcement Learning for Large Language Models. *Conference on Language Modeling (COLM)*.
+2. <a id="ref-2"></a>Ma, W., Wei, J., Zhao, L., et al. (2026). MOPD: Multi-Teacher On-Policy Distillation for Capability Integration in LLM Post-Training. *arXiv preprint* [arXiv:2606.30406](https://arxiv.org/abs/2606.30406).
+3. <a id="ref-3"></a>Ilharco, G., Ribeiro, M. T., Wortsman, M., Gururangan, S., Schmidt, L., Hajishirzi, H., & Farhadi, A. (2023). Editing Models with Task Arithmetic. *International Conference on Learning Representations (ICLR)*.
+4. <a id="ref-4"></a>Yadav, P., Tam, D., Choshen, L., Raffel, C., & Bansal, M. (2023). TIES-Merging: Resolving Interference When Merging Models. *Advances in Neural Information Processing Systems (NeurIPS)*.
+5. <a id="ref-5"></a>Wang, Y., Zhou, Y., Zhu, S., et al. (2026). On the Generalization Limitation of On-Policy Distillation for Post-RL Consolidation. *arXiv preprint* [arXiv:2611.05609](https://arxiv.org/abs/2611.05609).
+6. <a id="ref-6"></a>Hu, E. J., Shen, Y., Wallis, P., Allen-Zhu, Z., Li, Y., Wang, S., Wang, L., & Chen, W. (2021). LoRA: Low-Rank Adaptation of Large Language Models. *arXiv preprint* [arXiv:2106.09685](https://arxiv.org/abs/2106.09685).
+7. <a id="ref-7"></a>Su, J., Ahmed, M., Lu, Y., Pan, S., Bo, W., & Liu, Y. (2024). RoFormer: Enhanced Transformer with Rotary Position Embedding. *Neurocomputing*, 568: 127063.
+8. <a id="ref-8"></a>Kim, Y., & Rush, A. M. (2016). Sequence-Level Knowledge Distillation. *Proceedings of EMNLP*.
+9. <a id="ref-9"></a>Liu, J., Su, J., Yao, X., et al. (2025). Muon is Scalable for LLM Training. *arXiv preprint* [arXiv:2502.16982](https://arxiv.org/abs/2502.16982).
+10. <a id="ref-10"></a>Shao, Z., Wang, P., Zhu, Q., et al. (2024). DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models. *arXiv preprint* [arXiv:2402.03300](https://arxiv.org/abs/2402.03300).
+11. <a id="ref-11"></a>Yang, A., et al. (2025). Qwen3 Technical Report. *arXiv preprint* [arXiv:2505.09388](https://arxiv.org/abs/2505.09388).
+12. <a id="ref-12"></a>Jain, N., Han, K., Gu, A., Li, W.-D., Yan, F., Zhang, T., Wang, S., Solar-Lezama, A., Sen, K., & Stoica, I. (2025). LiveCodeBench: Holistic and Contamination Free Evaluation of Large Language Models for Code. *International Conference on Learning Representations (ICLR)*.
+13. <a id="ref-13"></a>Rein, D., Hou, B. L., Stickland, A. C., et al. (2024). GPQA: A Graduate-Level Google-Proof Q&A Benchmark. *Conference on Language Modeling (COLM)*.
+14. <a id="ref-14"></a>Pyatkin, V., Malik, S., Graf, V., Ivison, H., Huang, S., Dasigi, P., Lambert, N., & Hajishirzi, H. (2025). Generalizing Verifiable Instruction Following. *arXiv preprint* [arXiv:2507.02833](https://arxiv.org/abs/2507.02833).
+15. <a id="ref-15"></a>Röttger, P., Kirk, H. R., Vidgen, B., Attanasio, G., Bianchi, F., & Hovy, D. (2024). XSTest: A Test Suite for Identifying Exaggerated Safety Behaviours in Large Language Models. *Proceedings of NAACL*.
+16. <a id="ref-16"></a>Lin, S., Hilton, J., & Evans, O. (2022). TruthfulQA: Measuring How Models Mimic Human Falsehoods. *Proceedings of ACL*.
+17. <a id="ref-17"></a>Patil, S. G., Mao, H., Yan, F., Ji, C. C.-J., Suresh, V., Stoica, I., & Gonzalez, J. E. (2025). The Berkeley Function Calling Leaderboard (BFCL): From Tool Use to Agentic Evaluation of Large Language Models. *Proceedings of ICML*.
+18. <a id="ref-18"></a>Joshi, M., Choi, E., Weld, D., & Zettlemoyer, L. (2017). TriviaQA: A Large Scale Distantly Supervised Challenge Dataset for Reading Comprehension. *Proceedings of ACL*, 1601–1611.
+19. <a id="ref-19"></a>Kazemi, M., Fatemi, B., Bansal, H., et al. (2025). BIG-Bench Extra Hard. *Proceedings of ACL*, 26473–26501.
+20. <a id="ref-20"></a>Chen, Z., Chen, W., Smiley, C., Shah, S., Borova, I., Langdon, D., Moussa, R., Beane, M., Huang, T.-H., Routledge, B., & Wang, W. Y. (2021). FinQA: A Dataset of Numerical Reasoning over Financial Data. *Proceedings of EMNLP*, 3697–3711.
+21. <a id="ref-21"></a>Hendrycks, D., Burns, C., Kadavath, S., et al. (2021). Measuring Mathematical Problem Solving with the MATH Dataset. *NeurIPS Datasets and Benchmarks*.
+22. <a id="ref-22"></a>Xiaomi LLM-Core, Xia, B., Shen, B., et al. (2025). MiMo: Unlocking the Reasoning Potential of Language Model – From Pretraining to Posttraining. *arXiv preprint* [arXiv:2505.07608](https://arxiv.org/abs/2505.07608).
+23. <a id="ref-23"></a>Swallow LLM. (2026). GPT-OSS Swallow.
+24. <a id="ref-24"></a>Swallow LLM. (2026). Qwen3 Swallow.
+25. <a id="ref-25"></a>Team OLMo, Ettinger, A., Bertsch, A., et al. (2026). OLMo 3. *arXiv preprint* [arXiv:2512.13961](https://arxiv.org/abs/2512.13961).
+26. <a id="ref-26"></a>Wang, B., Lee, C., Lee, N., et al. (2026). Nemotron-Cascade: Scaling Cascaded Reinforcement Learning for General-Purpose Reasoning Models. *arXiv preprint* [arXiv:2512.13607](https://arxiv.org/abs/2512.13607).
+27. <a id="ref-27"></a>Cui, G., Yuan, L., Wang, Z., et al. (2025). Process Reinforcement through Implicit Rewards. *arXiv preprint* [arXiv:2502.01456](https://arxiv.org/abs/2502.01456).
+28. <a id="ref-28"></a>Prime Intellect. (2025). Distributed Training in the Inference-Time-Compute Paradigm.
+29. <a id="ref-29"></a>Hakala, K., Luoma, J., Zautner, D., et al. (2026). Enabling Language-Specific Reasoning in Multilingual Models with Reinforcement Learning. *ROCm Technical Blog*.
+30. <a id="ref-30"></a>Su, Z., Pan, L., Bai, X., et al. (2026). Klear-Reasoner: Advancing Reasoning Capability via Gradient-Preserving Clipping Policy Optimization. *arXiv preprint* [arXiv:2508.07629](https://arxiv.org/abs/2508.07629).
+31. <a id="ref-31"></a>Fu, W., Gao, J., Shen, X., et al. (2026). AReaL: A Large-Scale Asynchronous Reinforcement Learning System for Language Reasoning. *arXiv preprint* [arXiv:2505.24298](https://arxiv.org/abs/2505.24298).
+32. <a id="ref-32"></a>Kojic, M., Bondyrev, I., de Moor, A., et al. (2026). Mellum2 Technical Report. *arXiv preprint* [arXiv:2605.31268](https://arxiv.org/abs/2605.31268).
+33. <a id="ref-33"></a>Luo, M., Jain, N., Singh, J., et al. (2025). DeepSWE: Training a Fully Open-Sourced, State-of-the-Art Coding Agent by Scaling RL.
+34. <a id="ref-34"></a>Du, Y., Jiang, Y., Yuan, T., et al. (2026). LEGO-RL: Harness-Native Reinforcement Learning for Coding Agents. *arXiv preprint* [arXiv:2608.17393](https://arxiv.org/abs/2608.17393).
+35. <a id="ref-35"></a>Cao, S., Hegde, S., Li, D., et al. (2025). SkyRL-v0: Train Real-World Long-Horizon Agents via Reinforcement Learning.
+36. <a id="ref-36"></a>Ivison, H., Yin, J. O., Shao, R., Xiao, T., Lambert, N., & Hajishirzi, H. (2026). TMax: A Simple Recipe for Terminal Agents. *arXiv preprint* [arXiv:2606.23321](https://arxiv.org/abs/2606.23321).
+37. <a id="ref-37"></a>Razdaibiedina, A., Mao, Y., Hou, R., Khabsa, M., Lewis, M., & Almahairi, A. (2023). Progressive Prompts: Continual Learning for Language Models. *International Conference on Learning Representations (ICLR)*.
+38. <a id="ref-38"></a>Li, Y., Wei, F., Zhang, C., & Zhang, H. (2025). EAGLE-3: Scaling up Inference Acceleration of Large Language Models via Training-Time Test. *arXiv preprint* [arXiv:2503.01840](https://arxiv.org/abs/2503.01840).
+39. <a id="ref-39"></a>Chen, J., Liang, Y., & Liu, Z. (2026). DFlash: Block Diffusion for Flash Speculative Decoding. *Proceedings of ICML*.
+40. <a id="ref-40"></a>Schulman, J., & Thinking Machines Lab. (2025). LoRA Without Regret. *Thinking Machines Lab: Connectionism*.
+41. <a id="ref-41"></a>Zhang, Z., Hu, R., Glentis, A., Li, D., Yau, C.-Y., Lin, H., & Hong, M. (2026). Is One Layer Enough? Training A Single Transformer Layer Can Match Full-Parameter RL Training. *arXiv preprint* [arXiv:2607.01232](https://arxiv.org/abs/2607.01232).
+42. <a id="ref-42"></a>Mukherjee, S., Yuan, L., Hakkani-Tur, D., & Peng, H. (2025). Reinforcement Learning Finetunes Small Subnetworks in Large Language Models. *Advances in Neural Information Processing Systems (NeurIPS)*.
+43. <a id="ref-43"></a>Morris, J. X., Mireshghallah, N., Ibrahim, M., & Mahloujifar, S. (2026). Learning to Reason in 13 Parameters. *arXiv preprint* [arXiv:2602.04118](https://arxiv.org/abs/2602.04118).
+44. <a id="ref-44"></a>Mukherjee, S., Yuan, L., Jayasinha, P., Hakkani-Tur, D., & Peng, H. (2026). Do We Need Adam? Surprisingly Strong and Sparse Reinforcement Learning with SGD in LLMs. *arXiv preprint* [arXiv:2602.07729](https://arxiv.org/abs/2602.07729).
+45. <a id="ref-45"></a>DeepSeek-AI, et al. (2025). DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning. *arXiv preprint* [arXiv:2501.12948](https://arxiv.org/abs/2501.12948).
+46. <a id="ref-46"></a>Agarwal, R., Vieillard, N., Zhou, Y., Stanczyk, P., Ramos, S., Geist, M., & Bachem, O. (2024). On-Policy Distillation of Language Models: Learning from Self-Generated Mistakes. *International Conference on Learning Representations (ICLR)*.
+47. <a id="ref-47"></a>Gu, Y., Dong, L., Wei, F., & Huang, M. (2024). MiniLLM: Knowledge Distillation of Large Language Models. *International Conference on Learning Representations (ICLR)*.
+48. <a id="ref-48"></a>Lu, K., & Thinking Machines Lab. (2025). On-Policy Distillation. *Thinking Machines Lab: Connectionism*.
+49. <a id="ref-49"></a>Wortsman, M., Ilharco, G., Gadre, S. Y., et al. (2022). Model Soups: Averaging Weights of Multiple Fine-Tuned Models Improves Accuracy without Increasing Inference Time. *Proceedings of ICML*.
+50. <a id="ref-50"></a>Yu, L., Yu, B., Yu, H., Huang, F., & Li, Y. (2024). Language Models are Super Mario: Absorbing Abilities from Homologous Models as a Free Lunch. *Proceedings of ICML*.
+51. <a id="ref-51"></a>Wu, C., Li, Z., Bu, J., Liu, J., & Wang, H. (2026). Sparsity Curse: Understanding RLVR Model Parameter Space from Model Merging. *arXiv preprint* [arXiv:2606.18521](https://arxiv.org/abs/2606.18521).
+52. <a id="ref-52"></a>Lester, B., Al-Rfou, R., & Constant, N. (2021). The Power of Scale for Parameter-Efficient Prompt Tuning. *Proceedings of EMNLP*.
+53. <a id="ref-53"></a>Li, X. L., & Liang, P. (2021). Prefix-Tuning: Optimizing Continuous Prompts for Generation. *Proceedings of ACL-IJCNLP*.
+54. <a id="ref-54"></a>Wu, Z., Arora, A., Wang, Z., Geiger, A., Jurafsky, D., Manning, C. D., & Potts, C. (2024). ReFT: Representation Finetuning for Language Models. *Advances in Neural Information Processing Systems (NeurIPS)*.
+55. <a id="ref-55"></a>Kim, G., Jang, D., & Yang, E. (2024). PromptKD: Distilling Student-Friendly Knowledge for Generative Language Models via Prompt Tuning. *Findings of EMNLP*.
+56. <a id="ref-56"></a>Ma, Y., Zhu, Z., Jiang, M., & Xiao, C. (2026). One Student, Many Teachers: Multi-Task On-Policy Distillation via Soft-Prompt Privileged Context. *arXiv preprint* [arXiv:2607.18293](https://arxiv.org/abs/2607.18293).
+57. <a id="ref-57"></a>Teng, G., Shen, C., Wang, W., et al. (2026). DDPT: Enhancing Complex Reasoning in Large Language Models via Distillation and Dynamic Prompt Tuning. *Neurocomputing*.
+58. <a id="ref-58"></a>Alfarra, M., Pinneri, C., Kianfar, D., Almousa, M., & Louizos, C. (2026). Distilling Safe LLM Systems via Soft Prompts for On-Device Settings. *arXiv preprint* [arXiv:2606.09388](https://arxiv.org/abs/2606.09388).
+59. <a id="ref-59"></a>Eyuboglu, S., et al. (2025). Cartridges: Lightweight and General-Purpose Long Context Representations via Self-Study. *arXiv preprint* [arXiv:2506.06266](https://arxiv.org/abs/2506.06266).
+60. <a id="ref-60"></a>Hyperstition. (2026). Hypertune: Serving and Composing Individually Fine-Tuned Models with Soft Prefills.
+61. <a id="ref-61"></a>Huang, C., Liu, Q., Lin, B. Y., Pang, T., Du, C., & Lin, M. (2023). LoraHub: Efficient Cross-Task Generalization via Dynamic LoRA Composition. *arXiv preprint* [arXiv:2307.13269](https://arxiv.org/abs/2307.13269).
+62. <a id="ref-62"></a>Prabhakar, A., Li, Y., Narasimhan, K., Kakade, S., Malach, E., & Jelassi, S. (2024). LoRA Soups: Merging LoRAs for Practical Skill Composition Tasks. *arXiv preprint* [arXiv:2410.13025](https://arxiv.org/abs/2410.13025).
+63. <a id="ref-63"></a>Pfeiffer, J., Kamath, A., Rücklé, A., Cho, K., & Gurevych, I. (2021). AdapterFusion: Non-Destructive Task Composition for Transfer Learning. *Proceedings of EACL*.
+64. <a id="ref-64"></a>Buehler, E. L., & Buehler, M. J. (2024). X-LoRA: Mixture of Low-Rank Adapter Experts, a Flexible Framework for Large Language Models. *APL Machine Learning*.
+65. <a id="ref-65"></a>Zadouri, T., Üstün, A., Ahmadian, A., Ermiş, B., Locatelli, A., & Hooker, S. (2024). Pushing Mixture of Experts to the Limit: Extremely Parameter Efficient MoE for Instruction Tuning. *International Conference on Learning Representations (ICLR)*.
+66. <a id="ref-66"></a>Morrison, J., Adhikesaven, S., Bhagia, A., Zaharia, M., Smith, N. A., & Min, S. (2026). Train Separately, Merge Together: Modular Post-Training with Mixture-of-Experts. *arXiv preprint* [arXiv:2604.18473](https://arxiv.org/abs/2604.18473).
+67. <a id="ref-67"></a>Bowman, B., Achille, A., Zancato, L., Trager, M., Perera, P., Paolini, G., & Soatto, S. (2023). A-la-carte Prompt Tuning (APT): Combining Distinct Data via Composable Prompting. *Proceedings of CVPR*.
+68. <a id="ref-68"></a>Asai, A., Salehi, M., Peters, M. E., & Hajishirzi, H. (2022). ATTEMPT: Parameter-Efficient Multi-Task Tuning via Attentional Mixtures of Soft Prompts. *Proceedings of EMNLP*.
+69. <a id="ref-69"></a>Berthon, A., Astorga, N., & van der Schaar, M. (2026). Skill Neologisms: Towards Skill-Based Continual Learning. *Proceedings of the 43rd International Conference on Machine Learning (ICML)*, PMLR 306: 7815–7836.
+70. <a id="ref-70"></a>Chen, L., Ye, Z., Wu, Y., Zhuo, D., Ceze, L., & Krishnamurthy, A. (2023). Punica: Multi-Tenant LoRA Serving. *arXiv preprint* [arXiv:2310.18547](https://arxiv.org/abs/2310.18547).
+71. <a id="ref-71"></a>Sheng, Y., Cao, S., Li, D., Hooper, C., Lee, N., Yang, S., Chou, C., Zhu, B., Zheng, L., Keutzer, K., Gonzalez, J. E., & Stoica, I. (2024). S-LoRA: Serving Thousands of Concurrent LoRA Adapters. *Proceedings of MLSys*.
+72. <a id="ref-72"></a>Lanpouthakoun, A., Arora, A., Wu, Z., Pai, D., Keigwin, B., Jurafsky, D., & Potts, C. (2026). PreFT: Prefill-Only Finetuning for Efficient Inference. *arXiv preprint* [arXiv:2605.14217](https://arxiv.org/abs/2605.14217).
